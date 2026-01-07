@@ -520,17 +520,25 @@
     // ============================================
     // INITIALIZATION
     // ============================================
-    document.addEventListener('DOMContentLoaded', function() {
-      lucide.createIcons();
-      initSupabase();
-      setupEventListeners();
-    });
+   document.addEventListener('DOMContentLoaded', function() {
+  lucide.createIcons();
+  App.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  checkAuth();
+});
 
-    function initSupabase() {
-      try {
-        App.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        updateConnectionStatus('connecting', 'Connecting...');
-        loadCustomers();
+async function checkAuth() {
+  var result = await App.db.auth.getSession();
+  if (!result.data.session) {
+    window.location.href = 'login.html';
+    return;
+  }
+  setupEventListeners();
+  updateConnectionStatus('connecting', 'Connecting...');
+  loadCustomers();
+}
+
+function initSupabase() {
+  // Not used anymore
       } catch (error) {
         updateConnectionStatus('error', 'Failed');
         showNotification('Database connection failed: ' + error.message, 'error');
