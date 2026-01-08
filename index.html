@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BwanaBet CRM System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .tab-btn.active { background: #fbbf24; color: #000; }
+    .clickable-card { cursor: pointer; transition: all 0.2s; }
+    .clickable-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .notification { animation: slideIn 0.3s ease-out; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .mobile-menu { transition: max-height 0.3s ease-out; }
+    .table-scroll::-webkit-scrollbar { height: 8px; }
+    .table-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+    .table-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+  <div id="loginScreen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div class="bg-black p-6 text-center border-b-4 border-amber-400">
+        <h1 class="text-amber-400 font-extrabold text-3xl tracking-tight">BWANABET</h1>
+        <p class="text-slate-400 text-sm mt-1">CRM System v2.1</p>
+      </div>
+      <div class="p-6 sm:p-8">
+        <h2 class="text-xl font-bold text-slate-800 mb-6 text-center">Sign In</h2>
+        <div id="loginError" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"></div>
+        <div class="space-y-4">
+          <div><label class="block text-sm font-medium text-slate-700 mb-1">Email</label><input type="email" id="loginEmail" placeholder="you@example.com" class="w-full px-4 py-3 border border-slate-200 rounded-lg text-sm"/></div>
+          <div><label class="block text-sm font-medium text-slate-700 mb-1">Password</label><input type="password" id="loginPassword" placeholder="••••••••" class="w-full px-4 py-3 border border-slate-200 rounded-lg text-sm"/></div>
+          <button id="loginBtn" class="w-full py-3 bg-amber-500 text-black font-bold rounded-lg hover:bg-amber-400 flex items-center justify-center gap-2"><i data-lucide="log-in" class="h-5 w-5"></i> Sign In</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="mainApp" class="hidden">
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black/30 flex items-center justify-center z-[100]">
+      <div class="bg-white rounded-xl p-6 flex items-center gap-4 shadow-2xl">
+        <svg class="spinner h-8 w-8 text-amber-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+        <span class="text-lg font-medium text-slate-700" id="loadingText">Loading...</span>
+      </div>
+    </div>
+    <div id="notification" class="hidden fixed top-4 right-4 left-4 sm:left-auto z-50 px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 notification"></div>
+
+    <header class="bg-black shadow-md border-b-4 border-amber-400">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3 sm:gap-6">
+            <div class="text-amber-400 font-extrabold text-xl sm:text-2xl tracking-tight">BWANABET</div>
+            <div class="hidden sm:block border-l-2 border-slate-600 pl-4"><h1 class="text-lg font-bold text-white">CRM System</h1></div>
+          </div>
+          <div class="flex items-center gap-2 sm:gap-4">
+            <div class="flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-full bg-slate-700">
+              <div id="statusDot" class="w-2 h-2 rounded-full bg-gray-400"></div>
+              <span id="statusText" class="text-xs text-slate-300 hidden sm:inline">Connecting...</span>
+            </div>
+            <span id="userEmail" class="text-xs text-slate-400 hidden sm:inline truncate max-w-[120px]"></span>
+            <button id="logoutBtn" class="flex items-center gap-1 px-2 sm:px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 text-sm"><i data-lucide="log-out" class="h-4 w-4"></i><span class="hidden sm:inline">Logout</span></button>
+            <button id="mobileMenuBtn" class="lg:hidden p-2 text-slate-300 hover:text-white"><i data-lucide="menu" class="h-6 w-6"></i></button>
+          </div>
+        </div>
+        <div class="hidden lg:flex items-center gap-1 bg-slate-800 rounded-lg p-1 mt-3 w-fit">
+          <button id="tab-dashboard" class="tab-btn active flex items-center gap-2 px-4 py-2 rounded-md font-medium text-slate-300"><i data-lucide="layout-dashboard" class="h-4 w-4"></i>Dashboard</button>
+          <button id="tab-profitability" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-md font-medium text-slate-300"><i data-lucide="dollar-sign" class="h-4 w-4"></i>Profitability</button>
+          <button id="tab-behavior" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-md font-medium text-slate-300"><i data-lucide="brain" class="h-4 w-4"></i>Behavior</button>
+          <button id="tab-churn" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-md font-medium text-slate-300"><i data-lucide="user-x" class="h-4 w-4"></i>Churn</button>
+          <button id="tab-players" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-md font-medium text-slate-300"><i data-lucide="users" class="h-4 w-4"></i>Players</button>
+          <button id="tab-settings" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-md font-medium text-slate-300"><i data-lucide="settings" class="h-4 w-4"></i>Settings</button>
+        </div>
+        <div id="mobileMenu" class="lg:hidden mobile-menu max-h-0 overflow-hidden">
+          <div class="flex flex-col gap-1 bg-slate-800 rounded-lg p-2 mt-3">
+            <button id="tab-dashboard-mobile" class="tab-btn active px-4 py-3 rounded-md font-medium text-slate-300 text-left">Dashboard</button>
+            <button id="tab-profitability-mobile" class="tab-btn px-4 py-3 rounded-md font-medium text-slate-300 text-left">Profitability</button>
+            <button id="tab-behavior-mobile" class="tab-btn px-4 py-3 rounded-md font-medium text-slate-300 text-left">Behavior</button>
+            <button id="tab-churn-mobile" class="tab-btn px-4 py-3 rounded-md font-medium text-slate-300 text-left">Churn</button>
+            <button id="tab-players-mobile" class="tab-btn px-4 py-3 rounded-md font-medium text-slate-300 text-left">Players</button>
+            <button id="tab-settings-mobile" class="tab-btn px-4 py-3 rounded-md font-medium text-slate-300 text-left">Settings</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+      <!-- DASHBOARD -->
+      <div id="content-dashboard" class="tab-content">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-indigo-500 clickable-card" onclick="showAllPlayers()">
+            <p class="text-xs text-slate-500">Total Players</p>
+            <p class="text-2xl font-bold text-indigo-600" id="metric-total">0</p>
+            <p class="text-xs text-indigo-400 mt-1">Click to view →</p>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-emerald-500 clickable-card" onclick="showFilteredPlayers('profitable', 'Profitable Players')">
+            <p class="text-xs text-slate-500">Profitable Players</p>
+            <p class="text-2xl font-bold text-emerald-600" id="metric-profitable">0</p>
+            <p class="text-xs text-emerald-400 mt-1">Click to view →</p>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-red-500 clickable-card" onclick="showFilteredPlayers('negative_ggr', 'Negative GGR Players')">
+            <p class="text-xs text-slate-500">Negative GGR Players</p>
+            <p class="text-2xl font-bold text-red-600" id="metric-negative-ggr">0</p>
+            <p class="text-xs text-red-400 mt-1">Click to view →</p>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-amber-500 clickable-card" onclick="showFilteredPlayers('atrisk', 'At Risk Players')">
+            <p class="text-xs text-slate-500">At Risk</p>
+            <p class="text-2xl font-bold text-amber-600" id="metric-atrisk">0</p>
+            <p class="text-xs text-amber-400 mt-1">Click to view →</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div class="bg-white rounded-xl shadow-sm p-5">
+            <h3 class="font-bold text-slate-800 mb-4">Financial Overview</h3>
+            <div class="space-y-3">
+              <div class="flex justify-between p-3 bg-emerald-50 rounded-lg"><span class="text-emerald-700">Total Deposits</span><span class="font-bold text-emerald-600" id="fin-deposits">$0</span></div>
+              <div class="flex justify-between p-3 bg-red-50 rounded-lg"><span class="text-red-700">Total Withdrawals</span><span class="font-bold text-red-600" id="fin-withdrawals">$0</span></div>
+              <div class="flex justify-between p-3 bg-blue-50 rounded-lg"><span class="text-blue-700">Net Revenue (GGR)</span><span class="font-bold text-blue-600" id="fin-net">$0</span></div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm p-5">
+            <h3 class="font-bold text-slate-800 mb-4">Player Preferences</h3>
+            <div class="space-y-3">
+              <div class="clickable-card p-3 bg-green-50 rounded-lg border border-green-200" onclick="showFilteredPlayers('pref_sports', 'Sports Bettors')">
+                <div class="flex justify-between"><span class="text-green-700">Sports Bettors</span><div class="flex items-center gap-2"><span class="font-bold text-green-600" id="pref-sports">0</span><i data-lucide="download" class="h-4 w-4 text-green-400" onclick="event.stopPropagation(); exportFiltered('pref_sports', 'sports_bettors')"></i></div></div>
+              </div>
+              <div class="clickable-card p-3 bg-purple-50 rounded-lg border border-purple-200" onclick="showFilteredPlayers('pref_casino', 'Casino Players')">
+                <div class="flex justify-between"><span class="text-purple-700">Casino Players</span><div class="flex items-center gap-2"><span class="font-bold text-purple-600" id="pref-casino">0</span><i data-lucide="download" class="h-4 w-4 text-purple-400" onclick="event.stopPropagation(); exportFiltered('pref_casino', 'casino_players')"></i></div></div>
+              </div>
+              <div class="clickable-card p-3 bg-blue-50 rounded-lg border border-blue-200" onclick="showFilteredPlayers('pref_mixed', 'Mixed Players')">
+                <div class="flex justify-between"><span class="text-blue-700">Mixed Players</span><div class="flex items-center gap-2"><span class="font-bold text-blue-600" id="pref-mixed">0</span><i data-lucide="download" class="h-4 w-4 text-blue-400" onclick="event.stopPropagation(); exportFiltered('pref_mixed', 'mixed_players')"></i></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-5 mb-6">
+          <h3 class="font-bold text-slate-800 mb-4">Value Segments</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="clickable-card p-4 bg-purple-50 rounded-lg border border-purple-200 text-center" onclick="showFilteredPlayers('value_vip', 'VIP Players')">
+              <p class="text-xs text-purple-600">VIP ($5k+)</p><p class="text-2xl font-bold text-purple-700" id="seg-vip">0</p>
+              <button class="mt-2 text-xs text-purple-600" onclick="event.stopPropagation(); exportFiltered('value_vip', 'vip')"><i data-lucide="download" class="h-3 w-3 inline"></i> Export</button>
+            </div>
+            <div class="clickable-card p-4 bg-blue-50 rounded-lg border border-blue-200 text-center" onclick="showFilteredPlayers('value_high', 'High Value')">
+              <p class="text-xs text-blue-600">High ($1k-$5k)</p><p class="text-2xl font-bold text-blue-700" id="seg-high">0</p>
+              <button class="mt-2 text-xs text-blue-600" onclick="event.stopPropagation(); exportFiltered('value_high', 'high_value')"><i data-lucide="download" class="h-3 w-3 inline"></i> Export</button>
+            </div>
+            <div class="clickable-card p-4 bg-teal-50 rounded-lg border border-teal-200 text-center" onclick="showFilteredPlayers('value_medium', 'Medium Value')">
+              <p class="text-xs text-teal-600">Medium ($100-$1k)</p><p class="text-2xl font-bold text-teal-700" id="seg-medium">0</p>
+              <button class="mt-2 text-xs text-teal-600" onclick="event.stopPropagation(); exportFiltered('value_medium', 'medium_value')"><i data-lucide="download" class="h-3 w-3 inline"></i> Export</button>
+            </div>
+            <div class="clickable-card p-4 bg-slate-50 rounded-lg border border-slate-200 text-center" onclick="showFilteredPlayers('value_low', 'Low Value')">
+              <p class="text-xs text-slate-600">Low (&lt;$100)</p><p class="text-2xl font-bold text-slate-700" id="seg-low">0</p>
+              <button class="mt-2 text-xs text-slate-600" onclick="event.stopPropagation(); exportFiltered('value_low', 'low_value')"><i data-lucide="download" class="h-3 w-3 inline"></i> Export</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-5">
+          <h3 class="font-bold text-slate-800 mb-4">Churn Risk</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="clickable-card text-center p-4 bg-emerald-50 rounded-lg border border-emerald-200" onclick="showFilteredPlayers('churn_low', 'Low Risk')">
+              <p class="text-3xl font-bold text-emerald-600" id="churn-low">0</p><p class="text-sm text-emerald-700">Low Risk</p>
+              <button class="mt-2 text-xs text-emerald-600" onclick="event.stopPropagation(); exportFiltered('churn_low', 'low_risk')"><i data-lucide="download" class="h-3 w-3 inline"></i> Export</button>
+            </div>
+            <div class="clickable-card text-center p-4 bg-amber-50 rounded-lg border border-amber-200" onclick="showFilteredPlayers('churn_medium', 'Medium Risk')">
+              <p class="text-3xl font-bold text-amber-600" id="churn-medium">0</p><p class="text-sm text-amber-700">Medium</p>
+              <button class="mt-2 text-xs text-amber-600" onclick="event.stopPropagation(); exportFiltered('churn_medium', 'medium_risk')"><i data-lucide="download" class="h-3 w-3 inline"></i> Export</button>
+            </div>
+            <div class="clickable-card text-center p-4 bg-orange-50 rounded-lg border border-orange-200" onclick="showFilteredPlayers('churn_high', 'High Risk')">
+              <p class="text-3xl font-bold text-orange-600" id="churn-high">0</p><p class="text-sm text-orange-700">High Risk</p>
+              <button class="mt-2 text-xs text-orange-600" onclick="event.stopPropagation(); exportFiltered('churn_high', 'high_risk')"><i data-lucide="download" class="h-3 w-3 inline"></i> Export</button>
+            </div>
+            <div class="clickable-card text-center p-4 bg-red-50 rounded-lg border border-red-200" onclick="showFilteredPlayers('churn_critical', 'Critical Risk')">
+              <p class="text-3xl font-bold text-red-600" id="churn-critical">0</p><p class="text-sm text-red-700">Critical</p>
+              <button class="mt-2 text-xs text-red-600" onclick="event.stopPropagation(); exportFiltered('churn_critical', 'critical_risk')"><i data-lucide="download" class="h-3 w-3 inline"></i> Export</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROFITABILITY -->
+      <div id="content-profitability" class="tab-content hidden">
+        <h2 class="text-xl font-bold text-slate-800 mb-4">Player Profitability Analysis</h2>
+        <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg mb-6">
+          <p class="text-amber-800 font-medium">Understanding Profitability</p>
+          <p class="text-amber-700 text-sm mt-1"><strong>Profitable Players</strong> = Lost more than won (company earns from them)<br><strong>Negative GGR Players</strong> = Won more than lost (company loses money on them)</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+          <div class="clickable-card bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white" onclick="showFilteredPlayers('profitable', 'Profitable Players')">
+            <div class="flex items-center justify-between mb-4">
+              <div><h3 class="text-xl font-bold">Profitable Players</h3><p class="text-emerald-100 text-sm">Lost more than won</p></div>
+              <button class="bg-white/20 rounded-lg px-3 py-2 text-sm" onclick="event.stopPropagation(); exportFiltered('profitable', 'profitable')"><i data-lucide="download" class="h-4 w-4 inline"></i> Export</button>
+            </div>
+            <p class="text-5xl font-bold" id="profit-count">0</p>
+            <p class="text-emerald-100 mt-2">Company profit: <span class="font-bold" id="profit-amount">$0</span></p>
+          </div>
+          <div class="clickable-card bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white" onclick="showFilteredPlayers('negative_ggr', 'Negative GGR Players')">
+            <div class="flex items-center justify-between mb-4">
+              <div><h3 class="text-xl font-bold">Negative GGR Players</h3><p class="text-red-100 text-sm">Won more than lost</p></div>
+              <button class="bg-white/20 rounded-lg px-3 py-2 text-sm" onclick="event.stopPropagation(); exportFiltered('negative_ggr', 'negative_ggr')"><i data-lucide="download" class="h-4 w-4 inline"></i> Export</button>
+            </div>
+            <p class="text-5xl font-bold" id="negative-ggr-count">0</p>
+            <p class="text-red-100 mt-2">Company loss: <span class="font-bold" id="negative-ggr-amount">$0</span></p>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5">
+          <h3 class="font-bold text-slate-800 mb-4">Win Rate Distribution</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="clickable-card p-4 bg-emerald-50 rounded-lg text-center" onclick="showFilteredPlayers('wr_0_25', 'Win Rate 0-25%')">
+              <p class="text-xs text-emerald-600">0-25% (Most Profitable)</p><p class="text-2xl font-bold text-emerald-700" id="wr-0-25">0</p>
+              <button class="mt-2 text-xs text-emerald-600" onclick="event.stopPropagation(); exportFiltered('wr_0_25', 'wr_0_25')"><i data-lucide="download" class="h-3 w-3 inline"></i> Export</button>
+            </div>
+            <div class="clickable-card p-4 bg-teal-50 rounded-lg text-center" onclick="showFilteredPlayers('wr_25_40', 'Win Rate 25-40%')">
+              <p class="text-xs text-teal-600">25-40% (Profitable)</p><p class="text-2xl font-bold text-teal-700" id="wr-25-40">0</p>
+              <button class="mt-2 text-xs text-teal-600" onclick="event.stopPropagation(); exportFiltered('wr_25_40', 'wr_25_40')"><i data-lucide="download" class="h-3 w-3 inline"></i> Export</button>
+            </div>
+            <div class="clickable-card p-4 bg-amber-50 rounded-lg text-center" onclick="showFilteredPlayers('wr_40_50', 'Win Rate 40-50%')">
+              <p class="text-xs text-amber-600">40-50% (Break Even)</p><p class="text-2xl font-bold text-amber-700" id="wr-40-50">0</p>
+              <button class="mt-2 text-xs text-amber-600" onclick="event.stopPropagation(); exportFiltered('wr_40_50', 'wr_40_50')"><i data-lucide="download" class="h-3 w-3 inline"></i> Export</button>
+            </div>
+            <div class="clickable-card p-4 bg-red-50 rounded-lg text-center" onclick="showFilteredPlayers('wr_50_plus', 'Win Rate 50%+')">
+              <p class="text-xs text-red-600">50%+ (Negative GGR)</p><p class="text-2xl font-bold text-red-700" id="wr-50-plus">0</p>
+              <button class="mt-2 text-xs text-red-600" onclick="event.stopPropagation(); exportFiltered('wr_50_plus', 'wr_50_plus')"><i data-lucide="download" class="h-3 w-3 inline"></i> Export</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BEHAVIOR -->
+      <div id="content-behavior" class="tab-content hidden">
+        <h2 class="text-xl font-bold text-slate-800 mb-4">Player Behavior</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div class="clickable-card bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-5 text-white" onclick="showFilteredPlayers('style_highroller', 'High Rollers')">
+            <div class="flex justify-between"><h3 class="font-bold">High Rollers</h3><i data-lucide="download" class="h-5 w-5 opacity-70" onclick="event.stopPropagation(); exportFiltered('style_highroller', 'high_rollers')"></i></div>
+            <p class="text-white/80 text-sm">Avg bet &gt;$100</p><p class="text-4xl font-bold mt-2" id="style-highroller">0</p>
+          </div>
+          <div class="clickable-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-white" onclick="showFilteredPlayers('style_regular', 'Regular Bettors')">
+            <div class="flex justify-between"><h3 class="font-bold">Regular Bettors</h3><i data-lucide="download" class="h-5 w-5 opacity-70" onclick="event.stopPropagation(); exportFiltered('style_regular', 'regular_bettors')"></i></div>
+            <p class="text-white/80 text-sm">Avg bet $10-$100</p><p class="text-4xl font-bold mt-2" id="style-regular">0</p>
+          </div>
+          <div class="clickable-card bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl p-5 text-white" onclick="showFilteredPlayers('style_casual', 'Casual Players')">
+            <div class="flex justify-between"><h3 class="font-bold">Casual Players</h3><i data-lucide="download" class="h-5 w-5 opacity-70" onclick="event.stopPropagation(); exportFiltered('style_casual', 'casual_players')"></i></div>
+            <p class="text-white/80 text-sm">Avg bet &lt;$10</p><p class="text-4xl font-bold mt-2" id="style-casual">0</p>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5">
+          <h3 class="font-bold text-slate-800 mb-4">Lifecycle Stages</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div class="clickable-card bg-cyan-50 rounded-lg p-3 text-center border border-cyan-200" onclick="showFilteredPlayers('life_new', 'New Players')">
+              <p class="text-2xl font-bold text-cyan-600" id="life-new">0</p><p class="text-xs text-cyan-700">New (&lt;30d)</p>
+              <button class="mt-1 text-xs text-cyan-600" onclick="event.stopPropagation(); exportFiltered('life_new', 'new')">Export</button>
+            </div>
+            <div class="clickable-card bg-emerald-50 rounded-lg p-3 text-center border border-emerald-200" onclick="showFilteredPlayers('life_growing', 'Growing')">
+              <p class="text-2xl font-bold text-emerald-600" id="life-growing">0</p><p class="text-xs text-emerald-700">Growing</p>
+              <button class="mt-1 text-xs text-emerald-600" onclick="event.stopPropagation(); exportFiltered('life_growing', 'growing')">Export</button>
+            </div>
+            <div class="clickable-card bg-purple-50 rounded-lg p-3 text-center border border-purple-200" onclick="showFilteredPlayers('life_mature', 'Mature')">
+              <p class="text-2xl font-bold text-purple-600" id="life-mature">0</p><p class="text-xs text-purple-700">Mature</p>
+              <button class="mt-1 text-xs text-purple-600" onclick="event.stopPropagation(); exportFiltered('life_mature', 'mature')">Export</button>
+            </div>
+            <div class="clickable-card bg-amber-50 rounded-lg p-3 text-center border border-amber-200" onclick="showFilteredPlayers('life_declining', 'Declining')">
+              <p class="text-2xl font-bold text-amber-600" id="life-declining">0</p><p class="text-xs text-amber-700">Declining</p>
+              <button class="mt-1 text-xs text-amber-600" onclick="event.stopPropagation(); exportFiltered('life_declining', 'declining')">Export</button>
+            </div>
+            <div class="clickable-card bg-orange-50 rounded-lg p-3 text-center border border-orange-200" onclick="showFilteredPlayers('life_dormant', 'Dormant')">
+              <p class="text-2xl font-bold text-orange-600" id="life-dormant">0</p><p class="text-xs text-orange-700">Dormant</p>
+              <button class="mt-1 text-xs text-orange-600" onclick="event.stopPropagation(); exportFiltered('life_dormant', 'dormant')">Export</button>
+            </div>
+            <div class="clickable-card bg-red-50 rounded-lg p-3 text-center border border-red-200" onclick="showFilteredPlayers('life_churned', 'Churned')">
+              <p class="text-2xl font-bold text-red-600" id="life-churned">0</p><p class="text-xs text-red-700">Churned</p>
+              <button class="mt-1 text-xs text-red-600" onclick="event.stopPropagation(); exportFiltered('life_churned', 'churned')">Export</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHURN -->
+      <div id="content-churn" class="tab-content hidden">
+        <h2 class="text-xl font-bold text-slate-800 mb-4">Churn Risk Analysis</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div class="clickable-card bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 text-white" onclick="showFilteredPlayers('churn_low', 'Low Risk')">
+            <div class="flex justify-between"><h3 class="text-xl font-bold">Low Risk</h3><button class="bg-white/20 px-3 py-1 rounded text-sm" onclick="event.stopPropagation(); exportFiltered('churn_low', 'low_risk')">Export</button></div>
+            <p class="text-white/80 text-sm">&lt;7 days</p><p class="text-4xl font-bold mt-3" id="churn-d-low">0</p>
+          </div>
+          <div class="clickable-card bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-5 text-white" onclick="showFilteredPlayers('churn_medium', 'Medium Risk')">
+            <div class="flex justify-between"><h3 class="text-xl font-bold">Medium Risk</h3><button class="bg-white/20 px-3 py-1 rounded text-sm" onclick="event.stopPropagation(); exportFiltered('churn_medium', 'medium_risk')">Export</button></div>
+            <p class="text-white/80 text-sm">7-14 days</p><p class="text-4xl font-bold mt-3" id="churn-d-medium">0</p>
+          </div>
+          <div class="clickable-card bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-5 text-white" onclick="showFilteredPlayers('churn_high', 'High Risk')">
+            <div class="flex justify-between"><h3 class="text-xl font-bold">High Risk</h3><button class="bg-white/20 px-3 py-1 rounded text-sm" onclick="event.stopPropagation(); exportFiltered('churn_high', 'high_risk')">Export</button></div>
+            <p class="text-white/80 text-sm">14-30 days</p><p class="text-4xl font-bold mt-3" id="churn-d-high">0</p>
+          </div>
+          <div class="clickable-card bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-5 text-white" onclick="showFilteredPlayers('churn_critical', 'Critical')">
+            <div class="flex justify-between"><h3 class="text-xl font-bold">Critical</h3><button class="bg-white/20 px-3 py-1 rounded text-sm" onclick="event.stopPropagation(); exportFiltered('churn_critical', 'critical')">Export</button></div>
+            <p class="text-white/80 text-sm">30+ days</p><p class="text-4xl font-bold mt-3" id="churn-d-critical">0</p>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5">
+          <h3 class="font-bold text-slate-800 mb-4">Additional Indicators</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="clickable-card p-4 bg-red-50 rounded-lg border border-red-200" onclick="showFilteredPlayers('withdrawing', 'Withdrawing Profits')">
+              <div class="flex justify-between"><span class="text-sm font-medium text-red-700">Withdrawing Profits</span><i data-lucide="download" class="h-4 w-4 text-red-400" onclick="event.stopPropagation(); exportFiltered('withdrawing', 'withdrawing')"></i></div>
+              <p class="text-2xl font-bold text-red-600" id="alert-withdrawing">0</p>
+            </div>
+            <div class="clickable-card p-4 bg-amber-50 rounded-lg border border-amber-200" onclick="showFilteredPlayers('biglosers', 'Big Losers')">
+              <div class="flex justify-between"><span class="text-sm font-medium text-amber-700">Big Losers (&lt;40% WR)</span><i data-lucide="download" class="h-4 w-4 text-amber-400" onclick="event.stopPropagation(); exportFiltered('biglosers', 'big_losers')"></i></div>
+              <p class="text-2xl font-bold text-amber-600" id="alert-losers">0</p>
+            </div>
+            <div class="clickable-card p-4 bg-purple-50 rounded-lg border border-purple-200" onclick="showFilteredPlayers('virtual', 'Virtual Phone')">
+              <div class="flex justify-between"><span class="text-sm font-medium text-purple-700">Virtual Phone</span><i data-lucide="download" class="h-4 w-4 text-purple-400" onclick="event.stopPropagation(); exportFiltered('virtual', 'virtual_phone')"></i></div>
+              <p class="text-2xl font-bold text-purple-600" id="alert-virtual">0</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PLAYERS -->
+      <div id="content-players" class="tab-content hidden">
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div class="px-4 py-3 border-b bg-slate-50">
+            <div id="filterBanner" class="hidden mb-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-medium text-amber-700">Filtered: <span id="filterName">All</span></span>
+                  <span class="text-sm text-amber-600">(<span id="filterCount">0</span> players)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button id="exportFilteredBtn" class="flex items-center gap-1 px-3 py-1 bg-amber-500 text-white text-sm rounded"><i data-lucide="download" class="h-4 w-4"></i> Export</button>
+                  <button onclick="clearAllFilters()" class="text-amber-600 text-sm">✕ Clear</button>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col gap-3">
+              <div class="relative">
+                <i data-lucide="search" class="h-5 w-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="searchInput" placeholder="Search by ID or phone..." class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm"/>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <select id="profitFilter" class="flex-1 min-w-[100px] px-3 py-2 border border-slate-200 rounded-lg text-sm">
+                  <option value="all">All Players</option>
+                  <option value="profitable">Profitable</option>
+                  <option value="negative_ggr">Negative GGR</option>
+                </select>
+                <select id="prefFilter" class="flex-1 min-w-[100px] px-3 py-2 border border-slate-200 rounded-lg text-sm">
+                  <option value="all">All Prefs</option>
+                  <option value="sports">Sports</option>
+                  <option value="casino">Casino</option>
+                  <option value="mixed">Mixed</option>
+                </select>
+                <select id="churnFilter" class="flex-1 min-w-[100px] px-3 py-2 border border-slate-200 rounded-lg text-sm">
+                  <option value="all">All Risk</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+                <button id="clearFiltersBtn" class="px-3 py-2 text-sm text-amber-600 font-medium">Clear</button>
+              </div>
+              <div class="flex gap-2">
+                <button id="refreshBtn" class="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm"><i data-lucide="refresh-cw" class="h-4 w-4"></i> Refresh</button>
+                <button id="exportAllBtn" class="flex items-center gap-2 px-3 py-2 bg-amber-500 text-black font-medium rounded-lg text-sm"><i data-lucide="download" class="h-4 w-4"></i> Export All</button>
+              </div>
+            </div>
+          </div>
+          <div class="overflow-x-auto table-scroll">
+            <table class="w-full min-w-[900px]">
+              <thead class="bg-slate-50 border-b">
+                <tr>
+                  <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600">ID / Phone</th>
+                  <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600">Type</th>
+                  <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600">Preference</th>
+                  <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600">Net Revenue</th>
+                  <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600">Win Rate</th>
+                  <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600">GGR Status</th>
+                  <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600">Value</th>
+                  <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600">Churn</th>
+                  <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody" class="divide-y divide-slate-100"><tr><td colspan="9" class="px-4 py-12 text-center text-slate-500">Loading...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="px-4 py-3 bg-slate-50 border-t text-sm text-slate-500" id="tableFooter">Loading...</div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="content-settings" class="tab-content hidden">
+        <div class="max-w-4xl mx-auto">
+          <h2 class="text-xl font-bold text-slate-800 mb-6">Settings</h2>
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+            <div class="px-6 py-4 border-b bg-slate-50"><h3 class="font-bold text-slate-800">Current User</h3></div>
+            <div class="p-6"><p class="font-medium text-slate-800" id="settingsUserEmail">Loading...</p></div>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+            <div class="px-6 py-4 border-b bg-slate-50"><h3 class="font-bold text-slate-800">Import CSV</h3></div>
+            <div class="p-6">
+              <label class="block border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-amber-400 hover:bg-amber-50">
+                <i data-lucide="upload" class="h-12 w-12 text-slate-400 mx-auto mb-3"></i>
+                <p class="font-semibold text-slate-700">Click to upload CSV</p>
+                <input type="file" accept=".csv" id="csvFileInput" class="hidden"/>
+              </label>
+              <div id="importProgress" class="hidden mt-4">
+                <div class="flex justify-between text-sm mb-1"><span>Importing...</span><span id="importProgressText">0%</span></div>
+                <div class="h-2 bg-slate-200 rounded-full"><div id="importProgressBar" class="h-full bg-amber-500 rounded-full" style="width:0%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div id="playerModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="px-6 py-4 border-b flex items-center justify-between sticky top-0 bg-white">
+          <h3 class="text-lg font-bold">Player Details</h3>
+          <button id="closePlayerModal" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg"><i data-lucide="x" class="h-5 w-5"></i></button>
+        </div>
+        <div class="p-6" id="playerModalContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var SUPABASE_URL = 'https://blrrcnrhixckfudiojwe.supabase.co';
+    var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJscnJjbnJoaXhja2Z1ZGlvandlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3Nzg0MzMsImV4cCI6MjA4MzM1NDQzM30.2DGACAZz-f_r0ieYz3hvtsOG1y-3fqTD_ENH2ZR2g1k';
+    var App = { db: null, user: null, players: [], currentFilter: null, filteredPlayers: [], mobileMenuOpen: false };
+    var FIELD_MAP = { 'id': 'id', 'virtual/real phone': 'phone_number', 'referral': 'referral', 'status': 'status', 'registration_date': 'registration_date', 'sport_bet_amount': 'sport_bet_amount', 'sport_bet_count': 'sport_bet_count', 'sport_win_amount': 'sport_win_amount', 'sport_win_count': 'sport_win_count', 'casino_bet_amount': 'casino_bet_amount', 'casino_bet_count': 'casino_bet_count', 'casino_win_amount': 'casino_win_amount', 'casino_win_count': 'casino_win_count', 'total_deposit_amount': 'total_deposit_amount', 'total_withdraw_amount': 'total_withdraw_amount', 'sport_bet_min': 'sport_bet_min', 'sport_bet_max': 'sport_bet_max', 'sport_bet_avg': 'sport_bet_avg', 'casino_bet_min': 'casino_bet_min', 'casino_bet_max': 'casino_bet_max', 'casino_bet_avg': 'casino_bet_avg' };
+    var NUMERIC_FIELDS = ['sport_bet_amount', 'sport_bet_count', 'sport_win_amount', 'sport_win_count', 'casino_bet_amount', 'casino_bet_count', 'casino_win_amount', 'casino_win_count', 'total_deposit_amount', 'total_withdraw_amount', 'sport_bet_min', 'sport_bet_max', 'sport_bet_avg', 'casino_bet_min', 'casino_bet_max', 'casino_bet_avg'];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      lucide.createIcons();
+      App.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      document.getElementById('loginBtn').addEventListener('click', handleLogin);
+      document.getElementById('loginPassword').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
+      checkSession();
+    });
+
+    async function checkSession() {
+      var r = await App.db.auth.getSession();
+      if (r.data.session) { App.user = r.data.session.user; showMainApp(); }
+      App.db.auth.onAuthStateChange((e, s) => { if (e === 'SIGNED_IN' && s) { App.user = s.user; showMainApp(); } else if (e === 'SIGNED_OUT') { showLoginScreen(); } });
+    }
+
+    async function handleLogin() {
+      var email = document.getElementById('loginEmail').value.trim(), password = document.getElementById('loginPassword').value;
+      if (!email || !password) { document.getElementById('loginError').textContent = 'Enter email and password'; document.getElementById('loginError').classList.remove('hidden'); return; }
+      document.getElementById('loginBtn').disabled = true;
+      document.getElementById('loginBtn').innerHTML = '<svg class="spinner h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Signing in...';
+      try { var r = await App.db.auth.signInWithPassword({ email, password }); if (r.error) throw r.error; }
+      catch (e) { document.getElementById('loginError').textContent = e.message; document.getElementById('loginError').classList.remove('hidden'); document.getElementById('loginBtn').disabled = false; document.getElementById('loginBtn').innerHTML = '<i data-lucide="log-in" class="h-5 w-5"></i> Sign In'; lucide.createIcons(); }
+    }
+
+    function showLoginScreen() { document.getElementById('loginScreen').classList.remove('hidden'); document.getElementById('mainApp').classList.add('hidden'); }
+    function showMainApp() {
+      document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('mainApp').classList.remove('hidden');
+      if (App.user) { document.getElementById('userEmail').textContent = App.user.email; document.getElementById('settingsUserEmail').textContent = App.user.email; }
+      setupEventListeners(); loadPlayers();
+    }
+
+    function setupEventListeners() {
+      document.getElementById('logoutBtn').addEventListener('click', () => App.db.auth.signOut());
+      document.getElementById('mobileMenuBtn').addEventListener('click', () => { App.mobileMenuOpen = !App.mobileMenuOpen; document.getElementById('mobileMenu').style.maxHeight = App.mobileMenuOpen ? '400px' : '0'; });
+      ['dashboard', 'profitability', 'behavior', 'churn', 'players', 'settings'].forEach(t => {
+        var el = document.getElementById('tab-' + t); if (el) el.addEventListener('click', () => switchTab(t));
+        var mob = document.getElementById('tab-' + t + '-mobile'); if (mob) mob.addEventListener('click', () => { switchTab(t); App.mobileMenuOpen = false; document.getElementById('mobileMenu').style.maxHeight = '0'; });
+      });
+      document.getElementById('searchInput').addEventListener('input', filterTable);
+      document.getElementById('profitFilter').addEventListener('change', filterTable);
+      document.getElementById('prefFilter').addEventListener('change', filterTable);
+      document.getElementById('churnFilter').addEventListener('change', filterTable);
+      document.getElementById('clearFiltersBtn').addEventListener('click', clearAllFilters);
+      document.getElementById('refreshBtn').addEventListener('click', loadPlayers);
+      document.getElementById('exportAllBtn').addEventListener('click', () => exportData(App.players, 'all_players'));
+      document.getElementById('exportFilteredBtn').addEventListener('click', () => exportData(App.filteredPlayers, App.currentFilter || 'filtered'));
+      document.getElementById('csvFileInput').addEventListener('change', handleFileUpload);
+      document.getElementById('closePlayerModal').addEventListener('click', () => document.getElementById('playerModal').classList.add('hidden'));
+      lucide.createIcons();
+    }
+
+    async function loadPlayers() {
+      showLoading(true, 'Loading...');
+      try {
+        var r = await App.db.from('customers').select('*').order('id', { ascending: true });
+        if (r.error) throw r.error;
+        App.players = r.data.map(processPlayer);
+        document.getElementById('statusDot').className = 'w-2 h-2 rounded-full bg-emerald-400';
+        document.getElementById('statusText').textContent = 'Connected';
+        updateStats(); renderTable(App.players);
+        showNotification('Loaded ' + App.players.length + ' players', 'success');
+      } catch (e) { document.getElementById('statusDot').className = 'w-2 h-2 rounded-full bg-red-400'; showNotification('Error: ' + e.message, 'error'); }
+      finally { showLoading(false); }
+    }
+
+    function processPlayer(p) {
+      var sportBet = parseFloat(p.sport_bet_amount) || 0, sportWin = parseFloat(p.sport_win_amount) || 0;
+      var casinoBet = parseFloat(p.casino_bet_amount) || 0, casinoWin = parseFloat(p.casino_win_amount) || 0;
+      var totalBet = sportBet + casinoBet, totalWin = sportWin + casinoWin;
+      var totalBetCount = (parseInt(p.sport_bet_count) || 0) + (parseInt(p.casino_bet_count) || 0);
+      var totalWinCount = (parseInt(p.sport_win_count) || 0) + (parseInt(p.casino_win_count) || 0);
+      var deposits = parseFloat(p.total_deposit_amount) || 0, withdrawals = parseFloat(p.total_withdraw_amount) || 0;
+      var netRevenue = deposits - withdrawals;
+      var winRate = totalBetCount > 0 ? (totalWinCount / totalBetCount * 100) : 0;
+      var avgBet = totalBetCount > 0 ? (totalBet / totalBetCount) : 0;
+      var companyProfit = totalBet - totalWin;
+      var isProfitable = totalBet > totalWin && totalBetCount > 0;
+      var isNegativeGGR = totalWin > totalBet;
+      var phoneType = (p.phone_type || '').toLowerCase() === 'virtual' || (p.phone_number || '').toLowerCase().includes('virtual') ? 'virtual' : 'real';
+      var sportPct = totalBet > 0 ? (sportBet / totalBet * 100) : 0;
+      var preference = sportPct > 70 ? 'sports' : (sportPct < 30 ? 'casino' : 'mixed');
+      var valueSegment = netRevenue >= 5000 ? 'vip' : (netRevenue >= 1000 ? 'high' : (netRevenue >= 100 ? 'medium' : 'low'));
+      var bettingStyle = avgBet >= 100 ? 'highroller' : (avgBet >= 10 ? 'regular' : 'casual');
+      var regDate = p.registration_date ? new Date(p.registration_date) : null;
+      var daysSinceReg = regDate && !isNaN(regDate) ? Math.floor((new Date() - regDate) / 86400000) : 999;
+      var churnRisk = daysSinceReg < 7 ? 'low' : (daysSinceReg < 14 ? 'medium' : (daysSinceReg < 30 ? 'high' : 'critical'));
+      var lifecycle = daysSinceReg < 30 ? 'new' : (daysSinceReg < 90 ? 'growing' : (daysSinceReg < 180 ? 'mature' : (daysSinceReg < 270 ? 'declining' : (daysSinceReg < 365 ? 'dormant' : 'churned'))));
+      return { ...p, totalBet, totalWin, totalBetCount, totalWinCount, netRevenue, winRate, avgBet, companyProfit, isProfitable, isNegativeGGR, phoneType, preference, valueSegment, bettingStyle, daysSinceReg, churnRisk, lifecycle, isWithdrawing: withdrawals > deposits };
+    }
+
+    function getFiltered(type) {
+      switch(type) {
+        case 'profitable': return App.players.filter(p => p.isProfitable);
+        case 'negative_ggr': return App.players.filter(p => p.isNegativeGGR);
+        case 'atrisk': return App.players.filter(p => p.churnRisk === 'high' || p.churnRisk === 'critical');
+        case 'pref_sports': return App.players.filter(p => p.preference === 'sports');
+        case 'pref_casino': return App.players.filter(p => p.preference === 'casino');
+        case 'pref_mixed': return App.players.filter(p => p.preference === 'mixed');
+        case 'value_vip': return App.players.filter(p => p.valueSegment === 'vip');
+        case 'value_high': return App.players.filter(p => p.valueSegment === 'high');
+        case 'value_medium': return App.players.filter(p => p.valueSegment === 'medium');
+        case 'value_low': return App.players.filter(p => p.valueSegment === 'low');
+        case 'churn_low': return App.players.filter(p => p.churnRisk === 'low');
+        case 'churn_medium': return App.players.filter(p => p.churnRisk === 'medium');
+        case 'churn_high': return App.players.filter(p => p.churnRisk === 'high');
+        case 'churn_critical': return App.players.filter(p => p.churnRisk === 'critical');
+        case 'withdrawing': return App.players.filter(p => p.isWithdrawing);
+        case 'biglosers': return App.players.filter(p => p.winRate < 40 && p.totalBetCount > 10);
+        case 'virtual': return App.players.filter(p => p.phoneType === 'virtual');
+        case 'style_highroller': return App.players.filter(p => p.bettingStyle === 'highroller');
+        case 'style_regular': return App.players.filter(p => p.bettingStyle === 'regular');
+        case 'style_casual': return App.players.filter(p => p.bettingStyle === 'casual');
+        case 'life_new': return App.players.filter(p => p.lifecycle === 'new');
+        case 'life_growing': return App.players.filter(p => p.lifecycle === 'growing');
+        case 'life_mature': return App.players.filter(p => p.lifecycle === 'mature');
+        case 'life_declining': return App.players.filter(p => p.lifecycle === 'declining');
+        case 'life_dormant': return App.players.filter(p => p.lifecycle === 'dormant');
+        case 'life_churned': return App.players.filter(p => p.lifecycle === 'churned');
+        case 'wr_0_25': return App.players.filter(p => p.winRate < 25 && p.totalBetCount > 0);
+        case 'wr_25_40': return App.players.filter(p => p.winRate >= 25 && p.winRate < 40);
+        case 'wr_40_50': return App.players.filter(p => p.winRate >= 40 && p.winRate < 50);
+        case 'wr_50_plus': return App.players.filter(p => p.winRate >= 50 && p.totalBetCount > 0);
+        default: return App.players;
+      }
+    }
+
+    window.showFilteredPlayers = function(type, name) {
+      App.currentFilter = type; App.filteredPlayers = getFiltered(type);
+      switchTab('players');
+      document.getElementById('filterBanner').classList.remove('hidden');
+      document.getElementById('filterName').textContent = name;
+      document.getElementById('filterCount').textContent = App.filteredPlayers.length;
+      renderTable(App.filteredPlayers);
+    };
+
+    window.showAllPlayers = function() { clearAllFilters(); switchTab('players'); };
+    window.exportFiltered = function(type, filename) { exportData(getFiltered(type), filename); };
+
+    function filterTable() {
+      var search = document.getElementById('searchInput').value.toLowerCase();
+      var profit = document.getElementById('profitFilter').value;
+      var pref = document.getElementById('prefFilter').value;
+      var churn = document.getElementById('churnFilter').value;
+      var base = App.currentFilter ? App.filteredPlayers : App.players;
+      var filtered = base.filter(p => {
+        var matchSearch = !search || (p.id && String(p.id).toLowerCase().includes(search)) || (p.phone_number && p.phone_number.toLowerCase().includes(search));
+        var matchProfit = profit === 'all' || (profit === 'profitable' && p.isProfitable) || (profit === 'negative_ggr' && p.isNegativeGGR);
+        var matchPref = pref === 'all' || p.preference === pref;
+        var matchChurn = churn === 'all' || p.churnRisk === churn;
+        return matchSearch && matchProfit && matchPref && matchChurn;
+      });
+      renderTable(filtered);
+    }
+
+    function clearAllFilters() {
+      App.currentFilter = null; App.filteredPlayers = [];
+      document.getElementById('filterBanner').classList.add('hidden');
+      document.getElementById('searchInput').value = '';
+      document.getElementById('profitFilter').value = 'all';
+      document.getElementById('prefFilter').value = 'all';
+      document.getElementById('churnFilter').value = 'all';
+      renderTable(App.players);
+    }
+
+    function updateStats() {
+      var s = { total: App.players.length, deposits: 0, withdrawals: 0, profitable: 0, profitAmount: 0, negativeGGR: 0, negativeGGRAmount: 0, prefSports: 0, prefCasino: 0, prefMixed: 0, segVip: 0, segHigh: 0, segMedium: 0, segLow: 0, churnLow: 0, churnMedium: 0, churnHigh: 0, churnCritical: 0, styleHigh: 0, styleReg: 0, styleCasual: 0, lifeNew: 0, lifeGrowing: 0, lifeMature: 0, lifeDeclining: 0, lifeDormant: 0, lifeChurned: 0, withdrawing: 0, losers: 0, virtual: 0, wr0: 0, wr25: 0, wr40: 0, wr50: 0 };
+      App.players.forEach(p => {
+        s.deposits += parseFloat(p.total_deposit_amount) || 0; s.withdrawals += parseFloat(p.total_withdraw_amount) || 0;
+        if (p.isProfitable) { s.profitable++; s.profitAmount += p.companyProfit; }
+        if (p.isNegativeGGR) { s.negativeGGR++; s.negativeGGRAmount += Math.abs(p.companyProfit); }
+        if (p.preference === 'sports') s.prefSports++; else if (p.preference === 'casino') s.prefCasino++; else s.prefMixed++;
+        if (p.valueSegment === 'vip') s.segVip++; else if (p.valueSegment === 'high') s.segHigh++; else if (p.valueSegment === 'medium') s.segMedium++; else s.segLow++;
+        if (p.churnRisk === 'low') s.churnLow++; else if (p.churnRisk === 'medium') s.churnMedium++; else if (p.churnRisk === 'high') s.churnHigh++; else s.churnCritical++;
+        if (p.bettingStyle === 'highroller') s.styleHigh++; else if (p.bettingStyle === 'regular') s.styleReg++; else s.styleCasual++;
+        if (p.lifecycle === 'new') s.lifeNew++; else if (p.lifecycle === 'growing') s.lifeGrowing++; else if (p.lifecycle === 'mature') s.lifeMature++; else if (p.lifecycle === 'declining') s.lifeDeclining++; else if (p.lifecycle === 'dormant') s.lifeDormant++; else s.lifeChurned++;
+        if (p.isWithdrawing) s.withdrawing++; if (p.winRate < 40 && p.totalBetCount > 10) s.losers++; if (p.phoneType === 'virtual') s.virtual++;
+        if (p.totalBetCount > 0) { if (p.winRate < 25) s.wr0++; else if (p.winRate < 40) s.wr25++; else if (p.winRate < 50) s.wr40++; else s.wr50++; }
+      });
+      setText('metric-total', s.total); setText('metric-profitable', s.profitable); setText('metric-negative-ggr', s.negativeGGR); setText('metric-atrisk', s.churnHigh + s.churnCritical);
+      setText('fin-deposits', '$' + s.deposits.toLocaleString()); setText('fin-withdrawals', '$' + s.withdrawals.toLocaleString()); setText('fin-net', '$' + (s.deposits - s.withdrawals).toLocaleString());
+      setText('pref-sports', s.prefSports); setText('pref-casino', s.prefCasino); setText('pref-mixed', s.prefMixed);
+      setText('seg-vip', s.segVip); setText('seg-high', s.segHigh); setText('seg-medium', s.segMedium); setText('seg-low', s.segLow);
+      setText('churn-low', s.churnLow); setText('churn-medium', s.churnMedium); setText('churn-high', s.churnHigh); setText('churn-critical', s.churnCritical);
+      setText('churn-d-low', s.churnLow); setText('churn-d-medium', s.churnMedium); setText('churn-d-high', s.churnHigh); setText('churn-d-critical', s.churnCritical);
+      setText('profit-count', s.profitable); setText('profit-amount', '$' + s.profitAmount.toLocaleString()); setText('negative-ggr-count', s.negativeGGR); setText('negative-ggr-amount', '$' + s.negativeGGRAmount.toLocaleString());
+      setText('wr-0-25', s.wr0); setText('wr-25-40', s.wr25); setText('wr-40-50', s.wr40); setText('wr-50-plus', s.wr50);
+      setText('style-highroller', s.styleHigh); setText('style-regular', s.styleReg); setText('style-casual', s.styleCasual);
+      setText('life-new', s.lifeNew); setText('life-growing', s.lifeGrowing); setText('life-mature', s.lifeMature); setText('life-declining', s.lifeDeclining); setText('life-dormant', s.lifeDormant); setText('life-churned', s.lifeChurned);
+      setText('alert-withdrawing', s.withdrawing); setText('alert-losers', s.losers); setText('alert-virtual', s.virtual);
+      lucide.createIcons();
+    }
+
+    function renderTable(data) {
+      var tbody = document.getElementById('tableBody');
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-12 text-center text-slate-500">No players</td></tr>'; document.getElementById('tableFooter').textContent = '0 players'; return; }
+      var displayed = data.slice(0, 200);
+      tbody.innerHTML = displayed.map(p => {
+        var churnC = { low: 'emerald', medium: 'amber', high: 'orange', critical: 'red' }[p.churnRisk];
+        var prefC = { sports: 'green', casino: 'purple', mixed: 'blue' }[p.preference];
+        var valueC = { vip: 'purple', high: 'blue', medium: 'teal', low: 'slate' }[p.valueSegment];
+        var ggrBadge = p.isProfitable ? '<span class="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">Profitable</span>' : (p.isNegativeGGR ? '<span class="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700">Negative GGR</span>' : '<span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-600">-</span>');
+        return '<tr class="hover:bg-slate-50"><td class="px-3 py-3"><p class="font-medium text-sm">' + p.id + '</p><p class="text-xs text-slate-500">' + (p.phone_number || '-') + '</p></td><td class="px-3 py-3"><span class="text-xs px-2 py-1 rounded-full ' + (p.phoneType === 'virtual' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600') + '">' + p.phoneType + '</span></td><td class="px-3 py-3"><span class="text-xs px-2 py-1 rounded-full bg-' + prefC + '-100 text-' + prefC + '-700">' + p.preference + '</span></td><td class="px-3 py-3"><span class="font-medium ' + (p.netRevenue >= 0 ? 'text-emerald-600' : 'text-red-600') + '">$' + p.netRevenue.toLocaleString() + '</span></td><td class="px-3 py-3">' + p.winRate.toFixed(1) + '%</td><td class="px-3 py-3">' + ggrBadge + '</td><td class="px-3 py-3"><span class="text-xs px-2 py-1 rounded-full bg-' + valueC + '-100 text-' + valueC + '-700">' + p.valueSegment.toUpperCase() + '</span></td><td class="px-3 py-3"><span class="text-xs px-2 py-1 rounded-full bg-' + churnC + '-100 text-' + churnC + '-700">' + p.churnRisk + '</span></td><td class="px-3 py-3"><button onclick="viewPlayer(\'' + p.id + '\')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded"><i data-lucide="eye" class="h-4 w-4"></i></button></td></tr>';
+      }).join('');
+      document.getElementById('tableFooter').textContent = 'Showing ' + displayed.length + ' of ' + data.length;
+      lucide.createIcons();
+    }
+
+    window.viewPlayer = function(id) {
+      var p = App.players.find(x => String(x.id) === String(id)); if (!p) return;
+      var ggrLabel = p.isProfitable ? '<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-sm">Profitable</span>' : (p.isNegativeGGR ? '<span class="px-2 py-1 bg-red-100 text-red-700 rounded text-sm">Negative GGR</span>' : '');
+      document.getElementById('playerModalContent').innerHTML = '<div class="space-y-4"><div class="flex justify-between items-center"><h4 class="font-bold text-lg">Player #' + p.id + '</h4>' + ggrLabel + '</div><div class="grid grid-cols-2 gap-4"><div><p class="text-xs text-slate-500">Phone</p><p class="font-medium">' + (p.phone_number || '-') + ' <span class="text-xs px-1 py-0.5 rounded ' + (p.phoneType === 'virtual' ? 'bg-red-100 text-red-600' : 'bg-slate-100') + '">' + p.phoneType + '</span></p></div><div><p class="text-xs text-slate-500">Status</p><p class="font-medium">' + (p.status || '-') + '</p></div><div><p class="text-xs text-slate-500">Referral</p><p class="font-medium">' + (p.referral || '-') + '</p></div><div><p class="text-xs text-slate-500">Registered</p><p class="font-medium">' + (p.registration_date || '-') + '</p></div></div><hr><h4 class="font-bold">Financial</h4><div class="grid grid-cols-3 gap-3"><div class="p-3 bg-emerald-50 rounded"><p class="text-xs text-emerald-600">Deposits</p><p class="font-bold text-emerald-700">$' + (parseFloat(p.total_deposit_amount) || 0).toLocaleString() + '</p></div><div class="p-3 bg-red-50 rounded"><p class="text-xs text-red-600">Withdrawals</p><p class="font-bold text-red-700">$' + (parseFloat(p.total_withdraw_amount) || 0).toLocaleString() + '</p></div><div class="p-3 bg-blue-50 rounded"><p class="text-xs text-blue-600">Net Revenue</p><p class="font-bold text-blue-700">$' + p.netRevenue.toLocaleString() + '</p></div></div><hr><h4 class="font-bold">Betting</h4><div class="grid grid-cols-2 gap-4"><div class="p-3 bg-green-50 rounded"><p class="text-xs text-green-600">Sports</p><p class="text-sm">Bet: $' + (parseFloat(p.sport_bet_amount) || 0).toLocaleString() + ' | Won: $' + (parseFloat(p.sport_win_amount) || 0).toLocaleString() + '</p></div><div class="p-3 bg-purple-50 rounded"><p class="text-xs text-purple-600">Casino</p><p class="text-sm">Bet: $' + (parseFloat(p.casino_bet_amount) || 0).toLocaleString() + ' | Won: $' + (parseFloat(p.casino_win_amount) || 0).toLocaleString() + '</p></div></div><div class="p-3 bg-amber-50 rounded"><p class="text-xs text-amber-600">Company GGR from Player</p><p class="font-bold text-2xl ' + (p.companyProfit >= 0 ? 'text-emerald-600' : 'text-red-600') + '">$' + p.companyProfit.toLocaleString() + '</p></div><hr><h4 class="font-bold">Analysis</h4><div class="grid grid-cols-3 gap-3"><div class="p-3 bg-slate-50 rounded text-center"><p class="text-xs text-slate-500">Win Rate</p><p class="font-bold">' + p.winRate.toFixed(1) + '%</p></div><div class="p-3 bg-slate-50 rounded text-center"><p class="text-xs text-slate-500">Avg Bet</p><p class="font-bold">$' + p.avgBet.toFixed(0) + '</p></div><div class="p-3 bg-slate-50 rounded text-center"><p class="text-xs text-slate-500">Total Bets</p><p class="font-bold">' + p.totalBetCount + '</p></div><div class="p-3 bg-slate-50 rounded text-center"><p class="text-xs text-slate-500">Preference</p><p class="font-bold capitalize">' + p.preference + '</p></div><div class="p-3 bg-slate-50 rounded text-center"><p class="text-xs text-slate-500">Value</p><p class="font-bold uppercase">' + p.valueSegment + '</p></div><div class="p-3 bg-slate-50 rounded text-center"><p class="text-xs text-slate-500">Churn Risk</p><p class="font-bold capitalize">' + p.churnRisk + '</p></div></div></div>';
+      document.getElementById('playerModal').classList.remove('hidden');
+    };
+
+    function exportData(players, filename) {
+      if (!players.length) { showNotification('No data', 'error'); return; }
+      var headers = ['id','phone_number','phone_type','status','referral','registration_date','total_deposit','total_withdraw','net_revenue','sport_bet','sport_win','casino_bet','casino_win','total_bets','win_rate','company_ggr','is_profitable','is_negative_ggr','preference','value_segment','churn_risk'];
+      var rows = [headers.join(',')];
+      players.forEach(p => rows.push([p.id, '"' + (p.phone_number || '') + '"', p.phoneType, p.status, p.referral, p.registration_date, p.total_deposit_amount, p.total_withdraw_amount, p.netRevenue.toFixed(2), p.sport_bet_amount, p.sport_win_amount, p.casino_bet_amount, p.casino_win_amount, p.totalBetCount, p.winRate.toFixed(2), p.companyProfit.toFixed(2), p.isProfitable ? 'Yes' : 'No', p.isNegativeGGR ? 'Yes' : 'No', p.preference, p.valueSegment, p.churnRisk].join(',')));
+      var blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'bwanabet_' + filename + '_' + new Date().toISOString().split('T')[0] + '.csv'; a.click();
+      showNotification('Exported ' + players.length + ' players', 'success');
+    }
+
+    function cleanNumeric(v) { if (!v) return null; var c = String(v).replace(/,/g, '').trim(); var n = parseFloat(c); return isNaN(n) ? null : n; }
+    function parseDate(d) { if (!d) return null; if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.split('T')[0]; var m = { january: '01', february: '02', march: '03', april: '04', may: '05', june: '06', july: '07', august: '08', september: '09', october: '10', november: '11', december: '12' }; try { var p = d.toLowerCase().replace(/,/g, '').split(/\s+/); if (m[p[0]]) return p[2] + '-' + m[p[0]] + '-' + p[1].padStart(2, '0'); } catch (e) {} return null; }
+    function parseCSV(line) { var r = [], c = '', q = false; for (var i = 0; i < line.length; i++) { var ch = line[i]; if (ch === '"') q = !q; else if (ch === ',' && !q) { r.push(c.trim()); c = ''; } else c += ch; } r.push(c.trim()); return r; }
+
+    async function handleFileUpload(e) {
+      var file = e.target.files[0]; if (!file) return;
+      showLoading(true, 'Reading...'); document.getElementById('importProgress').classList.remove('hidden');
+      try {
+        var text = await file.text(), lines = text.split('\n').filter(l => l.trim());
+        var headers = parseCSV(lines[0]).map(h => h.trim().replace(/"/g, '').toLowerCase());
+        var colMap = {}; headers.forEach((h, i) => { var m = FIELD_MAP[h]; if (m) colMap[m] = i; if (h === 'virtual/real phone') colMap['phone_number'] = i; });
+        var toUpsert = [];
+        for (var i = 1; i < lines.length; i++) {
+          var vals = parseCSV(lines[i]), rec = {};
+          for (var col in colMap) {
+            var v = vals[colMap[col]];
+            if (v !== undefined && v !== '') {
+              if (col === 'phone_number') { if (v.toUpperCase().includes('VIRTUAL')) { rec.phone_type = 'virtual'; rec.phone_number = v.replace(/virtual/gi, '').replace(/account/gi, '').trim() || null; } else { rec.phone_type = 'real'; rec.phone_number = v; } }
+              else if (NUMERIC_FIELDS.includes(col)) rec[col] = cleanNumeric(v);
+              else if (col === 'registration_date') rec[col] = parseDate(v);
+              else rec[col] = v;
+            }
+          }
+          if (rec.id) { rec.updated_at = new Date().toISOString(); toUpsert.push(rec); }
+          if (i % 500 === 0) { document.getElementById('importProgressText').textContent = Math.round(i / lines.length * 50) + '%'; document.getElementById('importProgressBar').style.width = Math.round(i / lines.length * 50) + '%'; await new Promise(r => setTimeout(r, 0)); }
+        }
+        if (!toUpsert.length) { showNotification('No valid records', 'error'); return; }
+        for (var b = 0; b < toUpsert.length; b += 500) {
+          var batch = toUpsert.slice(b, b + 500);
+          var r = await App.db.from('customers').upsert(batch, { onConflict: 'id' });
+          if (r.error) throw r.error;
+          document.getElementById('importProgressText').textContent = (50 + Math.round((b + batch.length) / toUpsert.length * 50)) + '%';
+          document.getElementById('importProgressBar').style.width = (50 + Math.round((b + batch.length) / toUpsert.length * 50)) + '%';
+        }
+        showNotification('Imported ' + toUpsert.length + ' players!', 'success');
+        await loadPlayers();
+      } catch (err) { showNotification('Import failed: ' + err.message, 'error'); }
+      finally { showLoading(false); document.getElementById('importProgress').classList.add('hidden'); e.target.value = ''; }
+    }
+
+    function switchTab(t) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('content-' + t).classList.remove('hidden');
+      ['', '-mobile'].forEach(s => { var btn = document.getElementById('tab-' + t + s); if (btn) btn.classList.add('active'); });
+      lucide.createIcons();
+    }
+
+    function showLoading(show, text) { document.getElementById('loadingOverlay').classList.toggle('hidden', !show); if (text) document.getElementById('loadingText').textContent = text; }
+    function showNotification(msg, type) {
+      var el = document.getElementById('notification');
+      el.className = 'fixed top-4 right-4 left-4 sm:left-auto z-50 px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 notification text-sm text-white ' + (type === 'success' ? 'bg-emerald-500' : 'bg-red-500');
+      el.innerHTML = '<i data-lucide="' + (type === 'success' ? 'check-circle' : 'x-circle') + '" class="h-5 w-5"></i><span>' + msg + '</span>';
+      el.classList.remove('hidden'); lucide.createIcons();
+      setTimeout(() => el.classList.add('hidden'), 4000);
+    }
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+  </script>
+</body>
+</html>
