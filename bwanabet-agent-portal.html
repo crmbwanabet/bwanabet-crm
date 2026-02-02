@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BwanaBet Agent Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+  <!-- Login Screen -->
+  <div id="loginScreen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-900 to-emerald-700 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div class="bg-black p-6 text-center border-b-4 border-emerald-400">
+        <h1 class="text-emerald-400 font-extrabold text-3xl tracking-tight">BWANABET</h1>
+        <p class="text-slate-400 text-sm mt-1">Agent Portal</p>
+      </div>
+      <div class="p-6 sm:p-8">
+        <h2 class="text-xl font-bold text-slate-800 mb-6 text-center">Agent Sign In</h2>
+        <div id="loginError" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"></div>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Promo Code</label>
+            <input type="text" id="loginPromoCode" placeholder="YOUR PROMO CODE" class="w-full px-4 py-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400 outline-none uppercase font-mono"/>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" class="w-full px-4 py-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400 outline-none"/>
+          </div>
+          <button id="loginBtn" class="w-full py-3 bg-emerald-500 text-white font-bold rounded-lg hover:bg-emerald-600 flex items-center justify-center gap-2">
+            <i data-lucide="log-in" class="h-5 w-5"></i> Sign In
+          </button>
+        </div>
+        <p class="text-xs text-slate-500 text-center mt-6">Contact your manager if you forgot your password</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Portal -->
+  <div id="mainPortal" class="hidden">
+    <!-- Header -->
+    <header class="bg-black shadow-lg sticky top-0 z-50">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <h1 class="text-emerald-400 font-extrabold text-xl">BWANABET</h1>
+          <span class="text-slate-400 text-sm">Agent Portal</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="text-right">
+            <p class="text-white font-medium" id="agentName">Agent</p>
+            <p class="text-emerald-400 text-sm font-mono" id="agentPromoCode">CODE</p>
+          </div>
+          <button id="logoutBtn" class="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 flex items-center gap-2">
+            <i data-lucide="log-out" class="h-4 w-4"></i> Logout
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-6">
+      <!-- Agent Stats Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow-sm p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-slate-500">Total Signups</p>
+              <p class="text-3xl font-bold text-slate-800" id="myTotalSignups">0</p>
+            </div>
+            <div class="h-12 w-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+              <i data-lucide="user-plus" class="h-6 w-6 text-emerald-600"></i>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-slate-500">Total Deposits</p>
+              <p class="text-3xl font-bold text-purple-600" id="myTotalDeposits">K0</p>
+            </div>
+            <div class="h-12 w-12 bg-purple-100 rounded-xl flex items-center justify-center">
+              <i data-lucide="wallet" class="h-6 w-6 text-purple-600"></i>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-slate-500">Total Earnings</p>
+              <p class="text-3xl font-bold text-blue-600" id="myTotalEarnings">K0</p>
+            </div>
+            <div class="h-12 w-12 bg-blue-100 rounded-xl flex items-center justify-center">
+              <i data-lucide="coins" class="h-6 w-6 text-blue-600"></i>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-slate-500">Current Balance</p>
+              <p class="text-3xl font-bold text-orange-600" id="myBalance">K0</p>
+            </div>
+            <div class="h-12 w-12 bg-orange-100 rounded-xl flex items-center justify-center">
+              <i data-lucide="banknote" class="h-6 w-6 text-orange-600"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Weekly Performance -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm overflow-hidden">
+          <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
+            <h3 class="font-bold flex items-center gap-2"><i data-lucide="bar-chart-3" class="h-4 w-4"></i> Weekly Performance</h3>
+            <button onclick="downloadReport()" class="px-3 py-1 bg-emerald-500 rounded text-sm hover:bg-emerald-600 flex items-center gap-1">
+              <i data-lucide="download" class="h-4 w-4"></i> Download PDF
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Week</th>
+                  <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600">Signups</th>
+                  <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600">Deposits</th>
+                  <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600">Revenue</th>
+                  <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600">Earnings</th>
+                </tr>
+              </thead>
+              <tbody id="weeklyDataTable">
+                <tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div class="bg-yellow-500 text-black p-4">
+            <h3 class="font-bold flex items-center gap-2"><i data-lucide="trophy" class="h-4 w-4"></i> Leaderboard</h3>
+          </div>
+          <div class="p-2">
+            <select id="leaderboardType" onchange="renderLeaderboard()" class="w-full px-3 py-2 border rounded-lg text-sm mb-2">
+              <option value="signups">By Signups</option>
+              <option value="deposits">By Deposits</option>
+              <option value="earnings">By Earnings</option>
+            </select>
+          </div>
+          <div id="leaderboardContainer" class="max-h-[400px] overflow-y-auto">
+            <div class="p-4 text-center text-slate-400">Loading...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment History -->
+      <div class="mt-6 bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="bg-purple-800 text-white p-4">
+          <h3 class="font-bold flex items-center gap-2"><i data-lucide="receipt" class="h-4 w-4"></i> Payment History</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Date</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Amount</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Method</th>
+                <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600">Status</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsTable">
+              <tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 text-slate-400 text-center py-4 mt-8">
+      <p class="text-sm">© 2024 BwanaBet Agent Program. Contact support for assistance.</p>
+    </footer>
+  </div>
+
+  <script>
+    // =====================================================
+    // CONFIGURATION
+    // =====================================================
+    const SUPABASE_URL = 'https://blrrcnrhixckfudiojwe.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJscnJjbnJoaXhja2Z1ZGlvandlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3Nzg0MzMsImV4cCI6MjA4MzM1NDQzM30.2DGACAZz-f_r0ieYz3hvtsOG1y-3fqTD_ENH2ZR2g1k';
+
+    // =====================================================
+    // APP STATE
+    // =====================================================
+    const App = {
+      db: null,
+      agent: null,
+      weeklyData: [],
+      payments: [],
+      leaderboard: []
+    };
+
+    // =====================================================
+    // INITIALIZATION
+    // =====================================================
+    document.addEventListener('DOMContentLoaded', async () => {
+      lucide.createIcons();
+      
+      // Initialize Supabase
+      App.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      
+      // Check for saved session
+      const savedAgent = localStorage.getItem('agentSession');
+      if (savedAgent) {
+        try {
+          App.agent = JSON.parse(savedAgent);
+          await showPortal();
+        } catch(e) {
+          localStorage.removeItem('agentSession');
+        }
+      }
+      
+      // Login button
+      document.getElementById('loginBtn').addEventListener('click', handleLogin);
+      document.getElementById('loginPassword').addEventListener('keypress', e => {
+        if (e.key === 'Enter') handleLogin();
+      });
+      
+      // Logout button
+      document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+    });
+
+    // =====================================================
+    // AUTHENTICATION
+    // =====================================================
+    async function handleLogin() {
+      const promoCode = document.getElementById('loginPromoCode').value.trim().toUpperCase();
+      const password = document.getElementById('loginPassword').value;
+      const errorDiv = document.getElementById('loginError');
+      
+      if (!promoCode || !password) {
+        errorDiv.textContent = 'Please enter your promo code and password';
+        errorDiv.classList.remove('hidden');
+        return;
+      }
+      
+      const btn = document.getElementById('loginBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<svg class="spinner h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Signing in...';
+      
+      try {
+        // Find agent by promo code
+        const { data: agent, error } = await App.db
+          .from('agents')
+          .select('*')
+          .eq('promo_code', promoCode)
+          .eq('is_active', true)
+          .single();
+        
+        if (error || !agent) {
+          throw new Error('Invalid promo code');
+        }
+        
+        // Check password (simple comparison - in production use proper hashing!)
+        if (agent.password_hash !== password) {
+          throw new Error('Incorrect password');
+        }
+        
+        // Save session
+        App.agent = agent;
+        localStorage.setItem('agentSession', JSON.stringify(agent));
+        
+        errorDiv.classList.add('hidden');
+        await showPortal();
+        
+      } catch (error) {
+        console.error('Login error:', error);
+        errorDiv.textContent = error.message || 'Login failed. Please try again.';
+        errorDiv.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="log-in" class="h-5 w-5"></i> Sign In';
+        lucide.createIcons();
+      }
+    }
+
+    function handleLogout() {
+      App.agent = null;
+      localStorage.removeItem('agentSession');
+      document.getElementById('mainPortal').classList.add('hidden');
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('loginPromoCode').value = '';
+      document.getElementById('loginPassword').value = '';
+    }
+
+    // =====================================================
+    // PORTAL
+    // =====================================================
+    async function showPortal() {
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('mainPortal').classList.remove('hidden');
+      
+      // Update header
+      document.getElementById('agentName').textContent = App.agent.name;
+      document.getElementById('agentPromoCode').textContent = App.agent.promo_code;
+      
+      // Load data
+      await loadAgentData();
+      await loadLeaderboard();
+      
+      lucide.createIcons();
+    }
+
+    async function loadAgentData() {
+      try {
+        // Load weekly data
+        const { data: weeklyData, error: weeklyError } = await App.db
+          .from('agent_weekly_data')
+          .select('*')
+          .eq('agent_id', App.agent.id)
+          .order('week_start_date', { ascending: false });
+        
+        if (!weeklyError) {
+          App.weeklyData = weeklyData || [];
+        }
+        
+        // Load payments
+        const { data: payments, error: paymentsError } = await App.db
+          .from('agent_payments')
+          .select('*')
+          .eq('agent_id', App.agent.id)
+          .order('created_at', { ascending: false });
+        
+        if (!paymentsError) {
+          App.payments = payments || [];
+        }
+        
+        // Calculate totals
+        const totalSignups = App.weeklyData.reduce((sum, w) => sum + (w.signups || 0), 0);
+        const totalDeposits = App.weeklyData.reduce((sum, w) => sum + parseFloat(w.deposits || 0), 0);
+        const totalEarnings = App.weeklyData.reduce((sum, w) => sum + parseFloat(w.earnings || 0), 0);
+        const totalPaid = App.payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+        const balance = totalEarnings - totalPaid;
+        
+        // Update UI
+        document.getElementById('myTotalSignups').textContent = totalSignups.toLocaleString();
+        document.getElementById('myTotalDeposits').textContent = 'K' + totalDeposits.toLocaleString();
+        document.getElementById('myTotalEarnings').textContent = 'K' + totalEarnings.toLocaleString();
+        document.getElementById('myBalance').textContent = 'K' + balance.toLocaleString();
+        
+        // Render tables
+        renderWeeklyTable();
+        renderPaymentsTable();
+        
+      } catch (error) {
+        console.error('Error loading agent data:', error);
+      }
+    }
+
+    function renderWeeklyTable() {
+      const tbody = document.getElementById('weeklyDataTable');
+      
+      if (App.weeklyData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">No data available yet</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = App.weeklyData.map(week => {
+        const startDate = new Date(week.week_start_date).toLocaleDateString();
+        const endDate = new Date(week.week_end_date).toLocaleDateString();
+        
+        return `<tr class="border-t hover:bg-slate-50">
+          <td class="px-4 py-3 text-sm">${startDate} - ${endDate}</td>
+          <td class="px-4 py-3 text-center font-medium">${week.signups || 0}</td>
+          <td class="px-4 py-3 text-center">K${parseFloat(week.deposits || 0).toLocaleString()}</td>
+          <td class="px-4 py-3 text-center">K${parseFloat(week.revenue || 0).toLocaleString()}</td>
+          <td class="px-4 py-3 text-center font-bold text-emerald-600">K${parseFloat(week.earnings || 0).toLocaleString()}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderPaymentsTable() {
+      const tbody = document.getElementById('paymentsTable');
+      
+      if (App.payments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">No payments yet</td></tr>';
+        return;
+      }
+      
+      const statusColors = {
+        pending: 'orange',
+        paid: 'emerald',
+        cancelled: 'red'
+      };
+      
+      tbody.innerHTML = App.payments.map(payment => {
+        const date = payment.payment_date || payment.created_at?.split('T')[0] || '-';
+        const color = statusColors[payment.status] || 'slate';
+        
+        return `<tr class="border-t hover:bg-slate-50">
+          <td class="px-4 py-3 text-sm">${date}</td>
+          <td class="px-4 py-3 font-bold">K${parseFloat(payment.amount).toLocaleString()}</td>
+          <td class="px-4 py-3 text-sm capitalize">${payment.payment_method || '-'}</td>
+          <td class="px-4 py-3 text-center">
+            <span class="px-2 py-1 bg-${color}-100 text-${color}-700 rounded text-xs capitalize">${payment.status}</span>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    // =====================================================
+    // LEADERBOARD
+    // =====================================================
+    async function loadLeaderboard() {
+      try {
+        // Get all agents with their stats
+        const { data: agents, error: agentsError } = await App.db
+          .from('agents')
+          .select('id, name, promo_code')
+          .eq('is_active', true);
+        
+        if (agentsError) throw agentsError;
+        
+        const { data: allWeeklyData, error: weeklyError } = await App.db
+          .from('agent_weekly_data')
+          .select('*');
+        
+        if (weeklyError) throw weeklyError;
+        
+        // Calculate stats for each agent
+        App.leaderboard = agents.map(agent => {
+          const data = allWeeklyData.filter(w => w.agent_id === agent.id);
+          return {
+            id: agent.id,
+            name: agent.name,
+            promo_code: agent.promo_code,
+            totalSignups: data.reduce((sum, w) => sum + (w.signups || 0), 0),
+            totalDeposits: data.reduce((sum, w) => sum + parseFloat(w.deposits || 0), 0),
+            totalEarnings: data.reduce((sum, w) => sum + parseFloat(w.earnings || 0), 0),
+            isMe: agent.id === App.agent.id
+          };
+        });
+        
+        renderLeaderboard();
+        
+      } catch (error) {
+        console.error('Error loading leaderboard:', error);
+      }
+    }
+
+    function renderLeaderboard() {
+      const type = document.getElementById('leaderboardType').value;
+      const container = document.getElementById('leaderboardContainer');
+      
+      const sortKey = type === 'signups' ? 'totalSignups' : type === 'deposits' ? 'totalDeposits' : 'totalEarnings';
+      const prefix = type === 'signups' ? '' : 'K';
+      
+      const sorted = [...App.leaderboard].sort((a, b) => b[sortKey] - a[sortKey]);
+      
+      if (sorted.length === 0) {
+        container.innerHTML = '<div class="p-4 text-center text-slate-400">No data yet</div>';
+        return;
+      }
+      
+      container.innerHTML = sorted.map((agent, idx) => {
+        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+        const value = agent[sortKey];
+        const isMe = agent.isMe;
+        
+        return `<div class="flex items-center justify-between p-3 border-b ${isMe ? 'bg-emerald-50 border-l-4 border-l-emerald-500' : 'hover:bg-slate-50'}">
+          <div class="flex items-center gap-3">
+            <span class="text-lg w-8">${medal}</span>
+            <div>
+              <p class="font-medium text-sm ${isMe ? 'text-emerald-700' : ''}">${agent.name} ${isMe ? '(You)' : ''}</p>
+              <p class="text-xs text-slate-400">${agent.promo_code}</p>
+            </div>
+          </div>
+          <span class="font-bold text-sm">${prefix}${value.toLocaleString()}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // =====================================================
+    // PDF DOWNLOAD
+    // =====================================================
+    function downloadReport() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      const agent = App.agent;
+      const today = new Date().toLocaleDateString();
+      
+      // Header
+      doc.setFontSize(20);
+      doc.setTextColor(0, 128, 0);
+      doc.text('BWANABET Agent Report', 20, 20);
+      
+      doc.setFontSize(12);
+      doc.setTextColor(100);
+      doc.text(`Agent: ${agent.name}`, 20, 35);
+      doc.text(`Promo Code: ${agent.promo_code}`, 20, 42);
+      doc.text(`Generated: ${today}`, 20, 49);
+      
+      // Summary
+      doc.setFontSize(14);
+      doc.setTextColor(0);
+      doc.text('Summary', 20, 65);
+      
+      const totalSignups = App.weeklyData.reduce((sum, w) => sum + (w.signups || 0), 0);
+      const totalDeposits = App.weeklyData.reduce((sum, w) => sum + parseFloat(w.deposits || 0), 0);
+      const totalEarnings = App.weeklyData.reduce((sum, w) => sum + parseFloat(w.earnings || 0), 0);
+      const totalPaid = App.payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+      const balance = totalEarnings - totalPaid;
+      
+      doc.setFontSize(11);
+      doc.text(`Total Signups: ${totalSignups}`, 20, 75);
+      doc.text(`Total Deposits: K${totalDeposits.toLocaleString()}`, 20, 82);
+      doc.text(`Total Earnings: K${totalEarnings.toLocaleString()}`, 20, 89);
+      doc.text(`Total Paid: K${totalPaid.toLocaleString()}`, 20, 96);
+      doc.text(`Current Balance: K${balance.toLocaleString()}`, 20, 103);
+      
+      // Weekly Data Table
+      doc.setFontSize(14);
+      doc.text('Weekly Performance', 20, 120);
+      
+      let y = 130;
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text('Week', 20, y);
+      doc.text('Signups', 70, y);
+      doc.text('Deposits', 100, y);
+      doc.text('Earnings', 140, y);
+      
+      doc.setTextColor(0);
+      App.weeklyData.slice(0, 15).forEach(week => {
+        y += 8;
+        if (y > 270) return;
+        const startDate = new Date(week.week_start_date).toLocaleDateString();
+        doc.text(startDate, 20, y);
+        doc.text(String(week.signups || 0), 70, y);
+        doc.text('K' + parseFloat(week.deposits || 0).toLocaleString(), 100, y);
+        doc.text('K' + parseFloat(week.earnings || 0).toLocaleString(), 140, y);
+      });
+      
+      // Save
+      doc.save(`BwanaBet_Agent_Report_${agent.promo_code}_${today.replace(/\//g, '-')}.pdf`);
+    }
+  </script>
+</body>
+</html>
