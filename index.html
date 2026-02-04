@@ -91,6 +91,14 @@
     .dark .tutorial-content { background: #1e293b; color: #e2e8f0; }
     .comparison-card { transition: all 0.2s; }
     .comparison-card:hover { border-color: #6366F1; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15); }
+    /* Chat styles */
+    .chat-msg { animation: chatIn .2s ease-out; }
+    @keyframes chatIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .chat-bubble-mine { background:#059669;color:white;border-radius:16px 16px 4px 16px; }
+    .chat-bubble-theirs { background:#f1f5f9;color:#1e293b;border-radius:16px 16px 16px 4px; }
+    .agent-filter-active { background:#059669;color:white; }
+    .agent-filter-inactive { background:#e2e8f0;color:#64748b; }
+    .trend-up { color:#059669; } .trend-down { color:#ef4444; } .trend-flat { color:#94a3b8; }
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen">
@@ -1297,7 +1305,7 @@
               
               <!-- Add User Form -->
               <div class="p-4 border-b bg-slate-50">
-                <h4 class="font-medium text-slate-700 mb-3">Add New User</h4>
+                <h4 class="font-medium text-slate-700 mb-3">Add Call Center Agent</h4>
                 <div class="space-y-3">
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input type="text" id="ccNewUserName" placeholder="Full Name *" class="px-3 py-2 border rounded-lg text-sm">
@@ -1305,18 +1313,15 @@
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input type="password" id="ccNewUserPassword" placeholder="Password *" class="px-3 py-2 border rounded-lg text-sm">
-                    <select id="ccNewUserRole" class="px-3 py-2 border rounded-lg text-sm bg-white">
-                      <option value="callcenter">Call Center</option>
-                      <option value="affiliate_manager">Affiliate Manager</option>
-                      <option value="admin">Administrator</option>
-                      <option value="developer">Developer</option>
+                    <select id="ccNewUserRole" class="px-3 py-2 border rounded-lg text-sm bg-white" disabled>
+                      <option value="callcenter" selected>Call Center</option>
                     </select>
                   </div>
                   <button onclick="CallCenter.addUser()" id="ccAddUserBtn" class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 flex items-center justify-center gap-2">
-                    <i data-lucide="user-plus" class="h-4 w-4"></i> Create User Account
+                    <i data-lucide="user-plus" class="h-4 w-4"></i> Create Call Center Account
                   </button>
                 </div>
-                <p class="text-xs text-slate-500 mt-2">* Required fields. User will receive login credentials.</p>
+                <p class="text-xs text-slate-500 mt-2">* Required fields. Creates a Call Center agent login only.</p>
               </div>
               
               <!-- User List -->
@@ -1423,10 +1428,52 @@
           <button id="agentSubTab-team" onclick="AgentManager.switchSubTab('team')" class="agent-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 whitespace-nowrap transition-all duration-200">
             <i data-lucide="user-cog" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Team
           </button>
+          <button id="agentSubTab-chat" onclick="AgentManager.switchSubTab('chat')" class="agent-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 whitespace-nowrap relative transition-all duration-200">
+            <i data-lucide="message-circle" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Chat
+            <span id="chatUnreadBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">0</span>
+          </button>
+        </div>
+
+        <!-- Agent Filter Toggle (visible to affiliate_manager) -->
+        <div id="agentFilterBar" class="hidden bg-white rounded-xl shadow-sm p-2 mb-4 flex items-center justify-between" style="border:1px solid #e2e8f0;">
+          <div class="flex gap-1 rounded-lg overflow-hidden border">
+            <button onclick="AgentManager.setAgentFilter('mine')" id="filterBtnMine" class="px-4 py-2 text-xs font-semibold transition-all agent-filter-active">👤 My Agents</button>
+            <button onclick="AgentManager.setAgentFilter('all')" id="filterBtnAll" class="px-4 py-2 text-xs font-semibold transition-all agent-filter-inactive">👥 All Agents</button>
+          </div>
+          <span id="agentFilterLabel" class="text-xs text-slate-500">Showing: My agents recruited by <strong id="filterUserName">-</strong></span>
         </div>
 
         <!-- OVERVIEW SUB-TAB -->
         <div id="agentContent-overview">
+          <!-- Trend Dashboard (Week-over-Week) -->
+          <div id="trendDashboard" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div class="bg-white rounded-xl p-4" style="border:1px solid #e2e8f0;">
+              <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Clients This Week</p>
+              <div class="flex items-center gap-2"><span class="text-2xl font-extrabold" id="trend-clients-val">0</span><span id="trend-clients-change" class="text-xs font-bold trend-flat">—</span></div>
+            </div>
+            <div class="bg-white rounded-xl p-4" style="border:1px solid #e2e8f0;">
+              <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Losses This Week</p>
+              <div class="flex items-center gap-2"><span class="text-2xl font-extrabold" id="trend-losses-val">K0</span><span id="trend-losses-change" class="text-xs font-bold trend-flat">—</span></div>
+            </div>
+            <div class="bg-white rounded-xl p-4" style="border:1px solid #e2e8f0;">
+              <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Earnings This Week</p>
+              <div class="flex items-center gap-2"><span class="text-2xl font-extrabold" id="trend-earnings-val">K0</span><span id="trend-earnings-change" class="text-xs font-bold trend-flat">—</span></div>
+            </div>
+            <div class="bg-white rounded-xl p-4" style="border:1px solid #e2e8f0;">
+              <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">New Agents (30d)</p>
+              <div class="flex items-center gap-2"><span class="text-2xl font-extrabold" id="trend-newagents-val">0</span><span class="text-xs text-slate-400">registered</span></div>
+            </div>
+          </div>
+          
+          <!-- Mini Chart -->
+          <div class="bg-white rounded-xl overflow-hidden mb-5" style="border:1px solid #e2e8f0;">
+            <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+              <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="trending-up" class="h-4 w-4 text-emerald-500"></i> Weekly Trend (Last 8 Weeks)</h3>
+              <button onclick="AgentManager.exportOverviewCSV()" class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium hover:bg-emerald-200 flex items-center gap-1"><i data-lucide="download" class="h-3.5 w-3.5"></i> Export</button>
+            </div>
+            <div class="p-4" style="height:200px;"><canvas id="overviewTrendChart"></canvas></div>
+          </div>
+
           <!-- Key Metrics Row -->
           <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
             <div class="bg-white rounded-xl p-4 flex items-center gap-3" style="border: 1px solid #e2e8f0;">
@@ -1629,6 +1676,7 @@
               <div class="bg-slate-800 text-white p-4 flex items-center justify-between flex-wrap gap-2">
                 <h3 class="font-bold flex items-center gap-2"><i data-lucide="users" class="h-4 w-4"></i> All Agents</h3>
                 <div class="flex gap-2">
+                  <button onclick="AgentManager.exportAgentsCSV()" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 rounded text-xs font-medium flex items-center gap-1"><i data-lucide="download" class="h-3.5 w-3.5"></i> CSV</button>
                   <select id="agentPlanFilter" onchange="AgentManager.renderAgentsTable()" class="px-2 py-1 bg-slate-700 rounded text-sm">
                     <option value="all">All Plans</option>
                     <option value="per_client">Plan A</option>
@@ -1684,6 +1732,7 @@
                 <div class="mt-3 p-3 bg-blue-50 rounded-lg">
                   <p class="text-xs font-medium text-blue-700 mb-1">Expected columns:</p>
                   <p class="text-xs text-blue-600">Username, Agent Name, Telephone, NRC, Location, Recruiter Name, Date Registered, Percent, Code</p>
+                  <button onclick="AgentManager.downloadAgentTemplate()" class="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 flex items-center gap-1"><i data-lucide="download" class="h-3.5 w-3.5"></i> Download Template</button>
                 </div>
               </div>
             </div>
@@ -1722,6 +1771,7 @@
                     <p class="text-xs text-slate-600"><strong>Plan B:</strong> 20% of total player losses</p>
                     <p class="text-xs text-slate-600"><strong>Plan C:</strong> No commission (tracking only)</p>
                   </div>
+                  <button onclick="AgentManager.downloadActivityTemplate()" class="mt-2 px-3 py-1.5 bg-emerald-600 text-white rounded text-xs font-medium hover:bg-emerald-700 flex items-center gap-1"><i data-lucide="download" class="h-3.5 w-3.5"></i> Download Template</button>
                 </div>
               </div>
             </div>
@@ -1774,12 +1824,15 @@
             <div class="lg:col-span-2 bg-white rounded-xl shadow-sm overflow-hidden">
               <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
                 <h3 class="font-bold flex items-center gap-2"><i data-lucide="list" class="h-4 w-4"></i> Payment History</h3>
-                <select id="paymentStatusFilter" onchange="AgentManager.renderPaymentsTable()" class="px-2 py-1 bg-slate-700 rounded text-sm">
+                <div class="flex gap-2">
+                  <button onclick="AgentManager.exportPaymentsCSV()" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 rounded text-xs font-medium flex items-center gap-1"><i data-lucide="download" class="h-3.5 w-3.5"></i> CSV</button>
+                  <select id="paymentStatusFilter" onchange="AgentManager.renderPaymentsTable()" class="px-2 py-1 bg-slate-700 rounded text-sm">
                   <option value="all">All</option>
                   <option value="pending">Pending</option>
                   <option value="paid">Paid</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
+                </div>
               </div>
               <div class="overflow-x-auto max-h-[500px]">
                 <table class="w-full">
@@ -1884,7 +1937,7 @@
                 <h3 class="font-bold flex items-center gap-2"><i data-lucide="user-plus" class="h-4 w-4"></i> Add Team Member</h3>
               </div>
               <div class="p-4">
-                <p class="text-sm text-slate-500 mb-4">Create login accounts for Affiliate Managers and other team members who manage the agent program.</p>
+                <p class="text-sm text-slate-500 mb-4">Create accounts for Affiliate Managers and Agents in the affiliate program.</p>
                 <div class="space-y-3">
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input type="text" id="teamNewName" placeholder="Full Name *" class="px-3 py-2 border rounded-lg text-sm">
@@ -1894,9 +1947,7 @@
                     <input type="password" id="teamNewPassword" placeholder="Password (min 6 chars) *" class="px-3 py-2 border rounded-lg text-sm">
                     <select id="teamNewRole" class="px-3 py-2 border rounded-lg text-sm bg-white">
                       <option value="affiliate_manager">Affiliate Manager</option>
-                      <option value="admin">Administrator</option>
-                      <option value="callcenter">Call Center</option>
-                      <option value="developer">Developer</option>
+                      <option value="agent">Agent</option>
                     </select>
                   </div>
                   <button onclick="AgentManager.addTeamMember()" id="teamAddBtn" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 flex items-center justify-center gap-2">
@@ -1928,6 +1979,44 @@
                     <tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHAT SUB-TAB -->
+        <div id="agentContent-chat" class="hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4" style="height:calc(100vh - 280px);min-height:500px;">
+            <!-- Conversation List -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col" style="border:1px solid #e2e8f0;">
+              <div class="bg-indigo-700 text-white p-4">
+                <h3 class="font-bold flex items-center gap-2"><i data-lucide="message-circle" class="h-4 w-4"></i> Conversations</h3>
+              </div>
+              <div class="p-2">
+                <input type="text" id="chatSearchAgent" onkeyup="ChatManager.filterConversations()" placeholder="Search agents..." class="w-full px-3 py-2 border rounded-lg text-sm">
+              </div>
+              <div id="chatConversationList" class="flex-1 overflow-y-auto divide-y">
+                <div class="p-4 text-center text-sm text-slate-400">Loading agents...</div>
+              </div>
+            </div>
+            <!-- Chat Window -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col" style="border:1px solid #e2e8f0;">
+              <div id="chatHeader" class="bg-slate-800 text-white p-4 flex items-center justify-between">
+                <div id="chatHeaderInfo" class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-sm font-bold">?</div>
+                  <div><p class="font-medium text-sm">Select an agent to start chatting</p><p class="text-xs text-slate-400">Choose from the list on the left</p></div>
+                </div>
+              </div>
+              <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50" style="min-height:300px;">
+                <div class="flex items-center justify-center h-full text-slate-400 text-sm">
+                  <div class="text-center"><i data-lucide="message-circle" class="h-12 w-12 mx-auto mb-2 opacity-30"></i><p>No conversation selected</p></div>
+                </div>
+              </div>
+              <div id="chatInputArea" class="p-3 border-t bg-white hidden">
+                <div class="flex gap-2">
+                  <input type="text" id="chatMessageInput" placeholder="Type a message..." class="flex-1 px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none" onkeypress="if(event.key==='Enter')ChatManager.sendMessage()">
+                  <button onclick="ChatManager.sendMessage()" class="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm font-medium flex items-center gap-1"><i data-lucide="send" class="h-4 w-4"></i> Send</button>
+                </div>
               </div>
             </div>
           </div>
@@ -1973,6 +2062,13 @@
               <div>
                 <label class="block text-xs font-medium text-slate-700 mb-1">Recruiter</label>
                 <input type="text" id="editAgentRecruiter" class="w-full px-3 py-2 border rounded-lg text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">Current Password</label>
+                <div class="flex items-center gap-2">
+                  <input type="password" id="editAgentCurrentPw" class="w-full px-3 py-2 border rounded-lg bg-slate-50 text-sm font-mono" readonly>
+                  <button type="button" onclick="const el=document.getElementById('editAgentCurrentPw');el.type=el.type==='password'?'text':'password';this.innerHTML=el.type==='password'?'<i data-lucide=&quot;eye&quot; class=&quot;h-4 w-4&quot;></i>':'<i data-lucide=&quot;eye-off&quot; class=&quot;h-4 w-4&quot;></i>';lucide.createIcons();" class="px-2 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg" title="Show/hide password"><i data-lucide="eye" class="h-4 w-4"></i></button>
+                </div>
               </div>
               <div>
                 <label class="block text-xs font-medium text-slate-700 mb-1">New Password (blank = keep current)</label>
@@ -2139,6 +2235,8 @@
       dataLoaded: false, // Flag to prevent reloading data
       isLoading: false, // Prevent concurrent loads
       role: 'callcenter', // User role loaded from DB: admin, developer, affiliate_manager, callcenter
+      userName: '', // Current user's display name (from crm_users)
+      agentFilter: 'all', // 'mine' or 'all' — for affiliate_manager filtering
       // Efficiency features state
       selectedPlayers: new Set(), // Bulk selection
       watchlist: new Set(), // Favorited players
@@ -4011,6 +4109,146 @@ Total Players: ${s.total}`;
         if (!error) this.payments = data || [];
       },
 
+      // ======== AGENT FILTER (My Agents / All) ========
+      getFilteredAgents() {
+        if (App.role === 'affiliate_manager' && App.agentFilter === 'mine' && App.userName) {
+          return this.agents.filter(a => a.recruiter_name && a.recruiter_name.toLowerCase() === App.userName.toLowerCase());
+        }
+        return this.agents;
+      },
+
+      setAgentFilter(mode) {
+        App.agentFilter = mode;
+        document.getElementById('filterBtnMine').className = 'px-4 py-2 text-xs font-semibold transition-all ' + (mode === 'mine' ? 'agent-filter-active' : 'agent-filter-inactive');
+        document.getElementById('filterBtnAll').className = 'px-4 py-2 text-xs font-semibold transition-all ' + (mode === 'all' ? 'agent-filter-active' : 'agent-filter-inactive');
+        document.getElementById('agentFilterLabel').innerHTML = mode === 'mine' 
+          ? 'Showing: My agents recruited by <strong>' + (App.userName||'-') + '</strong>'
+          : 'Showing: <strong>All agents</strong> in the system';
+        // Re-render current sub-tab
+        this.switchSubTab(this.currentSubTab);
+      },
+
+      // ======== EXPORT FUNCTIONS ========
+      _downloadCSV(filename, headers, rows) {
+        const csv = [headers.join(','), ...rows.map(r => r.map(c => '"' + String(c||'').replace(/"/g,'""') + '"').join(','))].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+      },
+
+      exportAgentsCSV() {
+        const agents = this.getFilteredAgents().filter(a => a.status !== 'pending');
+        const headers = ['Promo Code','Name','Phone','Email','Plan','Location','Recruiter','Status','Total Clients','Total Earnings','Balance'];
+        const rows = agents.map(a => {
+          const s = this.getAgentStats(a.id);
+          return [a.promo_code, a.name, a.phone, a.email, a.commission_plan, a.location, a.recruiter_name, a.status, s.totalClients, s.totalEarnings, s.balance];
+        });
+        this._downloadCSV('bwanabet_agents_' + new Date().toISOString().slice(0,10) + '.csv', headers, rows);
+      },
+
+      exportPaymentsCSV() {
+        const filter = document.getElementById('paymentStatusFilter')?.value || 'all';
+        let payments = this.payments;
+        if (filter !== 'all') payments = payments.filter(p => p.status === filter);
+        const headers = ['Agent','Promo Code','Amount','Method','Date','Status','Notes'];
+        const rows = payments.map(p => [p.agents?.name||'-', p.agents?.promo_code||'-', p.amount, p.payment_method, p.payment_date||p.created_at?.split('T')[0], p.status, p.notes]);
+        this._downloadCSV('bwanabet_payments_' + new Date().toISOString().slice(0,10) + '.csv', headers, rows);
+      },
+
+      exportOverviewCSV() {
+        const agents = this.getFilteredAgents().filter(a => a.status === 'active');
+        const headers = ['Promo Code','Name','Plan','Tier','Active Clients','Total Clients','Total Losses','Total Earnings','Paid','Balance'];
+        const rows = agents.map(a => {
+          const s = this.getAgentStats(a.id);
+          const ac = this.getAgentLatestWeekClients(a.id);
+          const tier = this.getAgentTier(ac);
+          return [a.promo_code, a.name, a.commission_plan, tier?.tier_name||'None', ac, s.totalClients, s.totalLosses, s.totalEarnings, s.totalPaid, s.balance];
+        });
+        this._downloadCSV('bwanabet_overview_' + new Date().toISOString().slice(0,10) + '.csv', headers, rows);
+      },
+
+      // ======== TEMPLATE DOWNLOADS ========
+      downloadAgentTemplate() {
+        const headers = ['Username','Agent Name','Telephone','NRC','Location','Recruiter Name','Date Registered','Percent','Code'];
+        const sample = ['john_doe','John Doe','+260971234567','123456/10/1','Lusaka','Jane Manager','2026-01-15','20','JOHN2026'];
+        this._downloadCSV('agent_list_template.csv', headers, [sample]);
+      },
+
+      downloadActivityTemplate() {
+        const headers = ['User ID','Phone Number','Agent Code','First Deposit Amount','Total Deposit Amount','Total Bet Sports','Total Bet Casino','Total Bet','Losses'];
+        const sample = ['USR001','+260971234567','JOHN2026','200','500','1000','200','1200','300'];
+        this._downloadCSV('player_activity_template.csv', headers, [sample]);
+      },
+
+      // ======== TREND CALCULATIONS ========
+      renderTrends() {
+        const agents = this.getFilteredAgents().filter(a => a.status === 'active');
+        const agentIds = new Set(agents.map(a => a.id));
+        const filtered = this.weeklyData.filter(w => agentIds.has(w.agent_id));
+        
+        // Get unique weeks sorted desc
+        const weeks = [...new Set(filtered.map(w => w.week_start_date))].sort().reverse();
+        const thisWeek = weeks[0], lastWeek = weeks[1];
+        
+        const weekSum = (wk) => {
+          const rows = filtered.filter(w => w.week_start_date === wk);
+          return { clients: rows.reduce((s,w) => s+(w.total_clients||0),0), losses: rows.reduce((s,w) => s+parseFloat(w.total_losses||0),0), earnings: rows.reduce((s,w) => s+parseFloat(w.total_earnings||0),0) };
+        };
+        
+        const tw = thisWeek ? weekSum(thisWeek) : {clients:0,losses:0,earnings:0};
+        const lw = lastWeek ? weekSum(lastWeek) : null;
+        
+        const pctChange = (curr, prev) => { if (!prev || prev===0) return {text:'NEW',cls:'trend-up'}; const pct=((curr-prev)/prev*100); if(pct>0) return {text:'↑'+pct.toFixed(0)+'%',cls:'trend-up'}; if(pct<0) return {text:'↓'+Math.abs(pct).toFixed(0)+'%',cls:'trend-down'}; return {text:'→0%',cls:'trend-flat'}; };
+
+        document.getElementById('trend-clients-val').textContent = tw.clients;
+        document.getElementById('trend-losses-val').textContent = 'K' + tw.losses.toLocaleString();
+        document.getElementById('trend-earnings-val').textContent = 'K' + tw.earnings.toLocaleString();
+        
+        if (lw) {
+          const cc = pctChange(tw.clients, lw.clients); document.getElementById('trend-clients-change').textContent = cc.text; document.getElementById('trend-clients-change').className = 'text-xs font-bold ' + cc.cls;
+          const lc = pctChange(tw.losses, lw.losses); document.getElementById('trend-losses-change').textContent = lc.text; document.getElementById('trend-losses-change').className = 'text-xs font-bold ' + lc.cls;
+          const ec = pctChange(tw.earnings, lw.earnings); document.getElementById('trend-earnings-change').textContent = ec.text; document.getElementById('trend-earnings-change').className = 'text-xs font-bold ' + ec.cls;
+        }
+        
+        // New agents in last 30 days
+        const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate()-30);
+        const newAgents = agents.filter(a => a.created_at && new Date(a.created_at) >= thirtyDaysAgo).length;
+        document.getElementById('trend-newagents-val').textContent = newAgents;
+        
+        // Render trend chart (last 8 weeks)
+        this.renderTrendChart(filtered, weeks.slice(0,8).reverse());
+      },
+
+      trendChart: null,
+      renderTrendChart(data, weeks) {
+        const canvas = document.getElementById('overviewTrendChart');
+        if (!canvas) return;
+        if (this.trendChart) this.trendChart.destroy();
+        
+        const labels = weeks.map(w => { const d = new Date(w); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); });
+        const earningsData = weeks.map(w => data.filter(r => r.week_start_date === w).reduce((s,r) => s+parseFloat(r.total_earnings||0),0));
+        const clientsData = weeks.map(w => data.filter(r => r.week_start_date === w).reduce((s,r) => s+(r.total_clients||0),0));
+        
+        this.trendChart = new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              { label:'Earnings (K)', data:earningsData, borderColor:'#059669', backgroundColor:'rgba(5,150,105,0.1)', fill:true, tension:0.3, yAxisID:'y' },
+              { label:'Clients', data:clientsData, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.1)', fill:false, tension:0.3, borderDash:[5,3], yAxisID:'y1' }
+            ]
+          },
+          options: {
+            responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ position:'top', labels:{ font:{size:11} } } },
+            scales: {
+              y:{ beginAtZero:true, position:'left', ticks:{font:{size:10}} },
+              y1:{ beginAtZero:true, position:'right', grid:{drawOnChartArea:false}, ticks:{font:{size:10}} },
+              x:{ ticks:{font:{size:10}} }
+            }
+          }
+        });
+      },
+
       // Sub-tab Navigation
       switchSubTab(tab) {
         this.currentSubTab = tab;
@@ -4020,7 +4258,7 @@ Total Players: ${s.total}`;
         });
         const activeBtn = document.getElementById('agentSubTab-' + tab);
         if (activeBtn) { activeBtn.classList.remove('text-slate-500'); activeBtn.classList.add('bg-slate-800', 'text-white'); }
-        ['overview', 'approvals', 'agents', 'upload', 'payments', 'tiers', 'team'].forEach(t => {
+        ['overview', 'approvals', 'agents', 'upload', 'payments', 'tiers', 'team', 'chat'].forEach(t => {
           const c = document.getElementById('agentContent-' + t);
           if (c) c.classList.toggle('hidden', t !== tab);
         });
@@ -4030,6 +4268,7 @@ Total Players: ${s.total}`;
         if (tab === 'payments') this.renderPaymentsTable();
         if (tab === 'tiers') this.renderTiers();
         if (tab === 'team') this.renderTeamTable();
+        if (tab === 'chat') ChatManager.init();
         lucide.createIcons();
       },
 
@@ -4048,15 +4287,16 @@ Total Players: ${s.total}`;
 
       // Overview
       renderOverview() {
-        const active = this.agents.filter(a => a.status === 'active');
-        const pending = this.agents.filter(a => a.status === 'pending');
+        const allFiltered = this.getFilteredAgents();
+        const active = allFiltered.filter(a => a.status === 'active');
+        const pending = allFiltered.filter(a => a.status === 'pending');
         const planA = active.filter(a => a.commission_plan === 'per_client');
         const planB = active.filter(a => a.commission_plan === 'loss_based');
         const planC = active.filter(a => a.commission_plan === 'nil');
 
         let totalClients = 0, totalLosses = 0, pendingPayments = 0;
         const lb = [];
-        this.agents.filter(a => a.status === 'active').forEach(agent => {
+        active.forEach(agent => {
           const stats = this.getAgentStats(agent.id);
           totalClients += stats.totalClients;
           totalLosses += stats.totalLosses;
@@ -4076,6 +4316,9 @@ Total Players: ${s.total}`;
         this.renderLeaderboard('signups', [...lb].sort((a, b) => b.totalClients - a.totalClients).slice(0, 10));
         this.renderLeaderboard('deposits', [...lb].sort((a, b) => b.totalLosses - a.totalLosses).slice(0, 10));
         this.renderLeaderboard('earnings', [...lb].sort((a, b) => b.totalEarnings - a.totalEarnings).slice(0, 10));
+        
+        // Render trends and chart
+        this.renderTrends();
       },
 
       renderLeaderboard(type, data) {
@@ -4201,7 +4444,7 @@ Total Players: ${s.total}`;
         const tbody = document.getElementById('agentsTableBody');
         if (!tbody) return;
         const planFilter = document.getElementById('agentPlanFilter')?.value || 'all';
-        let filtered = this.agents.filter(a => a.status !== 'pending');
+        let filtered = this.getFilteredAgents().filter(a => a.status !== 'pending');
         if (planFilter !== 'all') filtered = filtered.filter(a => a.commission_plan === planFilter);
         if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-slate-400">No agents found</td></tr>'; return; }
         const planLabels = { per_client: '<span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px]">A</span>', loss_based: '<span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[10px]">B</span>', nil: '<span class="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[10px]">NIL</span>' };
@@ -4285,6 +4528,8 @@ Total Players: ${s.total}`;
         document.getElementById('editAgentLocation').value = a.location || '';
         document.getElementById('editAgentRecruiter').value = a.recruiter_name || '';
         document.getElementById('editAgentPassword').value = '';
+        document.getElementById('editAgentCurrentPw').value = a.password_hash || '';
+        document.getElementById('editAgentCurrentPw').type = 'password';
         document.getElementById('editAgentStatus').value = a.status || 'active';
         document.getElementById('editAgentModal').classList.remove('hidden');
         lucide.createIcons();
@@ -4960,8 +5205,11 @@ Total Players: ${s.total}`;
         const tbody = document.getElementById('teamTableBody');
         if (!tbody) return;
         
-        // Load all CRM users from call_center_users
-        const { data: users, error } = await App.db.from('call_center_users').select('*').order('name');
+        // Load only non-callcenter users
+        const { data: allUsers, error } = await App.db.from('crm_users').select('*').order('name');
+        if (error) { tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-red-400">Error loading team</td></tr>'; return; }
+        
+        const users = (allUsers || []).filter(u => u.role === 'affiliate_manager' || u.role === 'agent');
         if (error) { tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-red-400">Error loading team</td></tr>'; return; }
         
         document.getElementById('teamCount').textContent = (users?.length || 0) + ' members';
@@ -4971,8 +5219,8 @@ Total Players: ${s.total}`;
           return;
         }
         
-        const roleLabels = { admin: 'Administrator', developer: 'Developer', affiliate_manager: 'Affiliate Manager', callcenter: 'Call Center' };
-        const roleColors = { admin: 'red', developer: 'purple', affiliate_manager: 'green', callcenter: 'blue' };
+        const roleLabels = { affiliate_manager: 'Affiliate Manager', agent: 'Agent' };
+        const roleColors = { affiliate_manager: 'green', agent: 'yellow' };
         
         tbody.innerHTML = users.map(u => {
           const rc = roleColors[u.role] || 'slate';
@@ -5025,9 +5273,9 @@ Total Players: ${s.total}`;
             console.warn('Auth signup error:', authErr.message);
           }
           
-          // 2. Insert into call_center_users table
+          // 2. Insert into crm_users table
           const { data: userData, error: userError } = await App.db
-            .from('call_center_users')
+            .from('crm_users')
             .insert({ auth_id: authUserId, name, email: email.toLowerCase(), role, is_active: true })
             .select()
             .single();
@@ -5043,7 +5291,7 @@ Total Players: ${s.total}`;
           // Refresh table
           this.renderTeamTable();
           
-          const roleLabels = { admin: 'Administrator', developer: 'Developer', affiliate_manager: 'Affiliate Manager', callcenter: 'Call Center' };
+          const roleLabels = { affiliate_manager: 'Affiliate Manager', agent: 'Agent' };
           alert(`✅ Account created!\n\nName: ${name}\nEmail: ${email}\nRole: ${roleLabels[role]}\n\nThey can log in immediately.`);
           
         } catch (error) {
@@ -5058,17 +5306,17 @@ Total Players: ${s.total}`;
       async toggleTeamMember(userId, isCurrentlyActive) {
         const action = isCurrentlyActive ? 'deactivate' : 'activate';
         if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} this user?`)) return;
-        const { error } = await App.db.from('call_center_users').update({ is_active: !isCurrentlyActive }).eq('id', userId);
+        const { error } = await App.db.from('crm_users').update({ is_active: !isCurrentlyActive }).eq('id', userId);
         if (error) { alert('Error: ' + error.message); return; }
         this.renderTeamTable();
       },
 
       async changeTeamRole(userId, currentRole) {
-        const roles = ['admin', 'developer', 'affiliate_manager', 'callcenter'];
-        const roleLabels = { admin: 'Administrator', developer: 'Developer', affiliate_manager: 'Affiliate Manager', callcenter: 'Call Center' };
-        const newRole = prompt(`Change role for this user.\n\nCurrent: ${roleLabels[currentRole]}\n\nEnter new role:\n- admin\n- affiliate_manager\n- callcenter\n- developer`, currentRole);
+        const roles = ['affiliate_manager', 'agent'];
+        const roleLabels = { affiliate_manager: 'Affiliate Manager', agent: 'Agent' };
+        const newRole = prompt(`Change role for this user.\n\nCurrent: ${roleLabels[currentRole] || currentRole}\n\nEnter new role:\n- affiliate_manager\n- agent`, currentRole);
         if (!newRole || !roles.includes(newRole) || newRole === currentRole) return;
-        const { error } = await App.db.from('call_center_users').update({ role: newRole }).eq('id', userId);
+        const { error } = await App.db.from('crm_users').update({ role: newRole }).eq('id', userId);
         if (error) { alert('Error: ' + error.message); return; }
         this.renderTeamTable();
         alert(`Role changed to ${roleLabels[newRole]}`);
@@ -5131,7 +5379,7 @@ Total Players: ${s.total}`;
       async loadUsersFromSupabase() {
         console.log('Loading users from Supabase...');
         const { data, error } = await App.db
-          .from('call_center_users')
+          .from('crm_users')
           .select('*')
           .eq('is_active', true)
           .order('name');
@@ -5318,9 +5566,9 @@ Total Players: ${s.total}`;
             console.warn('Auth signup skipped:', authErr.message);
           }
           
-          // 2. Insert into call_center_users table (this is the important part)
+          // 2. Insert into crm_users table (this is the important part)
           const { data: userData, error: userError } = await App.db
-            .from('call_center_users')
+            .from('crm_users')
             .insert({
               auth_id: authUserId,
               name: name,
@@ -5393,7 +5641,7 @@ Total Players: ${s.total}`;
         try {
           // Update in Supabase
           const { error: updateError } = await App.db
-            .from('call_center_users')
+            .from('crm_users')
             .update({ name: newName, role: newRole })
             .eq('id', userId);
           
@@ -5440,7 +5688,7 @@ Total Players: ${s.total}`;
         try {
           // Soft delete - set is_active to false
           const { error } = await App.db
-            .from('call_center_users')
+            .from('crm_users')
             .update({ is_active: false })
             .eq('id', userId);
           
@@ -5473,35 +5721,20 @@ Total Players: ${s.total}`;
         const tbody = document.getElementById('ccUserTableBody');
         if (!tbody) return;
         
-        if (this.employees.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">No users found. Add your first user above.</td></tr>';
+        // Only show call center staff
+        const ccUsers = this.employees.filter(u => u.role === 'callcenter');
+        
+        if (ccUsers.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">No call center agents yet. Add your first agent above.</td></tr>';
           return;
         }
         
-        const roleLabels = {
-          admin: 'Administrator',
-          developer: 'Developer',
-          affiliate_manager: 'Affiliate Manager',
-          callcenter: 'Call Center'
-        };
-        
-        const roleColors = {
-          admin: 'yellow',
-          developer: 'purple',
-          affiliate_manager: 'green',
-          callcenter: 'blue'
-        };
-        
-        tbody.innerHTML = this.employees.map(user => {
-          const role = user.role || 'callcenter';
-          const roleLabel = roleLabels[role] || role;
-          const roleColor = roleColors[role] || 'slate';
-          
+        tbody.innerHTML = ccUsers.map(user => {
           return `<tr class="border-t hover:bg-slate-50">
             <td class="px-4 py-3 font-medium">${user.name}</td>
             <td class="px-4 py-3 text-slate-500 text-sm">${user.email || '-'}</td>
             <td class="px-4 py-3">
-              <span class="px-2 py-1 bg-${roleColor}-100 text-${roleColor}-700 rounded text-xs font-medium">${roleLabel}</span>
+              <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">Call Center</span>
             </td>
             <td class="px-4 py-3 text-center">
               <button onclick="CallCenter.editUser('${user.id}')" class="text-blue-600 hover:underline text-sm mr-2">Edit</button>
@@ -6249,6 +6482,217 @@ Total Players: ${s.total}`;
     }
 
     // ============================================================
+    // CHAT MANAGER - In-app live chat between CRM users and agents
+    // ============================================================
+    const ChatManager = {
+      selectedAgentId: null,
+      messages: [],
+      subscription: null,
+      initialized: false,
+      
+      async init() {
+        if (!this.initialized) {
+          this.initialized = true;
+          // Ensure chat_messages table exists (graceful fail)
+          await this.ensureTable();
+        }
+        this.renderConversationList();
+        this.loadUnreadCount();
+      },
+
+      async ensureTable() {
+        // Try a lightweight query to check if table exists
+        try {
+          await App.db.from('chat_messages').select('id').limit(1);
+        } catch(e) {
+          console.warn('chat_messages table may not exist. Please run the schema SQL.');
+        }
+      },
+
+      renderConversationList() {
+        const container = document.getElementById('chatConversationList');
+        if (!container) return;
+        const agents = AgentManager.getFilteredAgents().filter(a => a.status === 'active');
+        const search = document.getElementById('chatSearchAgent')?.value?.toLowerCase() || '';
+        const filtered = agents.filter(a => !search || a.name.toLowerCase().includes(search) || a.promo_code.toLowerCase().includes(search));
+        
+        if (filtered.length === 0) { container.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">No agents found</div>'; return; }
+        
+        container.innerHTML = filtered.map(a => {
+          const initials = a.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+          const selected = this.selectedAgentId === a.id;
+          return `<div onclick="ChatManager.selectAgent('${a.id}')" class="flex items-center gap-3 p-3 cursor-pointer transition-all ${selected ? 'bg-indigo-50 border-l-4 border-l-indigo-500' : 'hover:bg-slate-50'}">
+            <div class="w-9 h-9 rounded-full ${selected ? 'bg-indigo-600' : 'bg-slate-300'} flex items-center justify-center text-xs font-bold ${selected ? 'text-white' : 'text-slate-600'} flex-shrink-0">${initials}</div>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-sm truncate ${selected ? 'text-indigo-700' : ''}">${a.name}</p>
+              <p class="text-xs text-slate-400 font-mono">${a.promo_code}</p>
+            </div>
+            <span id="chatBadge-${a.id}" class="hidden bg-red-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center font-bold flex-shrink-0">0</span>
+          </div>`;
+        }).join('');
+      },
+
+      filterConversations() { this.renderConversationList(); },
+
+      async selectAgent(agentId) {
+        this.selectedAgentId = agentId;
+        const agent = AgentManager.agents.find(a => a.id === agentId);
+        if (!agent) return;
+        
+        // Update header
+        const initials = agent.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+        document.getElementById('chatHeaderInfo').innerHTML = `
+          <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-bold text-white">${initials}</div>
+          <div><p class="font-medium text-sm">${agent.name}</p><p class="text-xs text-slate-400 font-mono">${agent.promo_code} · ${agent.phone||'No phone'}</p></div>`;
+        
+        document.getElementById('chatInputArea').classList.remove('hidden');
+        this.renderConversationList();
+        
+        // Load messages
+        await this.loadMessages(agentId);
+        
+        // Mark as read
+        await this.markRead(agentId);
+        
+        // Subscribe to real-time
+        this.subscribeToMessages(agentId);
+      },
+
+      async loadMessages(agentId) {
+        try {
+          const { data, error } = await App.db.from('chat_messages')
+            .select('*')
+            .eq('agent_id', agentId)
+            .order('created_at', { ascending: true })
+            .limit(100);
+          
+          if (error) throw error;
+          this.messages = data || [];
+          this.renderMessages();
+        } catch(e) {
+          console.error('Failed to load messages:', e);
+          document.getElementById('chatMessages').innerHTML = '<div class="p-4 text-center text-amber-600 text-sm">⚠️ Chat not available. Please ensure the chat_messages table exists in Supabase.</div>';
+        }
+      },
+
+      renderMessages() {
+        const container = document.getElementById('chatMessages');
+        if (!container) return;
+        
+        if (this.messages.length === 0) {
+          container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400 text-sm"><div class="text-center"><p>No messages yet. Start the conversation!</p></div></div>';
+          return;
+        }
+        
+        const userEmail = App.user?.email?.toLowerCase() || '';
+        container.innerHTML = this.messages.map(m => {
+          const isMine = m.sender_type === 'crm' && m.sender_id?.toLowerCase() === userEmail;
+          const isAgent = m.sender_type === 'agent';
+          const time = new Date(m.created_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
+          const date = new Date(m.created_at).toLocaleDateString('en-GB', {day:'numeric',month:'short'});
+          
+          if (isAgent) {
+            return `<div class="chat-msg flex justify-start"><div class="max-w-[70%]"><div class="chat-bubble-theirs px-4 py-2.5"><p class="text-sm">${this.escapeHtml(m.message)}</p></div><p class="text-[10px] text-slate-400 mt-1 ml-1">${date} ${time}</p></div></div>`;
+          } else {
+            return `<div class="chat-msg flex justify-end"><div class="max-w-[70%]"><div class="chat-bubble-mine px-4 py-2.5"><p class="text-sm">${this.escapeHtml(m.message)}</p></div><p class="text-[10px] text-slate-400 mt-1 mr-1 text-right">${isMine ? 'You' : m.sender_name||'CRM'} · ${date} ${time}</p></div></div>`;
+          }
+        }).join('');
+        
+        container.scrollTop = container.scrollHeight;
+      },
+
+      async sendMessage() {
+        const input = document.getElementById('chatMessageInput');
+        const text = input?.value.trim();
+        if (!text || !this.selectedAgentId) return;
+        
+        input.value = '';
+        
+        try {
+          const { error } = await App.db.from('chat_messages').insert({
+            agent_id: this.selectedAgentId,
+            sender_type: 'crm',
+            sender_id: App.user?.email || 'unknown',
+            sender_name: App.userName || App.user?.email || 'CRM',
+            message: text,
+            is_read: false
+          });
+          
+          if (error) throw error;
+          // Message will appear via real-time subscription, or reload
+          await this.loadMessages(this.selectedAgentId);
+        } catch(e) {
+          console.error('Send message failed:', e);
+          alert('Failed to send message. Check chat_messages table exists.');
+        }
+      },
+
+      subscribeToMessages(agentId) {
+        if (this.subscription) { this.subscription.unsubscribe(); this.subscription = null; }
+        
+        this.subscription = App.db.channel('chat-' + agentId)
+          .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'chat_messages',
+            filter: 'agent_id=eq.' + agentId
+          }, (payload) => {
+            this.messages.push(payload.new);
+            this.renderMessages();
+            if (payload.new.sender_type === 'agent') this.markRead(agentId);
+          })
+          .subscribe();
+      },
+
+      async markRead(agentId) {
+        try {
+          await App.db.from('chat_messages')
+            .update({ is_read: true })
+            .eq('agent_id', agentId)
+            .eq('sender_type', 'agent')
+            .eq('is_read', false);
+          
+          // Hide badge
+          const badge = document.getElementById('chatBadge-' + agentId);
+          if (badge) badge.classList.add('hidden');
+          this.loadUnreadCount();
+        } catch(e) {}
+      },
+
+      async loadUnreadCount() {
+        try {
+          const { data } = await App.db.from('chat_messages')
+            .select('agent_id')
+            .eq('sender_type', 'agent')
+            .eq('is_read', false);
+          
+          if (!data) return;
+          const counts = {};
+          data.forEach(m => { counts[m.agent_id] = (counts[m.agent_id]||0) + 1; });
+          
+          let total = 0;
+          Object.keys(counts).forEach(aid => {
+            total += counts[aid];
+            const badge = document.getElementById('chatBadge-' + aid);
+            if (badge) { badge.textContent = counts[aid]; badge.classList.remove('hidden'); }
+          });
+          
+          const mainBadge = document.getElementById('chatUnreadBadge');
+          if (mainBadge) {
+            mainBadge.textContent = total;
+            mainBadge.classList.toggle('hidden', total === 0);
+          }
+        } catch(e) {}
+      },
+
+      escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+    };
+
+    // ============================================================
     // INITIALIZATION
     // ============================================================
     document.addEventListener('DOMContentLoaded', async () => {
@@ -6266,6 +6710,9 @@ Total Players: ${s.total}`;
         document.getElementById('languageSelect').value = App.currentLang;
       } catch(e){ console.error('Error loading settings:', e); }
       
+      // Initialize Supabase (must be before anything that queries DB)
+      App.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      
       // Load Telegram settings
       loadTelegramSettings();
       
@@ -6278,25 +6725,28 @@ Total Players: ${s.total}`;
         AIAgent.showWelcome();
       });
       
-      // Initialize Supabase
-      App.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      
       document.getElementById('loginBtn').addEventListener('click', handleLogin);
       document.getElementById('loginPassword').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
       
       // Restore role from localStorage
       const savedRole = localStorage.getItem('userRole');
       if (savedRole) App.role = savedRole;
+      const savedName = localStorage.getItem('userName');
+      if (savedName) App.userName = savedName;
+      if (App.role === 'affiliate_manager') App.agentFilter = 'mine';
       
       const { data: { session } } = await App.db.auth.getSession();
       if (session) {
         App.user = session.user;
         // Verify role from database on session restore
         try {
-          const { data: userRecord } = await App.db.from('call_center_users').select('role, is_active').eq('email', session.user.email.toLowerCase()).single();
+          const { data: userRecord } = await App.db.from('crm_users').select('role, is_active, name').eq('email', session.user.email.toLowerCase()).maybeSingle();
           if (userRecord && userRecord.is_active !== false) {
             App.role = userRecord.role || 'callcenter';
+            App.userName = userRecord.name || '';
             localStorage.setItem('userRole', App.role);
+            localStorage.setItem('userName', App.userName);
+            if (App.role === 'affiliate_manager') App.agentFilter = 'mine';
             showMainApp();
           } else {
             // Account deactivated or not found — force logout
@@ -6318,7 +6768,10 @@ Total Players: ${s.total}`;
           document.getElementById('loginScreen').classList.remove('hidden'); 
           document.getElementById('mainApp').classList.add('hidden');
           App.role = 'callcenter';
+          App.userName = '';
+          App.agentFilter = 'all';
           localStorage.removeItem('userRole');
+          localStorage.removeItem('userName');
         } 
       });
     });
@@ -6343,12 +6796,12 @@ Total Players: ${s.total}`;
         
         App.user = authData.user;
         
-        // 2. Look up role from call_center_users table
+        // 2. Look up role from crm_users table
         const { data: userRecord, error: userError } = await App.db
-          .from('call_center_users')
+          .from('crm_users')
           .select('role, is_active, name')
           .eq('email', email.toLowerCase())
-          .single();
+          .maybeSingle();
         
         if (userError || !userRecord) {
           await App.db.auth.signOut();
@@ -6362,7 +6815,10 @@ Total Players: ${s.total}`;
         
         // 3. Set role from database (enforced, not user-selected)
         App.role = userRecord.role || 'callcenter';
+        App.userName = userRecord.name || '';
         localStorage.setItem('userRole', App.role);
+        localStorage.setItem('userName', App.userName);
+        if (App.role === 'affiliate_manager') App.agentFilter = 'mine';
         
         // 4. NOW show the app with the correct role
         showMainApp();
@@ -6429,9 +6885,21 @@ Total Players: ${s.total}`;
       // Apply Call Center sub-tab access
       CallCenter.applySubTabAccess();
       
-      // Team tab only visible to admin/developer
+      // Team tab only visible to admin/developer/affiliate_manager
       const teamTab = document.getElementById('agentSubTab-team');
-      if (teamTab) teamTab.style.display = (role === 'admin' || role === 'developer') ? '' : 'none';
+      if (teamTab) teamTab.style.display = (role === 'admin' || role === 'developer' || role === 'affiliate_manager') ? '' : 'none';
+      
+      // Chat tab visible to admin/developer/affiliate_manager
+      const chatTab = document.getElementById('agentSubTab-chat');
+      if (chatTab) chatTab.style.display = (role === 'admin' || role === 'developer' || role === 'affiliate_manager') ? '' : 'none';
+      
+      // Agent filter bar visible only to affiliate_manager
+      const filterBar = document.getElementById('agentFilterBar');
+      if (filterBar) {
+        filterBar.classList.toggle('hidden', role !== 'affiliate_manager');
+        const nameEl = document.getElementById('filterUserName');
+        if (nameEl) nameEl.textContent = App.userName || App.user?.email || '-';
+      }
       
       if (role === 'callcenter') {
         // Hide ALL tabs - Call Center users see only the call center content directly
