@@ -1400,80 +1400,128 @@
       <!-- AGENTS MANAGEMENT -->
       <div id="content-agents" class="tab-content hidden">
         <!-- Sub-tab Navigation -->
-        <div id="agentSubTabs" class="bg-white rounded-xl shadow-sm p-2 mb-4 flex gap-1 overflow-x-auto">
-          <button id="agentSubTab-overview" onclick="AgentManager.switchSubTab('overview')" class="agent-subtab active flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-slate-800 text-white whitespace-nowrap">
-            <i data-lucide="layout-dashboard" class="h-4 w-4 inline mr-1"></i>Overview
+        <div id="agentSubTabs" class="bg-white rounded-xl shadow-sm p-1.5 mb-5 flex gap-1 overflow-x-auto" style="border: 1px solid #e2e8f0;">
+          <button id="agentSubTab-overview" onclick="AgentManager.switchSubTab('overview')" class="agent-subtab active flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold bg-slate-800 text-white whitespace-nowrap transition-all duration-200">
+            <i data-lucide="layout-dashboard" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Overview
           </button>
-          <button id="agentSubTab-approvals" onclick="AgentManager.switchSubTab('approvals')" class="agent-subtab flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap relative">
-            <i data-lucide="check-circle" class="h-4 w-4 inline mr-1"></i>Approvals
-            <span id="approvalsBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+          <button id="agentSubTab-approvals" onclick="AgentManager.switchSubTab('approvals')" class="agent-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 whitespace-nowrap relative transition-all duration-200">
+            <i data-lucide="check-circle" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Approvals
+            <span id="approvalsBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">0</span>
           </button>
-          <button id="agentSubTab-agents" onclick="AgentManager.switchSubTab('agents')" class="agent-subtab flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap">
-            <i data-lucide="users" class="h-4 w-4 inline mr-1"></i>Manage
+          <button id="agentSubTab-agents" onclick="AgentManager.switchSubTab('agents')" class="agent-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 whitespace-nowrap transition-all duration-200">
+            <i data-lucide="users" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Manage
           </button>
-          <button id="agentSubTab-upload" onclick="AgentManager.switchSubTab('upload')" class="agent-subtab flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap">
-            <i data-lucide="upload" class="h-4 w-4 inline mr-1"></i>Upload
+          <button id="agentSubTab-upload" onclick="AgentManager.switchSubTab('upload')" class="agent-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 whitespace-nowrap transition-all duration-200">
+            <i data-lucide="upload" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Upload
           </button>
-          <button id="agentSubTab-payments" onclick="AgentManager.switchSubTab('payments')" class="agent-subtab flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap">
-            <i data-lucide="wallet" class="h-4 w-4 inline mr-1"></i>Payments
+          <button id="agentSubTab-payments" onclick="AgentManager.switchSubTab('payments')" class="agent-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 whitespace-nowrap transition-all duration-200">
+            <i data-lucide="wallet" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Payments
           </button>
-          <button id="agentSubTab-tiers" onclick="AgentManager.switchSubTab('tiers')" class="agent-subtab flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap">
-            <i data-lucide="award" class="h-4 w-4 inline mr-1"></i>Tiers
+          <button id="agentSubTab-tiers" onclick="AgentManager.switchSubTab('tiers')" class="agent-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 whitespace-nowrap transition-all duration-200">
+            <i data-lucide="award" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Tiers
+          </button>
+          <button id="agentSubTab-team" onclick="AgentManager.switchSubTab('team')" class="agent-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 whitespace-nowrap transition-all duration-200">
+            <i data-lucide="user-cog" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Team
           </button>
         </div>
 
         <!-- OVERVIEW SUB-TAB -->
         <div id="agentContent-overview">
-          <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-            <div class="bg-white rounded-xl shadow-sm p-4">
-              <p class="text-sm text-slate-500">Total Agents</p>
-              <p class="text-2xl font-bold text-slate-800" id="agent-total-count">0</p>
+          <!-- Key Metrics Row -->
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
+            <div class="bg-white rounded-xl p-4 flex items-center gap-3" style="border: 1px solid #e2e8f0;">
+              <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="users" class="h-5 w-5 text-slate-600"></i>
+              </div>
+              <div>
+                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Agents</p>
+                <p class="text-xl font-extrabold text-slate-800 leading-tight" id="agent-total-count">0</p>
+              </div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm p-4">
-              <p class="text-sm text-slate-500">Pending Approval</p>
-              <p class="text-2xl font-bold text-orange-600" id="agent-pending-count">0</p>
+            <div class="bg-white rounded-xl p-4 flex items-center gap-3" style="border: 1px solid #fde68a;">
+              <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="clock" class="h-5 w-5 text-amber-500"></i>
+              </div>
+              <div>
+                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Pending</p>
+                <p class="text-xl font-extrabold text-amber-600 leading-tight" id="agent-pending-count">0</p>
+              </div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm p-4">
-              <p class="text-sm text-slate-500">Total Signups</p>
-              <p class="text-2xl font-bold text-emerald-600" id="agent-total-signups">0</p>
+            <div class="bg-white rounded-xl p-4 flex items-center gap-3" style="border: 1px solid #a7f3d0;">
+              <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="user-plus" class="h-5 w-5 text-emerald-500"></i>
+              </div>
+              <div>
+                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Signups</p>
+                <p class="text-xl font-extrabold text-emerald-600 leading-tight" id="agent-total-signups">0</p>
+              </div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm p-4">
-              <p class="text-sm text-slate-500">Total Losses</p>
-              <p class="text-2xl font-bold text-purple-600" id="agent-total-losses">K0</p>
+            <div class="bg-white rounded-xl p-4 flex items-center gap-3" style="border: 1px solid #e2e8f0;">
+              <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="trending-down" class="h-5 w-5 text-red-400"></i>
+              </div>
+              <div>
+                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Losses</p>
+                <p class="text-xl font-extrabold text-slate-800 leading-tight" id="agent-total-losses">K0</p>
+              </div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm p-4">
-              <p class="text-sm text-slate-500">Pending Payments</p>
-              <p class="text-2xl font-bold text-red-600" id="agent-pending-payments">K0</p>
+            <div class="bg-white rounded-xl p-4 flex items-center gap-3" style="border: 1px solid #fecaca;">
+              <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="banknote" class="h-5 w-5 text-red-500"></i>
+              </div>
+              <div>
+                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Owed</p>
+                <p class="text-xl font-extrabold text-red-600 leading-tight" id="agent-pending-payments">K0</p>
+              </div>
             </div>
           </div>
-          <!-- Commission Plan Breakdown -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-blue-500">
-              <p class="text-sm text-slate-500">Plan A: Per-Client (K100)</p>
-              <p class="text-xl font-bold" id="agent-plan-a-count">0 agents</p>
+
+          <!-- Commission Plans -->
+          <div class="bg-white rounded-xl overflow-hidden mb-5" style="border: 1px solid #e2e8f0;">
+            <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+              <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="pie-chart" class="h-4 w-4 text-slate-400"></i> Commission Plans</h3>
             </div>
-            <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-purple-500">
-              <p class="text-sm text-slate-500">Plan B: Loss-Based (20%)</p>
-              <p class="text-xl font-bold" id="agent-plan-b-count">0 agents</p>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-slate-400">
-              <p class="text-sm text-slate-500">Plan C: Nil (Tracking)</p>
-              <p class="text-xl font-bold" id="agent-plan-c-count">0 agents</p>
+            <div class="grid grid-cols-3 divide-x divide-slate-100">
+              <div class="p-4 text-center">
+                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold uppercase tracking-wider mb-2">Plan A</div>
+                <p class="text-2xl font-extrabold text-slate-800" id="agent-plan-a-count">0</p>
+                <p class="text-xs text-slate-400 mt-0.5">Per-Client · K100</p>
+              </div>
+              <div class="p-4 text-center">
+                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple-50 text-purple-600 text-[10px] font-bold uppercase tracking-wider mb-2">Plan B</div>
+                <p class="text-2xl font-extrabold text-slate-800" id="agent-plan-b-count">0</p>
+                <p class="text-xs text-slate-400 mt-0.5">Loss-Based · 20%</p>
+              </div>
+              <div class="p-4 text-center">
+                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-2">Plan C</div>
+                <p class="text-2xl font-extrabold text-slate-800" id="agent-plan-c-count">0</p>
+                <p class="text-xs text-slate-400 mt-0.5">Nil · Tracking Only</p>
+              </div>
             </div>
           </div>
+
           <!-- Leaderboards -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div class="bg-emerald-600 text-white p-4"><h3 class="font-bold flex items-center gap-2"><i data-lucide="trophy" class="h-4 w-4"></i> Top by Clients</h3></div>
-              <div id="leaderboard-signups" class="max-h-[300px] overflow-y-auto"><div class="p-4 text-center text-slate-400">No data yet</div></div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-xl overflow-hidden" style="border: 1px solid #e2e8f0;">
+              <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+                <div class="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center"><i data-lucide="trophy" class="h-3.5 w-3.5 text-emerald-600"></i></div>
+                <h3 class="text-sm font-bold text-slate-700">Top by Clients</h3>
+              </div>
+              <div id="leaderboard-signups" class="max-h-[280px] overflow-y-auto"><div class="p-6 text-center text-sm text-slate-300">No data yet</div></div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div class="bg-purple-600 text-white p-4"><h3 class="font-bold flex items-center gap-2"><i data-lucide="trophy" class="h-4 w-4"></i> Top by Losses</h3></div>
-              <div id="leaderboard-deposits" class="max-h-[300px] overflow-y-auto"><div class="p-4 text-center text-slate-400">No data yet</div></div>
+            <div class="bg-white rounded-xl overflow-hidden" style="border: 1px solid #e2e8f0;">
+              <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+                <div class="w-6 h-6 rounded-md bg-purple-100 flex items-center justify-center"><i data-lucide="trophy" class="h-3.5 w-3.5 text-purple-600"></i></div>
+                <h3 class="text-sm font-bold text-slate-700">Top by Losses</h3>
+              </div>
+              <div id="leaderboard-deposits" class="max-h-[280px] overflow-y-auto"><div class="p-6 text-center text-sm text-slate-300">No data yet</div></div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div class="bg-yellow-500 text-black p-4"><h3 class="font-bold flex items-center gap-2"><i data-lucide="trophy" class="h-4 w-4"></i> Top Earners</h3></div>
-              <div id="leaderboard-earnings" class="max-h-[300px] overflow-y-auto"><div class="p-4 text-center text-slate-400">No data yet</div></div>
+            <div class="bg-white rounded-xl overflow-hidden" style="border: 1px solid #e2e8f0;">
+              <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+                <div class="w-6 h-6 rounded-md bg-yellow-100 flex items-center justify-center"><i data-lucide="trophy" class="h-3.5 w-3.5 text-yellow-600"></i></div>
+                <h3 class="text-sm font-bold text-slate-700">Top Earners</h3>
+              </div>
+              <div id="leaderboard-earnings" class="max-h-[280px] overflow-y-auto"><div class="p-6 text-center text-sm text-slate-300">No data yet</div></div>
             </div>
           </div>
         </div>
@@ -1826,7 +1874,65 @@
             </div>
           </div>
         </div>
-      </div>
+
+        <!-- TEAM SUB-TAB -->
+        <div id="agentContent-team" class="hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Add Team Member -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div class="bg-gradient-to-r from-indigo-700 to-purple-700 text-white p-4">
+                <h3 class="font-bold flex items-center gap-2"><i data-lucide="user-plus" class="h-4 w-4"></i> Add Team Member</h3>
+              </div>
+              <div class="p-4">
+                <p class="text-sm text-slate-500 mb-4">Create login accounts for Affiliate Managers and other team members who manage the agent program.</p>
+                <div class="space-y-3">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input type="text" id="teamNewName" placeholder="Full Name *" class="px-3 py-2 border rounded-lg text-sm">
+                    <input type="email" id="teamNewEmail" placeholder="Email Address *" class="px-3 py-2 border rounded-lg text-sm">
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input type="password" id="teamNewPassword" placeholder="Password (min 6 chars) *" class="px-3 py-2 border rounded-lg text-sm">
+                    <select id="teamNewRole" class="px-3 py-2 border rounded-lg text-sm bg-white">
+                      <option value="affiliate_manager">Affiliate Manager</option>
+                      <option value="admin">Administrator</option>
+                      <option value="callcenter">Call Center</option>
+                      <option value="developer">Developer</option>
+                    </select>
+                  </div>
+                  <button onclick="AgentManager.addTeamMember()" id="teamAddBtn" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 flex items-center justify-center gap-2">
+                    <i data-lucide="user-plus" class="h-4 w-4"></i> Create Account
+                  </button>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">* Required fields. The user can log in immediately after creation.</p>
+              </div>
+            </div>
+
+            <!-- Team List -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
+                <h3 class="font-bold flex items-center gap-2"><i data-lucide="users" class="h-4 w-4"></i> Team Members</h3>
+                <span class="text-xs bg-white/20 px-2 py-1 rounded" id="teamCount">0 members</span>
+              </div>
+              <div class="max-h-[500px] overflow-y-auto">
+                <table class="w-full">
+                  <thead class="bg-slate-50 sticky top-0">
+                    <tr>
+                      <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Name</th>
+                      <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Email</th>
+                      <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Role</th>
+                      <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Status</th>
+                      <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="teamTableBody">
+                    <tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div> 
       <div id="editAgentModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onclick="if(event.target===this)this.classList.add('hidden')">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
           <div class="bg-slate-800 text-white p-4 rounded-t-2xl flex items-center justify-between sticky top-0">
@@ -3910,11 +4016,11 @@ Total Players: ${s.total}`;
         this.currentSubTab = tab;
         document.querySelectorAll('.agent-subtab').forEach(btn => {
           btn.classList.remove('bg-slate-800', 'text-white');
-          btn.classList.add('bg-slate-100', 'text-slate-600');
+          btn.classList.add('text-slate-500');
         });
         const activeBtn = document.getElementById('agentSubTab-' + tab);
-        if (activeBtn) { activeBtn.classList.remove('bg-slate-100', 'text-slate-600'); activeBtn.classList.add('bg-slate-800', 'text-white'); }
-        ['overview', 'approvals', 'agents', 'upload', 'payments', 'tiers'].forEach(t => {
+        if (activeBtn) { activeBtn.classList.remove('text-slate-500'); activeBtn.classList.add('bg-slate-800', 'text-white'); }
+        ['overview', 'approvals', 'agents', 'upload', 'payments', 'tiers', 'team'].forEach(t => {
           const c = document.getElementById('agentContent-' + t);
           if (c) c.classList.toggle('hidden', t !== tab);
         });
@@ -3923,6 +4029,7 @@ Total Players: ${s.total}`;
         if (tab === 'agents') this.renderAgentsTable();
         if (tab === 'payments') this.renderPaymentsTable();
         if (tab === 'tiers') this.renderTiers();
+        if (tab === 'team') this.renderTeamTable();
         lucide.createIcons();
       },
 
@@ -3962,9 +4069,9 @@ Total Players: ${s.total}`;
         document.getElementById('agent-total-signups').textContent = totalClients;
         document.getElementById('agent-total-losses').textContent = 'K' + totalLosses.toLocaleString();
         document.getElementById('agent-pending-payments').textContent = 'K' + pendingPayments.toLocaleString();
-        document.getElementById('agent-plan-a-count').textContent = planA.length + ' agents';
-        document.getElementById('agent-plan-b-count').textContent = planB.length + ' agents';
-        document.getElementById('agent-plan-c-count').textContent = planC.length + ' agents';
+        document.getElementById('agent-plan-a-count').textContent = planA.length;
+        document.getElementById('agent-plan-b-count').textContent = planB.length;
+        document.getElementById('agent-plan-c-count').textContent = planC.length;
 
         this.renderLeaderboard('signups', [...lb].sort((a, b) => b.totalClients - a.totalClients).slice(0, 10));
         this.renderLeaderboard('deposits', [...lb].sort((a, b) => b.totalLosses - a.totalLosses).slice(0, 10));
@@ -4844,6 +4951,127 @@ Total Players: ${s.total}`;
             TelegramManager.sendToAll(`🏅 <b>Agent Tier Up!</b>\n\n👤 ${agent.name} (${agent.promo_code})\n${currentTier.emoji} <b>${previousTier || 'None'} → ${currentTier.tier_name}</b>\n👥 Active clients: ${activeClients}\n🎁 Cash prize: K${currentTier.cash_prize.toLocaleString()}\n\n⏳ <i>Prize payment pending</i>`);
           }
         } catch(e) { console.error('Tier promotion error:', e); }
+      },
+
+      // ============================================================
+      // TEAM MANAGEMENT
+      // ============================================================
+      async renderTeamTable() {
+        const tbody = document.getElementById('teamTableBody');
+        if (!tbody) return;
+        
+        // Load all CRM users from call_center_users
+        const { data: users, error } = await App.db.from('call_center_users').select('*').order('name');
+        if (error) { tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-red-400">Error loading team</td></tr>'; return; }
+        
+        document.getElementById('teamCount').textContent = (users?.length || 0) + ' members';
+        
+        if (!users || users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">No team members yet. Add one using the form.</td></tr>';
+          return;
+        }
+        
+        const roleLabels = { admin: 'Administrator', developer: 'Developer', affiliate_manager: 'Affiliate Manager', callcenter: 'Call Center' };
+        const roleColors = { admin: 'red', developer: 'purple', affiliate_manager: 'green', callcenter: 'blue' };
+        
+        tbody.innerHTML = users.map(u => {
+          const rc = roleColors[u.role] || 'slate';
+          const isMe = u.email?.toLowerCase() === App.user?.email?.toLowerCase();
+          return `<tr class="border-t hover:bg-slate-50">
+            <td class="px-4 py-3">
+              <div class="font-medium text-sm">${u.name || '-'}</div>
+              ${isMe ? '<span class="text-[10px] text-blue-500 font-medium">← You</span>' : ''}
+            </td>
+            <td class="px-4 py-3 text-sm text-slate-600">${u.email || '-'}</td>
+            <td class="px-4 py-3 text-center"><span class="px-2 py-0.5 bg-${rc}-100 text-${rc}-700 rounded text-xs font-bold">${roleLabels[u.role] || u.role}</span></td>
+            <td class="px-4 py-3 text-center"><span class="px-2 py-0.5 ${u.is_active !== false ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'} rounded text-xs">${u.is_active !== false ? 'Active' : 'Inactive'}</span></td>
+            <td class="px-4 py-3 text-center">
+              ${!isMe ? `
+                <button onclick="AgentManager.toggleTeamMember('${u.id}', ${u.is_active !== false})" class="text-xs ${u.is_active !== false ? 'text-red-500 hover:text-red-700' : 'text-emerald-500 hover:text-emerald-700'} mr-2">${u.is_active !== false ? 'Deactivate' : 'Activate'}</button>
+                <button onclick="AgentManager.changeTeamRole('${u.id}', '${u.role}')" class="text-xs text-blue-500 hover:text-blue-700">Change Role</button>
+              ` : '<span class="text-xs text-slate-400">—</span>'}
+            </td>
+          </tr>`;
+        }).join('');
+        lucide.createIcons();
+      },
+
+      async addTeamMember() {
+        const name = document.getElementById('teamNewName')?.value.trim();
+        const email = document.getElementById('teamNewEmail')?.value.trim();
+        const password = document.getElementById('teamNewPassword')?.value;
+        const role = document.getElementById('teamNewRole')?.value || 'affiliate_manager';
+        
+        if (!name) { alert('Please enter a name'); return; }
+        if (!email) { alert('Please enter an email'); return; }
+        if (!password || password.length < 6) { alert('Password must be at least 6 characters'); return; }
+        
+        const btn = document.getElementById('teamAddBtn');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Creating...';
+        
+        try {
+          // 1. Create Supabase Auth user
+          let authUserId = null;
+          try {
+            const { data: signupData, error: signupError } = await App.db.auth.signUp({
+              email: email,
+              password: password,
+              options: { data: { name: name, role: role } }
+            });
+            if (!signupError && signupData?.user) authUserId = signupData.user.id;
+          } catch (authErr) {
+            console.warn('Auth signup error:', authErr.message);
+          }
+          
+          // 2. Insert into call_center_users table
+          const { data: userData, error: userError } = await App.db
+            .from('call_center_users')
+            .insert({ auth_id: authUserId, name, email: email.toLowerCase(), role, is_active: true })
+            .select()
+            .single();
+          
+          if (userError) throw userError;
+          
+          // Clear form
+          document.getElementById('teamNewName').value = '';
+          document.getElementById('teamNewEmail').value = '';
+          document.getElementById('teamNewPassword').value = '';
+          document.getElementById('teamNewRole').value = 'affiliate_manager';
+          
+          // Refresh table
+          this.renderTeamTable();
+          
+          const roleLabels = { admin: 'Administrator', developer: 'Developer', affiliate_manager: 'Affiliate Manager', callcenter: 'Call Center' };
+          alert(`✅ Account created!\n\nName: ${name}\nEmail: ${email}\nRole: ${roleLabels[role]}\n\nThey can log in immediately.`);
+          
+        } catch (error) {
+          alert('Error: ' + (error.message || 'Unknown error'));
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+          lucide.createIcons();
+        }
+      },
+
+      async toggleTeamMember(userId, isCurrentlyActive) {
+        const action = isCurrentlyActive ? 'deactivate' : 'activate';
+        if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} this user?`)) return;
+        const { error } = await App.db.from('call_center_users').update({ is_active: !isCurrentlyActive }).eq('id', userId);
+        if (error) { alert('Error: ' + error.message); return; }
+        this.renderTeamTable();
+      },
+
+      async changeTeamRole(userId, currentRole) {
+        const roles = ['admin', 'developer', 'affiliate_manager', 'callcenter'];
+        const roleLabels = { admin: 'Administrator', developer: 'Developer', affiliate_manager: 'Affiliate Manager', callcenter: 'Call Center' };
+        const newRole = prompt(`Change role for this user.\n\nCurrent: ${roleLabels[currentRole]}\n\nEnter new role:\n- admin\n- affiliate_manager\n- callcenter\n- developer`, currentRole);
+        if (!newRole || !roles.includes(newRole) || newRole === currentRole) return;
+        const { error } = await App.db.from('call_center_users').update({ role: newRole }).eq('id', userId);
+        if (error) { alert('Error: ' + error.message); return; }
+        this.renderTeamTable();
+        alert(`Role changed to ${roleLabels[newRole]}`);
       }
     };
 
@@ -6200,6 +6428,10 @@ Total Players: ${s.total}`;
       
       // Apply Call Center sub-tab access
       CallCenter.applySubTabAccess();
+      
+      // Team tab only visible to admin/developer
+      const teamTab = document.getElementById('agentSubTab-team');
+      if (teamTab) teamTab.style.display = (role === 'admin' || role === 'developer') ? '' : 'none';
       
       if (role === 'callcenter') {
         // Hide ALL tabs - Call Center users see only the call center content directly
