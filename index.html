@@ -6615,70 +6615,78 @@ Total Players: ${s.total}`;
         return null;
       };
 
-      let created = 0, updated = 0, skipped = 0, errors = [];
+      let processed = 0, skipped = 0, errors = [];
+      const BATCH_SIZE = 100;
       
+      // Build all player records first
+      const players = [];
       for (const row of playerUploadData) {
-        try {
-          // Find ID column
-          const idCol = findCol(row, 'id');
-          const id = idCol ? String(row[idCol]).trim() : null;
-          if (!id) { skipped++; continue; }
+        const idCol = findCol(row, 'id');
+        const id = idCol ? String(row[idCol]).trim() : null;
+        if (!id) { skipped++; continue; }
 
-          // Build player record
-          const player = { id };
-          
-          const addField = (field, parser = v => v) => {
-            const col = findCol(row, field);
-            if (col && row[col] !== '' && row[col] !== null && row[col] !== undefined) {
-              player[field] = parser(row[col]);
-            }
-          };
-
-          addField('phone_number', v => String(v).replace(/[^0-9+]/g, ''));
-          addField('registration_date', v => parseDate(v));
-          addField('last_activity', v => parseDate(v));
-          addField('sport_bet_amount', v => parseFloat(v) || 0);
-          addField('sport_win_amount', v => parseFloat(v) || 0);
-          addField('sport_bet_count', v => parseInt(v) || 0);
-          addField('sport_win_count', v => parseInt(v) || 0);
-          addField('casino_bet_amount', v => parseFloat(v) || 0);
-          addField('casino_win_amount', v => parseFloat(v) || 0);
-          addField('casino_bet_count', v => parseInt(v) || 0);
-          addField('casino_win_count', v => parseInt(v) || 0);
-          addField('deposit_amount', v => parseFloat(v) || 0);
-          addField('deposit_count', v => parseInt(v) || 0);
-          addField('withdrawal_amount', v => parseFloat(v) || 0);
-          addField('withdrawal_count', v => parseInt(v) || 0);
-          addField('bonus_amount', v => parseFloat(v) || 0);
-          addField('status', v => String(v).toLowerCase() === 'inactive' ? 'inactive' : 'active');
-
-          // Check if exists
-          const { data: existing } = await App.db.from('customers').select('id').eq('id', id).maybeSingle();
-          
-          if (existing) {
-            if (updateExisting) {
-              const { error } = await App.db.from('customers').update(player).eq('id', id);
-              if (error) throw error;
-              updated++;
-            } else {
-              skipped++;
-            }
-          } else {
-            player.currency = 'ZMW';
-            const { error } = await App.db.from('customers').insert(player);
-            if (error) throw error;
-            created++;
+        const player = { id, currency: 'ZMW' };
+        
+        const addField = (field, parser = v => v) => {
+          const col = findCol(row, field);
+          if (col && row[col] !== '' && row[col] !== null && row[col] !== undefined) {
+            player[field] = parser(row[col]);
           }
+        };
+
+        addField('phone_number', v => String(v).replace(/[^0-9+]/g, ''));
+        addField('registration_date', v => parseDate(v));
+        addField('last_activity', v => parseDate(v));
+        addField('sport_bet_amount', v => parseFloat(v) || 0);
+        addField('sport_win_amount', v => parseFloat(v) || 0);
+        addField('sport_bet_count', v => parseInt(v) || 0);
+        addField('sport_win_count', v => parseInt(v) || 0);
+        addField('casino_bet_amount', v => parseFloat(v) || 0);
+        addField('casino_win_amount', v => parseFloat(v) || 0);
+        addField('casino_bet_count', v => parseInt(v) || 0);
+        addField('casino_win_count', v => parseInt(v) || 0);
+        addField('deposit_amount', v => parseFloat(v) || 0);
+        addField('deposit_count', v => parseInt(v) || 0);
+        addField('withdrawal_amount', v => parseFloat(v) || 0);
+        addField('withdrawal_count', v => parseInt(v) || 0);
+        addField('bonus_amount', v => parseFloat(v) || 0);
+        addField('status', v => String(v).toLowerCase() === 'inactive' ? 'inactive' : 'active');
+        players.push(player);
+      }
+
+      // Batch upsert for performance
+      for (let i = 0; i < players.length; i += BATCH_SIZE) {
+        const batch = players.slice(i, i + BATCH_SIZE);
+        try {
+          const { error } = await App.db.from('customers').upsert(batch, { 
+            onConflict: 'id', 
+            ignoreDuplicates: !updateExisting 
+          });
+          if (error) throw error;
+          processed += batch.length;
         } catch(e) {
-          errors.push(e.message);
-          if (errors.length > 10) break;
+          // If batch fails, try one by one to isolate bad rows
+          for (const player of batch) {
+            try {
+              const { error } = await App.db.from('customers').upsert(player, { 
+                onConflict: 'id', 
+                ignoreDuplicates: !updateExisting 
+              });
+              if (error) throw error;
+              processed++;
+            } catch(e2) {
+              errors.push(`${player.id}: ${e2.message}`);
+            }
+          }
         }
+        // Update button with progress
+        btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline mr-1" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> ${Math.min(i + BATCH_SIZE, players.length)}/${players.length}`;
       }
 
       // Reload players
       await loadPlayers(true);
 
-      let msg = `Import Complete!\n\nCreated: ${created}\nUpdated: ${updated}\nSkipped: ${skipped}`;
+      let msg = `Import Complete!\n\n${updateExisting ? 'Imported/Updated' : 'Imported'}: ${processed}\nSkipped (no ID): ${skipped}`;
       if (errors.length) msg += `\n\nErrors (first 10):\n${errors.slice(0, 10).join('\n')}`;
       alert(msg);
 
