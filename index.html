@@ -3085,7 +3085,6 @@
       try {
         // Fetch ALL players using parallel requests
         const PAGE = 50000;
-        const COLUMNS = 'id,phone_number,registration_date,last_activity,last_deposit_date,sport_bet_amount,sport_win_amount,sport_bet_count,sport_win_count,casino_bet_amount,casino_win_amount,casino_bet_count,casino_win_count,deposit_amount,withdrawal_amount,status,referral';
         
         // Step 1: Get total count (fast HEAD-style query)
         showLoading(true, 'Counting players...');
@@ -3096,7 +3095,7 @@
         if (totalRows === 0) {
           App.players = [];
         } else {
-          // Step 2: Fire all page requests in parallel (90 requests finish in ~1-2 seconds)
+          // Step 2: Fire all page requests in parallel
           const numPages = Math.ceil(totalRows / PAGE);
           showLoading(true, `Fetching ${totalRows.toLocaleString()} players (${numPages} parallel batches)...`);
           
@@ -3105,7 +3104,7 @@
             const from = i * PAGE;
             const to = from + PAGE - 1;
             pagePromises.push(
-              App.db.from('customers').select(COLUMNS).range(from, to)
+              App.db.from('customers').select('*').range(from, to)
             );
           }
           
