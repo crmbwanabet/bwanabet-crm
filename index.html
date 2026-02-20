@@ -3083,8 +3083,8 @@
       showLoading(true, App.currentLang === 'ru' ? 'Загрузка игроков...' : 'Loading players...');
       
       try {
-        // Fetch ALL players using parallel requests (Supabase server caps at 1000 rows per request)
-        const PAGE = 1000;
+        // Fetch ALL players using parallel requests
+        const PAGE = 50000;
         const COLUMNS = 'id,phone_number,registration_date,last_activity,last_deposit_date,sport_bet_amount,sport_win_amount,sport_bet_count,sport_win_count,casino_bet_amount,casino_win_amount,casino_bet_count,casino_win_count,deposit_amount,withdrawal_amount,status,referral';
         
         // Step 1: Get total count (fast HEAD-style query)
