@@ -2780,13 +2780,23 @@
       showNotification(isRu ? 'Параметры сброшены к значениям по умолчанию' : 'Parameters reset to defaults', 'success');
     }
 
-    function reprocessPlayersWithNewParams() {
+    async function reprocessPlayersWithNewParams() {
       if (!App.players.length) return;
       
       showLoading(true, App.currentLang === 'ru' ? 'Пересчет данных...' : 'Recalculating...');
       
-      // Reprocess all players with new parameters
-      App.processedPlayers = App.players.map(processPlayer);
+      // Reprocess all players with new parameters — chunked to avoid UI freeze
+      const CHUNK = 1000;
+      App.processedPlayers = [];
+      const total = App.players.length;
+      for (let i = 0; i < total; i += CHUNK) {
+        const chunk = App.players.slice(i, i + CHUNK).map(processPlayer);
+        App.processedPlayers.push(...chunk);
+        if (total > CHUNK) {
+          showLoading(true, `${App.currentLang === 'ru' ? 'Пересчет' : 'Recalculating'} ${Math.min(i + CHUNK, total).toLocaleString()}/${total.toLocaleString()}...`);
+          await new Promise(r => setTimeout(r, 0));
+        }
+      }
       App.statsCache = null;
       
       // Reapply current filter if any
@@ -2862,6 +2872,19 @@
         factors.push('Winning & withdrawing'); 
       }
       
+      // Betting frequency decline (configurable weight)
+      const betCount = p.totalBetCount || 0;
+      const daysSinceReg = Math.max(p.daysSinceRegistration || 1, 1);
+      const betsPerDay = betCount / daysSinceReg;
+      // Low activity relative to account age suggests declining engagement
+      if (betCount > 0 && betsPerDay < 0.1) {
+        score += App.params.churnWeightFrequency * Math.min((0.1 - betsPerDay) / 0.1, 1);
+        factors.push('Low bet frequency');
+      } else if (betCount === 0 && days > 7) {
+        score += App.params.churnWeightFrequency;
+        factors.push('No betting activity');
+      }
+      
       score = Math.min(Math.round(score), 100);
       
       // Determine risk level based on configurable thresholds
@@ -2887,7 +2910,25 @@
 
     function findSimilarPlayers(target, n = 5) {
       if (!target || App.processedPlayers.length < 2) return [];
-      return App.processedPlayers
+      
+      // For large datasets, search within the same value segment + nearby segments
+      let candidates = App.processedPlayers;
+      if (candidates.length > 5000) {
+        // Pre-filter to same segment + adjacent segments for performance
+        const segOrder = ['low', 'medium', 'high', 'vip'];
+        const idx = segOrder.indexOf(target.valueSegment);
+        const nearSegs = new Set(segOrder.slice(Math.max(0, idx - 1), idx + 2));
+        candidates = candidates.filter(p => nearSegs.has(p.valueSegment) && p.preference === target.preference);
+        // If still too many, sample randomly
+        if (candidates.length > 2000) {
+          const sampled = [];
+          const step = Math.floor(candidates.length / 2000);
+          for (let i = 0; i < candidates.length; i += step) sampled.push(candidates[i]);
+          candidates = sampled;
+        }
+      }
+      
+      return candidates
         .filter(p => p.id !== target.id)
         .map(p => {
           const revDiff = Math.abs((p.netRevenue - target.netRevenue) / (Math.max(Math.abs(target.netRevenue), 1)));
@@ -3013,6 +3054,12 @@
       p.optimalBonus = calculateOptimalBonus(p);
       p.isWithdrawing = (parseFloat(p.withdrawal_amount) || 0) > (parseFloat(p.deposit_amount) || 0);
       
+      // Ensure last_deposit_date is available (for call center display)
+      if (!p.last_deposit_date && (parseFloat(p.deposit_amount) || 0) > 0) {
+        // If player has deposits but no explicit date, use last_activity as best estimate
+        p.last_deposit_date = p.last_activity || p.registration_date || null;
+      }
+      
       return p;
     }
 
@@ -3022,13 +3069,13 @@
     async function loadPlayers(forceReload = false) {
       // Prevent reloading if data already exists (unless forced)
       if (!forceReload && App.dataLoaded && App.processedPlayers.length > 0) {
-        console.log('Data already loaded, skipping reload');
+        // Data already loaded
         return;
       }
       
       // Prevent concurrent loads
       if (App.isLoading) {
-        console.log('Load already in progress');
+        // Load in progress
         return;
       }
       
@@ -3036,20 +3083,37 @@
       showLoading(true, App.currentLang === 'ru' ? 'Загрузка игроков...' : 'Loading players...');
       
       try {
-        // FIXED: Changed from 'players' to 'customers'
-        const { data, error } = await App.db.from('customers').select('*');
-        if (error) throw error;
+        // Fetch ALL players using pagination (Supabase limits to 1000 per request)
+        const PAGE = 1000;
+        let allData = [];
+        let from = 0;
+        let hasMore = true;
         
-        App.players = data || [];
+        while (hasMore) {
+          showLoading(true, `Fetching players... ${allData.length.toLocaleString()}+`);
+          const { data, error } = await App.db.from('customers').select('*').range(from, from + PAGE - 1);
+          if (error) throw error;
+          if (data && data.length > 0) {
+            allData.push(...data);
+            from += PAGE;
+            hasMore = data.length === PAGE; // If we got a full page, there may be more
+            await new Promise(r => setTimeout(r, 0)); // yield to UI between fetches
+          } else {
+            hasMore = false;
+          }
+        }
+        
+        App.players = allData;
         
         // Process players in chunks to avoid blocking UI
-        const CHUNK = 200;
+        const CHUNK = 1000;
         App.processedPlayers = [];
-        for (let i = 0; i < App.players.length; i += CHUNK) {
+        const total = App.players.length;
+        for (let i = 0; i < total; i += CHUNK) {
           const chunk = App.players.slice(i, i + CHUNK).map(processPlayer);
           App.processedPlayers.push(...chunk);
-          if (App.players.length > CHUNK) {
-            showLoading(true, `Processing ${Math.min(i + CHUNK, App.players.length)}/${App.players.length} players...`);
+          if (total > CHUNK) {
+            showLoading(true, `Processing ${Math.min(i + CHUNK, total).toLocaleString()}/${total.toLocaleString()} players...`);
             await new Promise(r => setTimeout(r, 0)); // yield to UI
           }
         }
@@ -3834,12 +3898,15 @@
 
     function startAutoRefresh() {
       stopAutoRefresh();
+      // Use longer interval for large datasets to reduce API load
+      const intervalMs = App.processedPlayers.length > 10000 
+        ? 900000  // 15 minutes for large datasets
+        : App.autoRefreshSeconds * 1000;
       App.autoRefreshInterval = setInterval(() => {
         if (App.autoRefreshEnabled && !App.isLoading) {
-          console.log('Auto-refreshing data...');
           loadPlayers(true);
         }
-      }, App.autoRefreshSeconds * 1000);
+      }, intervalMs);
     }
 
     function stopAutoRefresh() {
@@ -4191,7 +4258,7 @@ Total Players: ${s.total}`;
       ],
 
       async init() {
-        console.log('AgentManager.init()');
+
         try {
           await this.loadAgents();
           await this.loadWeeklyData();
@@ -4208,17 +4275,37 @@ Total Players: ${s.total}`;
       async loadAgents() {
         const { data, error } = await App.db.from('agents').select('*').order('promo_code');
         if (!error) this.agents = data || [];
-        console.log('Loaded agents:', this.agents.length);
+
       },
 
       async loadWeeklyData() {
-        const { data, error } = await App.db.from('agent_weekly_data').select('*').order('week_start_date', { ascending: false });
-        if (!error) this.weeklyData = data || [];
+        // Paginate to get ALL weekly data (100 agents × many weeks can exceed 1000)
+        const PAGE = 1000;
+        let allData = [];
+        let from = 0;
+        let hasMore = true;
+        while (hasMore) {
+          const { data, error } = await App.db.from('agent_weekly_data').select('*').order('week_start_date', { ascending: false }).range(from, from + PAGE - 1);
+          if (error) { console.error('Weekly data load error:', error.message); break; }
+          if (data && data.length > 0) { allData.push(...data); from += PAGE; hasMore = data.length === PAGE; }
+          else { hasMore = false; }
+        }
+        this.weeklyData = allData;
       },
 
       async loadPayments() {
-        const { data, error } = await App.db.from('agent_payments').select('*, agents(name, promo_code)').order('created_at', { ascending: false });
-        if (!error) this.payments = data || [];
+        // Paginate to get ALL payments
+        const PAGE = 1000;
+        let allData = [];
+        let from = 0;
+        let hasMore = true;
+        while (hasMore) {
+          const { data, error } = await App.db.from('agent_payments').select('*, agents(name, promo_code)').order('created_at', { ascending: false }).range(from, from + PAGE - 1);
+          if (error) { console.error('Payments load error:', error.message); break; }
+          if (data && data.length > 0) { allData.push(...data); from += PAGE; hasMore = data.length === PAGE; }
+          else { hasMore = false; }
+        }
+        this.payments = allData;
       },
 
       // ======== AGENT FILTER (My Agents / All) ========
@@ -4702,7 +4789,7 @@ Total Players: ${s.total}`;
             // Read raw data from row 3 (header is row 2)
             const allData = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
             this.agentListFileData = allData;
-            console.log('Agent list parsed, rows:', allData.length);
+
           } catch(err) { alert('Error parsing file'); this.agentListFileData = null; }
         };
         reader.readAsArrayBuffer(file);
@@ -4789,7 +4876,7 @@ Total Players: ${s.total}`;
             const sheetName = wb.SheetNames.find(s => s.toUpperCase() === 'BWANABET') || wb.SheetNames[0];
             const ws = wb.Sheets[sheetName];
             this.playerActivityFileData = XLSX.utils.sheet_to_json(ws);
-            console.log('Player activity parsed from sheet:', sheetName, 'rows:', this.playerActivityFileData.length);
+
           } catch(err) { alert('Error parsing file'); this.playerActivityFileData = null; }
         };
         reader.readAsArrayBuffer(file);
@@ -5389,6 +5476,8 @@ Total Players: ${s.total}`;
         
         try {
           // 1. Create Supabase Auth user
+          // IMPORTANT: Save current admin session first — signUp replaces it
+          const { data: { session: adminSession } } = await App.db.auth.getSession();
           let authUserId = null;
           try {
             const { data: signupData, error: signupError } = await App.db.auth.signUp({
@@ -5399,6 +5488,10 @@ Total Players: ${s.total}`;
             if (!signupError && signupData?.user) authUserId = signupData.user.id;
           } catch (authErr) {
             console.warn('Auth signup error:', authErr.message);
+          }
+          // Restore admin session so we don't get logged in as the new user
+          if (adminSession) {
+            await App.db.auth.setSession({ access_token: adminSession.access_token, refresh_token: adminSession.refresh_token });
           }
           
           // 2. Insert into crm_users table
@@ -5462,15 +5555,15 @@ Total Players: ${s.total}`;
       currentSubTab: 'calls', // Current sub-tab
       
       async init() {
-        console.log('CallCenter.init() called');
+
         try {
           // Load users from Supabase
           await this.loadUsersFromSupabase();
-          console.log('Users loaded, count:', this.employees.length);
+
           
           // Load call logs from Supabase
           await this.loadCallLogsFromSupabase();
-          console.log('Call logs loaded, count:', this.callLogs.length);
+
           
           // Try to set current employee based on logged-in user
           if (App.user?.email) {
@@ -5483,7 +5576,7 @@ Total Players: ${s.total}`;
           }
         } catch(e) { 
           console.error('Error loading call center data from Supabase:', e);
-          console.log('Falling back to localStorage...');
+
           // Fallback to localStorage
           this.loadFromLocalStorage();
         }
@@ -5505,7 +5598,7 @@ Total Players: ${s.total}`;
       },
       
       async loadUsersFromSupabase() {
-        console.log('Loading users from Supabase...');
+
         const { data, error } = await App.db
           .from('crm_users')
           .select('*')
@@ -5516,34 +5609,49 @@ Total Players: ${s.total}`;
           console.error('Supabase error loading users:', error);
           throw error;
         }
-        console.log('Loaded users:', data);
+
         this.employees = data || [];
       },
       
       async loadCallLogsFromSupabase() {
-        const { data, error } = await App.db
-          .from('call_logs')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (error) {
-          console.warn('call_logs table not found, using localStorage');
+        try {
+          // Paginate to get ALL call logs (Supabase caps at 1000 per request)
+          const PAGE = 1000;
+          let allLogs = [];
+          let from = 0;
+          let hasMore = true;
+          while (hasMore) {
+            const { data, error } = await App.db
+              .from('call_logs')
+              .select('*')
+              .order('created_at', { ascending: false })
+              .range(from, from + PAGE - 1);
+            if (error) throw error;
+            if (data && data.length > 0) {
+              allLogs.push(...data);
+              from += PAGE;
+              hasMore = data.length === PAGE;
+            } else {
+              hasMore = false;
+            }
+          }
+          
+          // Convert Supabase format to internal format
+          this.callLogs = allLogs.map(log => ({
+            id: log.id,
+            clientId: log.client_id,
+            employeeId: log.employee_id,
+            outcome: log.outcome,
+            notes: log.notes,
+            rating: log.rating,
+            callbackDate: log.callback_date,
+            date: log.created_at
+          }));
+        } catch(e) {
+          console.warn('call_logs load failed, using localStorage:', e.message);
           const savedLogs = localStorage.getItem('callCenterLogs');
           if (savedLogs) this.callLogs = JSON.parse(savedLogs);
-          return;
         }
-        
-        // Convert Supabase format to internal format
-        this.callLogs = (data || []).map(log => ({
-          id: log.id,
-          clientId: log.client_id,
-          employeeId: log.employee_id,
-          outcome: log.outcome,
-          notes: log.notes,
-          rating: log.rating,
-          callbackDate: log.callback_date,
-          date: log.created_at
-        }));
       },
       
       save() {
@@ -5678,6 +5786,8 @@ Total Players: ${s.total}`;
         
         try {
           // 1. Try to create Supabase Auth user (may fail without service key)
+          // IMPORTANT: Save current admin session first — signUp replaces it
+          const { data: { session: adminSession } } = await App.db.auth.getSession();
           let authUserId = null;
           try {
             const { data: signupData, error: signupError } = await App.db.auth.signUp({
@@ -5693,6 +5803,10 @@ Total Players: ${s.total}`;
           } catch (authErr) {
             console.warn('Auth signup skipped:', authErr.message);
           }
+          // Restore admin session so we don't get logged in as the new user
+          if (adminSession) {
+            await App.db.auth.setSession({ access_token: adminSession.access_token, refresh_token: adminSession.refresh_token });
+          }
           
           // 2. Insert into crm_users table (this is the important part)
           const { data: userData, error: userError } = await App.db
@@ -5700,7 +5814,7 @@ Total Players: ${s.total}`;
             .insert({
               auth_id: authUserId,
               name: name,
-              email: email,
+              email: email.toLowerCase(),
               role: role,
               is_active: true
             })
@@ -5871,8 +5985,24 @@ Total Players: ${s.total}`;
       },
       
       // Call Data
+      // Pre-indexed call data map — rebuilt when call logs change
+      _callDataMap: null,
+      
+      _buildCallDataMap() {
+        const map = new Map();
+        for (const log of this.callLogs) {
+          const cid = String(log.clientId);
+          if (!map.has(cid)) map.set(cid, []);
+          map.get(cid).push(log);
+        }
+        this._callDataMap = map;
+      },
+      
+      _invalidateCallDataMap() { this._callDataMap = null; },
+      
       getClientCallData(clientId) {
-        const logs = this.callLogs.filter(l => String(l.clientId) === String(clientId));
+        if (!this._callDataMap) this._buildCallDataMap();
+        const logs = this._callDataMap.get(String(clientId)) || [];
         const attempts = logs.filter(l => l.outcome === 'no_answer').length;
         const lastCall = logs.length > 0 ? logs[logs.length - 1] : null;
         const callbacks = logs.filter(l => l.outcome === 'callback' && new Date(l.callbackDate) <= new Date());
@@ -5885,12 +6015,7 @@ Total Players: ${s.total}`;
       },
       
       getEmployeeStats(employeeId, dateFilter = 'all') {
-        // Debug: show what we're filtering
-        console.log(`getEmployeeStats for employeeId: ${employeeId}`);
-        console.log('All logs employeeIds:', this.callLogs.map(l => l.employeeId));
-        
         let logs = this.callLogs.filter(l => String(l.employeeId) === String(employeeId));
-        console.log(`Filtered logs count: ${logs.length}`);
         
         const now = new Date();
         if (dateFilter === 'today') {
@@ -5933,17 +6058,12 @@ Total Players: ${s.total}`;
       renderAdminStats() {
         const dateFilter = document.getElementById('ccAdminDateFilter')?.value || 'all';
         
-        console.log('renderAdminStats called, dateFilter:', dateFilter);
-        console.log('Total employees:', this.employees.length);
-        console.log('Total call logs:', this.callLogs.length);
-        
         let totalCalls = 0, totalSuccess = 0, totalFailed = 0;
         const employeeRows = [];
         
         // Show ALL employees (not just call center)
         this.employees.forEach(emp => {
           const stats = this.getEmployeeStats(emp.id, dateFilter);
-          console.log(`Stats for ${emp.name} (${emp.id}):`, stats);
           
           totalCalls += stats.total;
           totalSuccess += stats.successful;
@@ -5998,6 +6118,9 @@ Total Players: ${s.total}`;
         
         const queue = [];
         App.processedPlayers.forEach(player => {
+          // Only queue players with medium+ churn risk (skip low-risk to avoid 90k items)
+          if (player.churnRisk === 'low') return;
+          
           const callData = this.getClientCallData(player.id);
           
           if (callData.status === 'no_contact') return;
@@ -6044,7 +6167,12 @@ Total Players: ${s.total}`;
           return;
         }
         
-        container.innerHTML = filtered.map(q => {
+        // Limit DOM to first 100 items to prevent browser freeze
+        const MAX_RENDER = 100;
+        const renderList = filtered.slice(0, MAX_RENDER);
+        const overflowCount = filtered.length - MAX_RENDER;
+        
+        container.innerHTML = renderList.map(q => {
           const p = q.player;
           const cd = q.callData;
           const riskColor = { critical: 'red', high: 'orange', medium: 'yellow', low: 'emerald' }[p.churnRisk];
@@ -6062,18 +6190,23 @@ Total Players: ${s.total}`;
             </div>
             <p class="text-xs text-slate-500 mt-1">${p.phone_number || 'No phone'}</p>
           </div>`;
-        }).join('');
+        }).join('') + (overflowCount > 0 ? `<div class="p-3 text-center text-xs text-slate-400 bg-slate-50">+ ${overflowCount.toLocaleString()} more (use filters to narrow)</div>` : '');
         
-        // Update counts
-        const allQueue = this.buildQueue();
-        const noContact = App.processedPlayers?.filter(p => this.getClientCallData(p.id).status === 'no_contact').length || 0;
+        // Compute counts in single pass from the already-built queue (no re-scan)
+        let noContactCount = 0;
+        if (this._callDataMap) {
+          for (const [, logs] of this._callDataMap) {
+            const noAnswers = logs.filter(l => l.outcome === 'no_answer').length;
+            if (noAnswers >= 5) noContactCount++;
+          }
+        }
         
         const el = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
-        el('cc-queue-total', allQueue.length);
-        el('cc-no-contact', noContact);
-        el('cc-critical-count', allQueue.filter(q => q.player.churnRisk === 'critical').length);
-        el('cc-high-count', allQueue.filter(q => q.player.churnRisk === 'high').length);
-        el('cc-callback-count', allQueue.filter(q => q.callData.hasCallback).length);
+        el('cc-queue-total', queue.length);
+        el('cc-no-contact', noContactCount);
+        el('cc-critical-count', queue.filter(q => q.player.churnRisk === 'critical').length);
+        el('cc-high-count', queue.filter(q => q.player.churnRisk === 'high').length);
+        el('cc-callback-count', queue.filter(q => q.callData.hasCallback).length);
         
         refreshIcons();
       },
@@ -6296,6 +6429,7 @@ Total Players: ${s.total}`;
           };
           
           this.callLogs.push(log);
+          this._invalidateCallDataMap(); // Rebuild index on next access
           this.save(); // Backup to localStorage
           
           const callData = this.getClientCallData(this.activeClient.id);
@@ -6436,8 +6570,9 @@ Total Players: ${s.total}`;
       if (!data.length) return showNotification(App.currentLang === 'ru' ? 'Нет данных' : 'No data', 'error');
       
       const headers = ['id','phone_number','phoneType','preference','valueSegment','netRevenue','winRate','churnRisk','churnScore','ltv','optimalBonus'];
+      const escapeCSV = v => { const s = String(v ?? ''); return (s.includes(',') || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g, '""') + '"' : s; };
       let csv = headers.join(',') + '\n';
-      data.forEach(p => csv += headers.map(h => p[h] ?? '').join(',') + '\n');
+      data.forEach(p => csv += headers.map(h => escapeCSV(p[h])).join(',') + '\n');
       
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
@@ -6654,6 +6789,7 @@ Total Players: ${s.total}`;
         phone_number: ['phone', 'phone_number', 'phonenumber', 'telephone', 'mobile'],
         registration_date: ['registration_date', 'reg_date', 'registered', 'date_registered', 'signup_date', 'created'],
         last_activity: ['last_activity', 'lastactivity', 'last_login', 'last_active', 'lastlogin'],
+        last_deposit_date: ['last_deposit_date', 'last_deposit', 'lastdeposit', 'last_deposit_at'],
         sport_bet_amount: ['sport_bet', 'sport_bet_amount', 'sports_bet', 'sportbet', 'sport_wager'],
         sport_win_amount: ['sport_win', 'sport_win_amount', 'sports_win', 'sportwin'],
         sport_bet_count: ['sport_bet_count', 'sport_bets', 'sports_bets'],
@@ -6702,6 +6838,7 @@ Total Players: ${s.total}`;
         addField('phone_number', v => String(v).replace(/[^0-9+]/g, ''));
         addField('registration_date', v => parseDate(v));
         addField('last_activity', v => parseDate(v));
+        addField('last_deposit_date', v => parseDate(v));
         addField('sport_bet_amount', v => parseFloat(v) || 0);
         addField('sport_win_amount', v => parseFloat(v) || 0);
         addField('sport_bet_count', v => parseInt(v) || 0);
@@ -6809,10 +6946,10 @@ Total Players: ${s.total}`;
       try {
         const text = await file.text();
         const lines = text.split('\n').filter(l => l.trim());
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
         const records = [];
         for (let i = 1; i < lines.length; i++) {
-          const vals = lines[i].split(',');
+          const vals = parseCSVLine(lines[i]);
           const rec = {};
           headers.forEach((h, j) => { rec[FIELD_MAP[h] || h] = vals[j]?.trim() || ''; });
           if (rec.id) records.push(rec);
@@ -7118,6 +7255,29 @@ Total Players: ${s.total}`;
           App.agentFilter = 'all';
           localStorage.removeItem('userRole');
           localStorage.removeItem('userName');
+          // Clear all in-memory data to prevent leaking to next user
+          App.players = [];
+          App.processedPlayers = [];
+          App.filteredPlayers = [];
+          App.statsCache = null;
+          App.dataLoaded = false;
+          App.selectedPlayers.clear();
+          App.watchlist.clear();
+          App.recentlyViewed = [];
+          CallCenter.callLogs = [];
+          CallCenter.employees = [];
+          CallCenter.currentEmployee = null;
+          CallCenter.activeClient = null;
+          CallCenter._callDataMap = null;
+          AgentManager.agents = [];
+          AgentManager.weeklyData = [];
+          AgentManager.payments = [];
+          ChatManager.messages = [];
+          if (ChatManager.subscription) { ChatManager.subscription.unsubscribe(); ChatManager.subscription = null; }
+          stopAutoRefresh();
+          // Destroy all charts
+          Object.values(App.charts).forEach(c => { try { c.destroy(); } catch(e){} });
+          App.charts = {};
         } 
       });
     });
