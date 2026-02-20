@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BwanaBet CRM System v1</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -2103,9 +2103,9 @@
               </div>
               <div>
                 <label class="block text-xs font-medium text-slate-700 mb-1">Current Password</label>
-                <div class="flex items-center gap-2">
-                  <input type="password" id="editAgentCurrentPw" class="w-full px-3 py-2 border rounded-lg bg-slate-50 text-sm font-mono" readonly>
-                  <button type="button" onclick="const el=document.getElementById('editAgentCurrentPw');el.type=el.type==='password'?'text':'password';this.innerHTML=el.type==='password'?'<i data-lucide=&quot;eye&quot; class=&quot;h-4 w-4&quot;></i>':'<i data-lucide=&quot;eye-off&quot; class=&quot;h-4 w-4&quot;></i>';lucide.createIcons();" class="px-2 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg" title="Show/hide password"><i data-lucide="eye" class="h-4 w-4"></i></button>
+                <div class="relative">
+                  <input type="password" id="editAgentCurrentPw" class="w-full px-3 py-2 border rounded-lg bg-slate-50 text-sm font-mono pr-10" readonly>
+                  <button type="button" onclick="togglePwVis('editAgentCurrentPw', this)" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><i data-lucide="eye" class="h-4 w-4"></i></button>
                 </div>
               </div>
               <div>
@@ -2290,7 +2290,7 @@
       params: { ...DEFAULT_PARAMS } // Copy defaults
     };
 
-    const FIELD_MAP = { 'id': 'id', 'virtual/real phone': 'phone_number', 'referral': 'referral', 'status': 'status', 'registration_date': 'registration_date', 'sport_bet_amount': 'sport_bet_amount', 'sport_bet_count': 'sport_bet_count', 'sport_win_amount': 'sport_win_amount', 'sport_win_count': 'sport_win_count', 'casino_bet_amount': 'casino_bet_amount', 'casino_bet_count': 'casino_bet_count', 'casino_win_amount': 'casino_win_amount', 'casino_win_count': 'casino_win_count', 'total_deposit_amount': 'total_deposit_amount', 'total_withdraw_amount': 'total_withdraw_amount', 'sport_bet_avg': 'sport_bet_avg', 'casino_bet_avg': 'casino_bet_avg' };
+    const FIELD_MAP = { 'id': 'id', 'virtual/real phone': 'phone_number', 'referral': 'referral', 'status': 'status', 'registration_date': 'registration_date', 'sport_bet_amount': 'sport_bet_amount', 'sport_bet_count': 'sport_bet_count', 'sport_win_amount': 'sport_win_amount', 'sport_win_count': 'sport_win_count', 'casino_bet_amount': 'casino_bet_amount', 'casino_bet_count': 'casino_bet_count', 'casino_win_amount': 'casino_win_amount', 'casino_win_count': 'casino_win_count', 'deposit_amount': 'deposit_amount', 'withdrawal_amount': 'withdrawal_amount', 'sport_bet_avg': 'sport_bet_avg', 'casino_bet_avg': 'casino_bet_avg' };
 
     // ============================================================
     // TRANSLATIONS
@@ -2409,7 +2409,7 @@
       if (!el) return;
       el.type = el.type === 'password' ? 'text' : 'password';
       btn.innerHTML = el.type === 'password' ? '<i data-lucide="eye" class="h-4 w-4"></i>' : '<i data-lucide="eye-off" class="h-4 w-4"></i>';
-      lucide.createIcons();
+      refreshIcons();
     }
 
     // Sanitize promo codes - replace Cyrillic lookalikes with Latin equivalents
@@ -2422,6 +2422,32 @@
         'і': 'i', 'ѕ': 's', 'ј': 'j'
       };
       return code.split('').map(c => cyrillicToLatin[c] || c).join('').trim().toUpperCase();
+    }
+
+    // Global HTML escaper for XSS prevention in innerHTML
+    function esc(str) {
+      if (str == null) return '';
+      const s = String(str);
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    // Parse CSV line handling quoted fields with commas
+    function parseCSVLine(line) {
+      const result = []; let current = ''; let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (inQuotes) {
+          if (c === '"' && line[i+1] === '"') { current += '"'; i++; }
+          else if (c === '"') inQuotes = false;
+          else current += c;
+        } else {
+          if (c === '"') inQuotes = true;
+          else if (c === ',') { result.push(current.trim()); current = ''; }
+          else current += c;
+        }
+      }
+      result.push(current.trim());
+      return result;
     }
 
     function applyTranslations() {
@@ -2505,7 +2531,7 @@
         similar_players: { title: 'Similar Players', body: 'Players with similar profiles based on betting patterns, value, and behavior. Useful for: understanding player segments, finding comparison points, and applying successful retention strategies from similar players.' },
         // Settings Tab
         settings: { title: 'Settings', body: 'Manage your account, import player data via CSV, configure analysis parameters, and view keyboard shortcuts for faster navigation.' },
-        csv_import: { title: 'CSV Import', body: 'Upload player data from CSV files. The CSV should include: id, phone_number, total_deposit_amount, total_withdraw_amount, total_bet_amount, total_win_amount, and optionally registration_date. Data will be merged with existing records.' },
+        csv_import: { title: 'CSV Import', body: 'Upload player data from CSV files. The CSV should include: id, phone_number, deposit_amount, withdrawal_amount, total_bet_amount, total_win_amount, and optionally registration_date. Data will be merged with existing records.' },
         parameters: { title: 'Analysis Parameters', body: 'Configure thresholds used for player analysis. Adjust win rate boundaries for profitability classification, value segment thresholds (VIP, High, Medium, Low), churn risk day thresholds, and score component weights. Reset to defaults if needed.' },
         param_profitability: { title: 'Profitability Parameters', body: 'Win rate thresholds that determine profitability categories: <strong>Most Profitable</strong> = WR below first threshold. <strong>Profitable</strong> = WR below second threshold. <strong>Break Even</strong> = WR around 50%. <strong>Negative GGR</strong> = WR above third threshold.' },
         param_value: { title: 'Value Segment Parameters', body: 'Revenue thresholds for categorizing player value: <strong>VIP</strong> = above VIP threshold (default K5000). <strong>High</strong> = between High and VIP. <strong>Medium</strong> = between Medium and High. <strong>Low</strong> = below Medium threshold.' },
@@ -2578,7 +2604,7 @@
         similar_players: { title: 'Похожие игроки', body: 'Игроки с похожими профилями по паттернам ставок, ценности и поведению. Полезно для понимания сегментов и применения успешных стратегий удержания.' },
         // Settings Tab
         settings: { title: 'Настройки', body: 'Управляйте аккаунтом, импортируйте данные через CSV, настраивайте параметры анализа и просматривайте горячие клавиши.' },
-        csv_import: { title: 'Импорт CSV', body: 'Загрузите данные игроков из CSV файлов. CSV должен содержать: id, phone_number, total_deposit_amount, total_withdraw_amount, total_bet_amount, total_win_amount и опционально registration_date.' },
+        csv_import: { title: 'Импорт CSV', body: 'Загрузите данные игроков из CSV файлов. CSV должен содержать: id, phone_number, deposit_amount, withdrawal_amount, total_bet_amount, total_win_amount и опционально registration_date.' },
         parameters: { title: 'Параметры анализа', body: 'Настройте пороги для анализа игроков. Регулируйте границы винрейта для классификации прибыльности, пороги сегментов ценности, пороги дней для риска оттока и веса компонентов оценки.' },
         param_profitability: { title: 'Параметры прибыльности', body: 'Пороги винрейта для категорий прибыльности: <strong>Самые прибыльные</strong> = WR ниже первого порога. <strong>Прибыльные</strong> = WR ниже второго. <strong>Безубыточные</strong> = WR около 50%. <strong>Убыточные</strong> = WR выше третьего.' },
         param_value: { title: 'Параметры ценности', body: 'Пороги дохода для сегментов: <strong>VIP</strong> = выше порога VIP (по умолчанию K5000). <strong>Высокий</strong> = между Высоким и VIP. <strong>Средний</strong> = между Средним и Высоким. <strong>Низкий</strong> = ниже порога Среднего.' },
@@ -2601,7 +2627,7 @@
       document.getElementById('tutorialTitle').textContent = tutorial.title;
       document.getElementById('tutorialBody').innerHTML = tutorial.body;
       document.getElementById('tutorialModal').classList.remove('hidden');
-      lucide.createIcons();
+      refreshIcons();
     }
 
     function closeTutorial() {
@@ -2641,7 +2667,7 @@
       });
       
       document.getElementById('paramsModal').classList.remove('hidden');
-      lucide.createIcons();
+      refreshIcons();
     }
 
     function closeParamsModal() {
@@ -2814,8 +2840,8 @@
       if (days > 7) factors.push(`${days}d inactive`);
       
       // Withdrawal ratio (configurable weight)
-      const deposits = parseFloat(p.total_deposit_amount) || 0;
-      const withdrawals = parseFloat(p.total_withdraw_amount) || 0;
+      const deposits = parseFloat(p.deposit_amount) || 0;
+      const withdrawals = parseFloat(p.withdrawal_amount) || 0;
       const wdRatio = deposits > 0 ? withdrawals / deposits : 0;
       if (wdRatio > 0.8) { 
         score += App.params.churnWeightWithdrawal * Math.min(wdRatio - 0.8, 0.5) * 2; 
@@ -2888,8 +2914,8 @@
       
       for (const p of players) {
         s.total++;
-        s.deposits += parseFloat(p.total_deposit_amount) || 0;
-        s.withdrawals += parseFloat(p.total_withdraw_amount) || 0;
+        s.deposits += parseFloat(p.deposit_amount) || 0;
+        s.withdrawals += parseFloat(p.withdrawal_amount) || 0;
         s.netRevenue += p.netRevenue || 0;
         s.totalLTV += p.ltv || 0;
         
@@ -2908,7 +2934,7 @@
         if (p.lifecycle === 'new') s.lifeNew++; else if (p.lifecycle === 'growing') s.lifeGrowing++; else if (p.lifecycle === 'mature') s.lifeMature++;
         else if (p.lifecycle === 'declining') s.lifeDeclining++; else if (p.lifecycle === 'dormant') s.lifeDormant++; else s.lifeChurned++;
         
-        if ((parseFloat(p.total_withdraw_amount)||0) > (parseFloat(p.total_deposit_amount)||0)) s.withdrawing++;
+        if ((parseFloat(p.withdrawal_amount)||0) > (parseFloat(p.deposit_amount)||0)) s.withdrawing++;
         if (p.phoneType === 'virtual') s.virtual++;
         if (p.winRate > 60) s.highWinRate++;
         
@@ -2918,6 +2944,13 @@
         if (ltv >= 50000) s.ltvVip++; else if (ltv >= 10000) s.ltvHigh++; else if (ltv >= 1000) s.ltvMed++; else s.ltvLow++;
       }
       return s;
+    }
+
+    // Debounced icon refresh - prevents 30+ redundant full-DOM scans
+    let _lucideTimer = null;
+    function refreshIcons() {
+      if (_lucideTimer) cancelAnimationFrame(_lucideTimer);
+      _lucideTimer = requestAnimationFrame(() => { lucide.createIcons(); _lucideTimer = null; });
     }
 
     function getStats() {
@@ -2978,7 +3011,7 @@
       
       p.ltv = calculateLTV(p);
       p.optimalBonus = calculateOptimalBonus(p);
-      p.isWithdrawing = (parseFloat(p.total_withdraw_amount) || 0) > (parseFloat(p.total_deposit_amount) || 0);
+      p.isWithdrawing = (parseFloat(p.withdrawal_amount) || 0) > (parseFloat(p.deposit_amount) || 0);
       
       return p;
     }
@@ -3008,15 +3041,31 @@
         if (error) throw error;
         
         App.players = data || [];
-        App.processedPlayers = App.players.map(processPlayer);
+        
+        // Process players in chunks to avoid blocking UI
+        const CHUNK = 200;
+        App.processedPlayers = [];
+        for (let i = 0; i < App.players.length; i += CHUNK) {
+          const chunk = App.players.slice(i, i + CHUNK).map(processPlayer);
+          App.processedPlayers.push(...chunk);
+          if (App.players.length > CHUNK) {
+            showLoading(true, `Processing ${Math.min(i + CHUNK, App.players.length)}/${App.players.length} players...`);
+            await new Promise(r => setTimeout(r, 0)); // yield to UI
+          }
+        }
+        
         App.statsCache = null;
         App.filteredPlayers = [...App.processedPlayers];
         App.dataLoaded = true; // Mark data as loaded
         
         updateAllStats();
-        updateAllCharts();
         renderTable();
-        runProactiveAnalysis();
+        
+        // Defer heavy chart + analysis work
+        requestAnimationFrame(() => {
+          updateAllCharts();
+          runProactiveAnalysis();
+        });
         
         showNotification(App.currentLang === 'ru' ? `Загружено ${App.processedPlayers.length} игроков` : `Loaded ${App.processedPlayers.length} players`, 'success');
       } catch (err) {
@@ -3059,7 +3108,7 @@
       setText('life-declining', s.lifeDeclining); setText('life-dormant', s.lifeDormant); setText('life-churned', s.lifeChurned);
       setText('alert-withdrawing', s.withdrawing); setText('alert-virtual', s.virtual); setText('alert-highwin', s.highWinRate);
       
-      lucide.createIcons();
+      refreshIcons();
     }
 
     function createChart(id, type, labels, data, colors, label = '') {
@@ -3205,8 +3254,8 @@
       let winRateSum = 0;
       
       periodPlayers.forEach(p => {
-        stats.deposits += parseFloat(p.total_deposit_amount) || 0;
-        stats.withdrawals += parseFloat(p.total_withdraw_amount) || 0;
+        stats.deposits += parseFloat(p.deposit_amount) || 0;
+        stats.withdrawals += parseFloat(p.withdrawal_amount) || 0;
         stats.ggr += p.netRevenue || 0;
         stats.totalBets += p.totalBet || 0;
         stats.totalWins += p.totalWin || 0;
@@ -3290,7 +3339,7 @@
       // Update detailed breakdown table
       updateComparisonTable(stats1, stats2);
       
-      lucide.createIcons();
+      refreshIcons();
       showNotification(App.currentLang === 'ru' ? 'Сравнение выполнено' : 'Comparison complete', 'success');
     }
 
@@ -3403,12 +3452,14 @@
         const idStr = String(p.id);
         const isSelected = App.selectedPlayers.has(idStr);
         const isWatched = App.watchlist.has(idStr);
+        const safeId = esc(p.id);
+        const safePhone = esc(p.phone_number || '-');
         
-        return `<tr class="${isWatched ? 'watched' : ''} hover:bg-yellow-50 border-b border-slate-100" data-id="${p.id}">
+        return `<tr class="${isWatched ? 'watched' : ''} hover:bg-yellow-50 border-b border-slate-100" data-id="${safeId}">
           <td class="px-3 py-3">
-            <input type="checkbox" class="bulk-checkbox row-checkbox" ${isSelected ? 'checked' : ''} onchange="togglePlayerSelection('${p.id}')" onclick="event.stopPropagation()">
+            <input type="checkbox" class="bulk-checkbox row-checkbox" ${isSelected ? 'checked' : ''} onchange="togglePlayerSelection('${safeId}')" onclick="event.stopPropagation()">
           </td>
-          ${cols.id ? `<td class="px-3 py-3 col-id cursor-pointer" onclick="viewPlayer('${p.id}')"><p class="font-medium text-sm">${p.id}</p><p class="text-xs text-slate-500">${p.phone_number || '-'}</p></td>` : ''}
+          ${cols.id ? `<td class="px-3 py-3 col-id cursor-pointer" onclick="viewPlayer('${safeId}')"><p class="font-medium text-sm">${safeId}</p><p class="text-xs text-slate-500">${safePhone}</p></td>` : ''}
           ${cols.type ? `<td class="px-3 py-3 col-type"><span class="text-xs px-2 py-1 rounded-full ${p.phoneType === 'virtual' ? 'bg-red-100 text-red-700' : 'bg-slate-100'}">${p.phoneType}</span></td>` : ''}
           ${cols.pref ? `<td class="px-3 py-3 col-pref"><span class="text-xs px-2 py-1 rounded-full bg-${prefC}-100 text-${prefC}-700">${p.preference}</span></td>` : ''}
           ${cols.revenue ? `<td class="px-3 py-3 col-revenue"><span class="font-medium ${p.netRevenue >= 0 ? 'text-emerald-600' : 'text-red-600'}">${formatK(p.netRevenue)}</span></td>` : ''}
@@ -3418,8 +3469,8 @@
           ${cols.ltv ? `<td class="px-3 py-3 col-ltv text-sm">${formatK(p.ltv)}</td>` : ''}
           <td class="px-3 py-3">
             <div class="quick-actions">
-              <button onclick="event.stopPropagation();viewPlayer('${p.id}')" class="quick-action view" title="View"><i data-lucide="eye" class="h-3 w-3"></i></button>
-              <button onclick="event.stopPropagation();toggleWatchlist('${p.id}')" class="quick-action star ${isWatched ? 'active' : ''}" title="Watchlist"><i data-lucide="star" class="h-3 w-3"></i></button>
+              <button onclick="event.stopPropagation();viewPlayer('${safeId}')" class="quick-action view" title="View"><i data-lucide="eye" class="h-3 w-3"></i></button>
+              <button onclick="event.stopPropagation();toggleWatchlist('${safeId}')" class="quick-action star ${isWatched ? 'active' : ''}" title="Watchlist"><i data-lucide="star" class="h-3 w-3"></i></button>
             </div>
           </td>
         </tr>`;
@@ -3440,7 +3491,7 @@
       }
       
       updateBulkToolbar();
-      lucide.createIcons();
+      refreshIcons();
     }
 
     const filterTable = debounce(() => {
@@ -3595,7 +3646,7 @@
           </button>
         </div>
       `).join('');
-      lucide.createIcons();
+      refreshIcons();
     }
 
     // ============================================================
@@ -3637,7 +3688,7 @@
           <span class="text-xs px-1.5 py-0.5 rounded bg-${p.churnRisk === 'critical' ? 'red' : p.churnRisk === 'high' ? 'orange' : 'slate'}-100 text-${p.churnRisk === 'critical' ? 'red' : p.churnRisk === 'high' ? 'orange' : 'slate'}-700">${p.churnRisk}</span>
         </div>
       `).join('');
-      lucide.createIcons();
+      refreshIcons();
     }
 
     // ============================================================
@@ -3710,7 +3761,7 @@
           </button>
         </div>
       `).join('');
-      lucide.createIcons();
+      refreshIcons();
     }
 
     // ============================================================
@@ -3925,8 +3976,8 @@
           </div>
           <div class="p-4 border rounded-xl"><h4 class="font-bold mb-3">${isRu ? 'Финансы' : 'Financial'}</h4>
             <div class="space-y-1 text-sm">
-              <p>${isRu ? 'Депозиты' : 'Deposits'}: <span class="text-emerald-600">${formatK(parseFloat(p.total_deposit_amount)||0)}</span></p>
-              <p>${isRu ? 'Выводы' : 'Withdrawals'}: <span class="text-red-600">${formatK(parseFloat(p.total_withdraw_amount)||0)}</span></p>
+              <p>${isRu ? 'Депозиты' : 'Deposits'}: <span class="text-emerald-600">${formatK(parseFloat(p.deposit_amount)||0)}</span></p>
+              <p>${isRu ? 'Выводы' : 'Withdrawals'}: <span class="text-red-600">${formatK(parseFloat(p.withdrawal_amount)||0)}</span></p>
               <p>${isRu ? 'Всего ставок' : 'Total Bet'}: ${formatK(p.totalBet)}</p>
               <p>${isRu ? 'Всего выиграно' : 'Total Won'}: ${formatK(p.totalWin)}</p>
             </div>
@@ -3937,7 +3988,7 @@
         </div>` : ''}`;
       
       document.getElementById('playerModal').classList.remove('hidden');
-      lucide.createIcons();
+      refreshIcons();
     };
 
     // ============================================================
@@ -3985,7 +4036,7 @@
             </div>
             <button onclick="TelegramManager.removeSubscriber('${s.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="x" class="h-4 w-4"></i></button>
           </div>`).join('');
-        lucide.createIcons();
+        refreshIcons();
       },
 
       async addSubscriber() {
@@ -4330,7 +4381,7 @@ Total Players: ${s.total}`;
         if (tab === 'tiers') this.renderTiers();
         if (tab === 'team') this.renderTeamTable();
         if (tab === 'chat') ChatManager.init();
-        lucide.createIcons();
+        refreshIcons();
       },
 
       // Stats calculation
@@ -4517,9 +4568,9 @@ Total Players: ${s.total}`;
           const tier = this.getAgentTier(activeClients);
           const tierBadge = this.getTierBadge(tier);
           return `<tr class="border-t hover:bg-slate-50">
-            <td class="px-3 py-3 font-mono font-bold text-blue-600 text-sm">${a.promo_code}</td>
-            <td class="px-3 py-3 text-sm">${a.name}</td>
-            <td class="px-3 py-3 text-xs text-slate-600">${a.phone || '-'}</td>
+            <td class="px-3 py-3 font-mono font-bold text-blue-600 text-sm">${esc(a.promo_code)}</td>
+            <td class="px-3 py-3 text-sm">${esc(a.name)}</td>
+            <td class="px-3 py-3 text-xs text-slate-600">${esc(a.phone || '-')}</td>
             <td class="px-3 py-3 text-center">${planLabels[a.commission_plan] || '-'}</td>
             <td class="px-3 py-3 text-center">${tierBadge}</td>
             <td class="px-3 py-3 text-center text-sm">${stats.totalClients}</td>
@@ -4572,7 +4623,7 @@ Total Players: ${s.total}`;
           this.renderAgentsTable(); this.populatePaymentAgentSelect(); this.renderOverview();
           alert(`Agent "${name}" created!\nPromo: ${promoCode}\nPlan: ${plan}`);
         } catch(e) { alert('Error: ' + (e.message || 'Unknown')); } finally {
-          btn.disabled = false; btn.innerHTML = '<i data-lucide="plus" class="h-4 w-4"></i> Create Agent'; lucide.createIcons();
+          btn.disabled = false; btn.innerHTML = '<i data-lucide="plus" class="h-4 w-4"></i> Create Agent'; refreshIcons();
         }
       },
 
@@ -4593,7 +4644,7 @@ Total Players: ${s.total}`;
         document.getElementById('editAgentCurrentPw').type = 'password';
         document.getElementById('editAgentStatus').value = a.status || 'active';
         document.getElementById('editAgentModal').classList.remove('hidden');
-        lucide.createIcons();
+        refreshIcons();
       },
 
       async saveAgentEdit() {
@@ -4613,6 +4664,11 @@ Total Players: ${s.total}`;
           location: location || null, recruiter_name: recruiter || null,
           status, is_active: status === 'active' };
         if (password && password.length >= 6) update.password_hash = password;
+        // Track commission plan change for 30-day lock
+        const oldAgent = this.agents.find(a => a.id === agentId);
+        if (oldAgent && oldAgent.commission_plan !== plan) {
+          update.commission_plan_changed_at = new Date().toISOString();
+        }
 
         const { error } = await App.db.from('agents').update(update).eq('id', agentId);
         if (error) { alert('Error: ' + error.message); return; }
@@ -4661,7 +4717,7 @@ Total Players: ${s.total}`;
         const useDefault = document.getElementById('uploadUseDefaultPw')?.checked !== false;
         const customPw = document.getElementById('uploadCustomPw')?.value.trim();
         const password = (useDefault || !customPw) ? '123456' : customPw;
-        if (password.length < 6) { alert('Password must be at least 6 characters'); btn.disabled = false; btn.innerHTML = '<i data-lucide="check-circle" class="h-4 w-4"></i> Import Agents'; lucide.createIcons(); return; }
+        if (password.length < 6) { alert('Password must be at least 6 characters'); btn.disabled = false; btn.innerHTML = '<i data-lucide="check-circle" class="h-4 w-4"></i> Import Agents'; refreshIcons(); return; }
 
         let created = 0, skipped = 0, errors = [];
         const rows = this.agentListFileData;
@@ -4716,7 +4772,7 @@ Total Players: ${s.total}`;
         document.getElementById('uploadCustomPw').value = '';
         document.getElementById('uploadCustomPw').disabled = true;
         this.agentListFileData = null;
-        btn.disabled = true; btn.innerHTML = '<i data-lucide="check-circle" class="h-4 w-4"></i> Import Agents'; lucide.createIcons();
+        btn.disabled = true; btn.innerHTML = '<i data-lucide="check-circle" class="h-4 w-4"></i> Import Agents'; refreshIcons();
       },
 
       // ====== UPLOAD: PLAYER ACTIVITY ======
@@ -4754,11 +4810,13 @@ Total Players: ${s.total}`;
 
         for (const row of this.playerActivityFileData) {
           // Map columns flexibly
-          const agentCodeRaw = String(row['Agent Code'] || row['agent_code'] || row['AgentCode'] || '').trim();
+          const agentCodeRaw = sanitizePromoCode(String(row['Agent Code'] || row['agent_code'] || row['AgentCode'] || '').trim());
           if (!agentCodeRaw) { skippedRows++; continue; }
 
-          const agentCode = 'A' + agentCodeRaw;
-          const agent = this.agents.find(a => a.promo_code.toUpperCase() === agentCode.toUpperCase());
+          // Try matching: raw code, with 'A' prefix, or uppercase
+          let agent = this.agents.find(a => a.promo_code.toUpperCase() === agentCodeRaw.toUpperCase());
+          if (!agent) agent = this.agents.find(a => a.promo_code.toUpperCase() === ('A' + agentCodeRaw).toUpperCase());
+          const agentCode = agent ? agent.promo_code : agentCodeRaw;
           if (!agent) { skippedRows++; continue; }
 
           const userId = String(row['User ID'] || row['user_id'] || '');
@@ -4883,7 +4941,7 @@ Total Players: ${s.total}`;
         document.getElementById('playerActivityFile').value = '';
         document.getElementById('playerActivityFileName').textContent = '';
         this.playerActivityFileData = null;
-        btn.disabled = true; btn.innerHTML = '<i data-lucide="check-circle" class="h-4 w-4"></i> Process & Calculate Commission'; lucide.createIcons();
+        btn.disabled = true; btn.innerHTML = '<i data-lucide="check-circle" class="h-4 w-4"></i> Process & Calculate Commission'; refreshIcons();
       },
 
       // Payments
@@ -5185,7 +5243,7 @@ Total Players: ${s.total}`;
               ` : p.prize_status === 'paid' ? `<span class="text-xs text-emerald-600">✅ ${p.paid_at?.split('T')[0] || 'Paid'}</span>` : '<span class="text-xs text-slate-400">Skipped</span>'}
             </td></tr>`;
         }).join('');
-        lucide.createIcons();
+        refreshIcons();
       },
 
       async editPrizeAmount(promoId) {
@@ -5311,7 +5369,7 @@ Total Players: ${s.total}`;
             </td>
           </tr>`;
         }).join('');
-        lucide.createIcons();
+        refreshIcons();
       },
 
       async addTeamMember() {
@@ -5369,7 +5427,7 @@ Total Players: ${s.total}`;
         } finally {
           btn.disabled = false;
           btn.innerHTML = originalText;
-          lucide.createIcons();
+          refreshIcons();
         }
       },
 
@@ -5522,7 +5580,7 @@ Total Players: ${s.total}`;
           this.renderAdminStats();
         }
         
-        lucide.createIcons();
+        refreshIcons();
       },
       
       applySubTabAccess() {
@@ -5677,7 +5735,7 @@ Total Players: ${s.total}`;
         } finally {
           btn.disabled = false;
           btn.innerHTML = originalText;
-          lucide.createIcons();
+          refreshIcons();
         }
       },
       
@@ -5693,7 +5751,7 @@ Total Players: ${s.total}`;
         document.getElementById('ccEditUserNewPassword').value = '';
         
         document.getElementById('ccEditUserModal').classList.remove('hidden');
-        lucide.createIcons();
+        refreshIcons();
       },
       
       async saveUserEdit() {
@@ -5718,12 +5776,10 @@ Total Players: ${s.total}`;
           if (updateError) throw updateError;
           
           // Update password if provided
-          if (newPassword && newPassword.length >= 6 && authId) {
-            try {
-              await App.db.auth.admin.updateUserById(authId, { password: newPassword });
-            } catch (e) {
-              console.warn('Could not update password via admin API:', e);
-            }
+          // NOTE: auth.admin.updateUserById requires a service_role key and won't work from the browser.
+          // Password changes for CRM team members must be done via Supabase dashboard.
+          if (newPassword && newPassword.length >= 6) {
+            alert('Password saved locally but NOTE: Supabase Auth password must be updated separately via the Supabase dashboard (Auth > Users). The anon key cannot change auth passwords.');
           }
           
           // Update local array
@@ -5984,7 +6040,7 @@ Total Players: ${s.total}`;
             <i data-lucide="check-circle" class="h-8 w-8 mx-auto mb-2 opacity-50"></i>
             <p>No clients in this queue</p>
           </div>`;
-          lucide.createIcons();
+          refreshIcons();
           return;
         }
         
@@ -6019,7 +6075,7 @@ Total Players: ${s.total}`;
         el('cc-high-count', allQueue.filter(q => q.player.churnRisk === 'high').length);
         el('cc-callback-count', allQueue.filter(q => q.callData.hasCallback).length);
         
-        lucide.createIcons();
+        refreshIcons();
       },
       
       selectClient(clientId) {
@@ -6101,7 +6157,7 @@ Total Players: ${s.total}`;
         this.currentRating = 0;
         this.renderClientCallHistory(clientId);
         this.filterQueue();
-        lucide.createIcons();
+        refreshIcons();
       },
       
       currentRating: 0,
@@ -6399,7 +6455,7 @@ Total Players: ${s.total}`;
       el.className = `px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 text-sm text-white notification ${type === 'success' ? 'bg-emerald-500' : 'bg-red-500'}`;
       el.innerHTML = `<i data-lucide="${type === 'success' ? 'check-circle' : 'x-circle'}" class="h-5 w-5"></i>${msg}`;
       document.getElementById('notificationStack').appendChild(el);
-      lucide.createIcons();
+      refreshIcons();
       setTimeout(() => el.remove(), 4000);
     }
     function switchTab(t) { 
@@ -6409,7 +6465,7 @@ Total Players: ${s.total}`;
       document.getElementById('tab-'+t)?.classList.add('active'); 
       
       // Only refresh icons, don't reload data
-      lucide.createIcons();
+      refreshIcons();
       
       // Update UI from existing data if available (no reload)
       if (App.dataLoaded && App.processedPlayers.length > 0) {
@@ -6534,37 +6590,46 @@ Total Players: ${s.total}`;
     function handlePlayerUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
-      document.getElementById('playerUploadFileName').textContent = file.name;
-      document.getElementById('processPlayerUploadBtn').disabled = false;
+      const fileNameEl = document.getElementById('playerUploadFileName');
+      const btn = document.getElementById('processPlayerUploadBtn');
+      fileNameEl.textContent = file.name;
+      btn.disabled = true;
+      btn.innerHTML = '<svg class="animate-spin h-4 w-4 inline mr-1" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Reading file...';
       
       const reader = new FileReader();
       reader.onload = (e) => {
-        try {
-          let data;
-          if (file.name.endsWith('.csv')) {
-            // Parse CSV
-            const text = e.target.result;
-            const lines = text.split('\n').filter(l => l.trim());
-            const headers = lines[0].split(',').map(h => h.trim());
-            data = lines.slice(1).map(line => {
-              const vals = line.split(',');
-              const row = {};
-              headers.forEach((h, i) => { row[h] = vals[i]?.trim() || ''; });
-              return row;
-            });
-          } else {
-            // Parse Excel
-            const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-            const ws = wb.Sheets[wb.SheetNames[0]];
-            data = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        // Defer parsing to next frame so the UI can update first
+        setTimeout(() => {
+          try {
+            let data;
+            if (file.name.endsWith('.csv')) {
+              const text = e.target.result;
+              const lines = text.split('\n').filter(l => l.trim());
+              const headers = parseCSVLine(lines[0]);
+              data = lines.slice(1).map(line => {
+                const vals = parseCSVLine(line);
+                const row = {};
+                headers.forEach((h, i) => { row[h] = vals[i] || ''; });
+                return row;
+              });
+            } else {
+              const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+              const ws = wb.Sheets[wb.SheetNames[0]];
+              data = XLSX.utils.sheet_to_json(ws, { defval: '' });
+            }
+            playerUploadData = data;
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="upload" class="h-4 w-4"></i> Import ${data.length} Players`;
+            refreshIcons();
+            console.log('Player data parsed, rows:', data.length);
+          } catch(err) {
+            alert('Error parsing file: ' + err.message);
+            playerUploadData = null;
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="check-circle" class="h-4 w-4"></i> Import Players';
+            refreshIcons();
           }
-          playerUploadData = data;
-          console.log('Player data parsed, rows:', data.length);
-        } catch(err) {
-          alert('Error parsing file: ' + err.message);
-          playerUploadData = null;
-          document.getElementById('processPlayerUploadBtn').disabled = true;
-        }
+        }, 50);
       };
       
       if (file.name.endsWith('.csv')) {
@@ -6655,6 +6720,7 @@ Total Players: ${s.total}`;
       }
 
       // Batch upsert for performance
+      showLoading(true, 'Importing players...');
       for (let i = 0; i < players.length; i += BATCH_SIZE) {
         const batch = players.slice(i, i + BATCH_SIZE);
         try {
@@ -6679,25 +6745,29 @@ Total Players: ${s.total}`;
             }
           }
         }
-        // Update button with progress
-        btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline mr-1" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> ${Math.min(i + BATCH_SIZE, players.length)}/${players.length}`;
+        // Update progress and yield to UI
+        const progress = Math.min(i + BATCH_SIZE, players.length);
+        btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline mr-1" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> ${progress}/${players.length}`;
+        showLoading(true, `Importing players... ${progress}/${players.length}`);
+        await new Promise(r => setTimeout(r, 0)); // Yield to browser
       }
-
-      // Reload players
-      await loadPlayers(true);
+      showLoading(false);
 
       let msg = `Import Complete!\n\n${updateExisting ? 'Imported/Updated' : 'Imported'}: ${processed}\nSkipped (no ID): ${skipped}`;
       if (errors.length) msg += `\n\nErrors (first 10):\n${errors.slice(0, 10).join('\n')}`;
       alert(msg);
 
-      // Reset
+      // Reset form immediately
       document.getElementById('playerUploadFile').value = '';
       document.getElementById('playerUploadFileName').textContent = '';
       document.getElementById('playerUploadUpdate').checked = false;
       playerUploadData = null;
       btn.disabled = true;
       btn.innerHTML = '<i data-lucide="check-circle" class="h-4 w-4"></i> Import Players';
-      lucide.createIcons();
+      refreshIcons();
+
+      // Reload players in background (non-blocking)
+      setTimeout(() => loadPlayers(true), 100);
     }
 
     function parseDate(val) {
@@ -6972,7 +7042,7 @@ Total Players: ${s.total}`;
     // INITIALIZATION
     // ============================================================
     document.addEventListener('DOMContentLoaded', async () => {
-      lucide.createIcons();
+      refreshIcons();
       
       // Load saved settings
       try { 
@@ -7104,7 +7174,7 @@ Total Players: ${s.total}`;
         errEl.classList.remove('hidden');
         btn.disabled = false;
         btn.innerHTML = '<i data-lucide="log-in" class="h-5 w-5"></i> ' + (App.currentLang === 'ru' ? 'Войти' : 'Sign In');
-        lucide.createIcons();
+        refreshIcons();
       } finally {
         App.isLoggingIn = false;
       }
@@ -7145,7 +7215,7 @@ Total Players: ${s.total}`;
       updateSavedFiltersPanel();
       updateColumnVisibility();
       
-      lucide.createIcons();
+      refreshIcons();
       
       // Load data only once on initial app show
       if (!App.dataLoaded) {
