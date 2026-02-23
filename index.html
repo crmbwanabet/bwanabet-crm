@@ -98,22 +98,6 @@
     .chat-bubble-theirs { background:#f1f5f9;color:#1e293b;border-radius:16px 16px 16px 4px; }
     .agent-filter-active { background:#059669;color:white; }
     .agent-filter-inactive { background:#e2e8f0;color:#64748b; }
-    /* Voice Agent */
-    .va-live-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
-    .va-live-card .header { background: linear-gradient(135deg, #059669, #047857); color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
-    .va-live-card .transcript { max-height: 220px; overflow-y: auto; padding: 12px; font-size: 13px; }
-    .va-transcript-line { margin-bottom: 6px; padding: 6px 10px; border-radius: 8px; }
-    .va-transcript-line.user { background: #eff6ff; border-left: 3px solid #3b82f6; }
-    .va-transcript-line.agent { background: #f0fdf4; border-left: 3px solid #22c55e; }
-    .va-transcript-role { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-    .va-transcript-role.user { color: #3b82f6; }
-    .va-transcript-role.agent { color: #22c55e; }
-    .va-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-    .va-badge-green { background: #dcfce7; color: #16a34a; }
-    .va-badge-red { background: #fee2e2; color: #dc2626; }
-    .va-badge-yellow { background: #fef3c7; color: #d97706; }
-    .va-badge-gray { background: #f1f5f9; color: #64748b; }
-    .va-badge-blue { background: #dbeafe; color: #2563eb; }
     .trend-up { color:#059669; } .trend-down { color:#ef4444; } .trend-flat { color:#94a3b8; }
   </style>
 </head>
@@ -1197,9 +1181,6 @@
           <button id="ccSubTab-admin" onclick="CallCenter.switchSubTab('admin')" class="cc-subtab flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">
             <i data-lucide="settings" class="h-4 w-4 inline mr-2"></i>Admin Panel
           </button>
-          <button id="ccSubTab-voiceagent" onclick="CallCenter.switchSubTab('voiceagent')" class="cc-subtab flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">
-            <i data-lucide="bot" class="h-4 w-4 inline mr-2"></i>AI Voice Agent
-          </button>
         </div>
 
         <!-- CALLS SUB-TAB -->
@@ -1432,264 +1413,6 @@
                 <button onclick="CallCenter.exportAdminReport()" class="w-full px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 flex items-center justify-center gap-2">
                   <i data-lucide="download" class="h-4 w-4"></i> Export Report
                 </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- AI VOICE AGENT SUB-TAB -->
-        <div id="ccContent-voiceagent" class="hidden">
-          
-          <!-- Stats Row -->
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
-            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
-              <p class="text-2xl font-bold text-emerald-600" id="va-active-calls">0</p>
-              <p class="text-xs text-slate-500">Active Calls</p>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
-              <p class="text-2xl font-bold text-slate-800" id="va-calls-today">0</p>
-              <p class="text-xs text-slate-500">Calls Today</p>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
-              <p class="text-2xl font-bold text-emerald-600" id="va-interested">0</p>
-              <p class="text-xs text-slate-500">Interested</p>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
-              <p class="text-2xl font-bold text-red-600" id="va-not-interested">0</p>
-              <p class="text-xs text-slate-500">Not Interested</p>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
-              <p class="text-2xl font-bold text-blue-600" id="va-llm-provider">—</p>
-              <p class="text-xs text-slate-500">LLM Provider</p>
-            </div>
-          </div>
-
-          <!-- Quick Call -->
-          <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
-            <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="phone-call" class="h-4 w-4 text-emerald-500"></i> Quick Call</h3>
-            <div class="flex flex-wrap gap-3 items-end">
-              <div class="flex-1 min-w-[200px]">
-                <label class="block text-xs font-medium text-slate-600 mb-1">Phone Number</label>
-                <input type="tel" id="vaQuickPhone" placeholder="e.g. 260779613904" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 outline-none">
-              </div>
-              <div class="flex-1 min-w-[200px]">
-                <label class="block text-xs font-medium text-slate-600 mb-1">Script</label>
-                <select id="vaQuickScript" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-yellow-400 outline-none">
-                  <option value="">Default Script</option>
-                </select>
-              </div>
-              <button onclick="VoiceAgent.quickCall()" class="px-6 py-2 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 flex items-center gap-2 text-sm">
-                <i data-lucide="phone" class="h-4 w-4"></i> Call Now
-              </button>
-            </div>
-          </div>
-
-          <!-- Inner Tabs: Scripts | Campaigns | Live Monitor | History | Settings -->
-          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="flex gap-1 p-2 bg-slate-50 border-b overflow-x-auto">
-              <button onclick="VoiceAgent.switchInnerTab('scripts')" class="va-inner-tab active px-4 py-2 rounded-lg text-xs font-semibold bg-slate-800 text-white whitespace-nowrap">
-                <i data-lucide="file-text" class="h-3.5 w-3.5 inline mr-1"></i>Scripts
-              </button>
-              <button onclick="VoiceAgent.switchInnerTab('campaigns')" class="va-inner-tab px-4 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-200 whitespace-nowrap">
-                <i data-lucide="megaphone" class="h-3.5 w-3.5 inline mr-1"></i>Campaigns
-              </button>
-              <button onclick="VoiceAgent.switchInnerTab('monitor')" class="va-inner-tab px-4 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-200 whitespace-nowrap">
-                <i data-lucide="eye" class="h-3.5 w-3.5 inline mr-1"></i>Live Monitor
-              </button>
-              <button onclick="VoiceAgent.switchInnerTab('history')" class="va-inner-tab px-4 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-200 whitespace-nowrap">
-                <i data-lucide="history" class="h-3.5 w-3.5 inline mr-1"></i>Call History
-              </button>
-              <button onclick="VoiceAgent.switchInnerTab('settings')" class="va-inner-tab px-4 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-200 whitespace-nowrap">
-                <i data-lucide="settings" class="h-3.5 w-3.5 inline mr-1"></i>Settings
-              </button>
-            </div>
-
-            <!-- SCRIPTS PANEL -->
-            <div id="vaPanel-scripts" class="va-panel p-4">
-              <div class="flex items-center justify-between mb-4">
-                <h4 class="font-bold text-slate-800">Call Scripts</h4>
-                <button onclick="VoiceAgent.openScriptModal()" class="px-4 py-2 bg-yellow-400 text-black font-medium rounded-lg hover:bg-yellow-300 text-sm flex items-center gap-2">
-                  <i data-lucide="plus" class="h-4 w-4"></i> New Script
-                </button>
-              </div>
-              <div class="overflow-x-auto">
-                <table class="w-full">
-                  <thead><tr class="bg-slate-50">
-                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Name</th>
-                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Description</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Default</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Actions</th>
-                  </tr></thead>
-                  <tbody id="vaScriptsTable">
-                    <tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">No scripts yet. Create one to get started.</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- CAMPAIGNS PANEL -->
-            <div id="vaPanel-campaigns" class="va-panel hidden p-4">
-              <div class="flex items-center justify-between mb-4">
-                <h4 class="font-bold text-slate-800">Campaigns</h4>
-                <button onclick="VoiceAgent.openCampaignModal()" class="px-4 py-2 bg-yellow-400 text-black font-medium rounded-lg hover:bg-yellow-300 text-sm flex items-center gap-2">
-                  <i data-lucide="plus" class="h-4 w-4"></i> New Campaign
-                </button>
-              </div>
-              <div class="overflow-x-auto">
-                <table class="w-full">
-                  <thead><tr class="bg-slate-50">
-                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Campaign</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Status</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Progress</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Interested</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Not Interested</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Actions</th>
-                  </tr></thead>
-                  <tbody id="vaCampaignsTable">
-                    <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No campaigns yet</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- LIVE MONITOR PANEL -->
-            <div id="vaPanel-monitor" class="va-panel hidden p-4">
-              <h4 class="font-bold text-slate-800 mb-4">Live Calls</h4>
-              <div id="vaLiveCallsContainer">
-                <div class="text-center py-8 text-slate-400">
-                  <i data-lucide="eye" class="h-10 w-10 mx-auto mb-3 opacity-40"></i>
-                  <p>No active calls. Start a call or campaign to see live transcripts here.</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- CALL HISTORY PANEL -->
-            <div id="vaPanel-history" class="va-panel hidden p-4">
-              <div class="flex flex-wrap gap-3 items-end mb-4">
-                <div class="flex-1 min-w-[180px]">
-                  <label class="block text-xs font-medium text-slate-600 mb-1">Search Phone</label>
-                  <input type="text" id="vaHistorySearch" placeholder="Search..." class="w-full px-3 py-2 border rounded-lg text-sm">
-                </div>
-                <div class="min-w-[150px]">
-                  <label class="block text-xs font-medium text-slate-600 mb-1">Outcome</label>
-                  <select id="vaHistoryOutcome" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
-                    <option value="">All</option>
-                    <option value="interested">Interested</option>
-                    <option value="not_interested">Not Interested</option>
-                    <option value="no_answer">No Answer</option>
-                  </select>
-                </div>
-                <button onclick="VoiceAgent.searchHistory()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-300">Search</button>
-              </div>
-              <div class="overflow-x-auto">
-                <table class="w-full">
-                  <thead><tr class="bg-slate-50">
-                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Phone</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Outcome</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Duration</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Turns</th>
-                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Date</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Transcript</th>
-                  </tr></thead>
-                  <tbody id="vaHistoryTable">
-                    <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No call history yet</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- SETTINGS PANEL -->
-            <div id="vaPanel-settings" class="va-panel hidden p-4">
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <!-- LLM Config -->
-                <div class="border border-slate-200 rounded-xl p-4">
-                  <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="cpu" class="h-4 w-4 text-purple-500"></i> LLM Configuration</h4>
-                  <div class="grid grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">Provider</label>
-                      <select id="vaSettingProvider" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
-                        <option value="groq">Groq</option>
-                        <option value="anthropic">Anthropic</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">Model</label>
-                      <input type="text" id="vaSettingModel" value="llama-3.3-70b-versatile" class="w-full px-3 py-2 border rounded-lg text-sm">
-                    </div>
-                  </div>
-                </div>
-                <!-- Voice Config -->
-                <div class="border border-slate-200 rounded-xl p-4">
-                  <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="mic" class="h-4 w-4 text-blue-500"></i> Voice & TTS</h4>
-                  <div class="grid grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">ElevenLabs Voice ID</label>
-                      <input type="text" id="vaSettingVoice" value="21m00Tcm4TlvDq8ikWAM" class="w-full px-3 py-2 border rounded-lg text-sm">
-                    </div>
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">TTS Model</label>
-                      <select id="vaSettingTTS" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
-                        <option value="eleven_turbo_v2_5">Turbo v2.5</option>
-                        <option value="eleven_multilingual_v2">Multilingual v2</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                <!-- Call Config -->
-                <div class="border border-slate-200 rounded-xl p-4">
-                  <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="phone" class="h-4 w-4 text-emerald-500"></i> Call Settings</h4>
-                  <div class="grid grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">Max Concurrent</label>
-                      <input type="number" id="vaSettingConcurrent" value="2" min="1" max="10" class="w-full px-3 py-2 border rounded-lg text-sm">
-                    </div>
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">Max Turns</label>
-                      <input type="number" id="vaSettingTurns" value="10" min="3" max="20" class="w-full px-3 py-2 border rounded-lg text-sm">
-                    </div>
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">Initial Delay (s)</label>
-                      <input type="number" id="vaSettingDelay" value="3.5" min="1" max="6" step="0.5" class="w-full px-3 py-2 border rounded-lg text-sm">
-                    </div>
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">Endpointing (ms)</label>
-                      <input type="number" id="vaSettingEndpoint" value="300" min="100" max="1000" step="50" class="w-full px-3 py-2 border rounded-lg text-sm">
-                    </div>
-                  </div>
-                </div>
-                <!-- Caller IDs -->
-                <div class="border border-slate-200 rounded-xl p-4">
-                  <div class="flex items-center justify-between mb-3">
-                    <h4 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="hash" class="h-4 w-4 text-amber-500"></i> Caller IDs</h4>
-                    <button onclick="VoiceAgent.openCallerIdModal()" class="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs hover:bg-slate-200">+ Add</button>
-                  </div>
-                  <table class="w-full text-sm">
-                    <thead><tr><th class="text-left text-xs text-slate-500 pb-2">Number</th><th class="text-left text-xs text-slate-500 pb-2">Label</th><th class="text-center text-xs text-slate-500 pb-2">Status</th></tr></thead>
-                    <tbody id="vaCallerIdsTable">
-                      <tr>
-                        <td class="py-1 font-mono text-sm">260963065588</td>
-                        <td class="py-1">Main Line</td>
-                        <td class="py-1 text-center"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">Active</span></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <!-- Server Connection -->
-                <div class="border border-slate-200 rounded-xl p-4 lg:col-span-2">
-                  <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="server" class="h-4 w-4 text-slate-500"></i> Voice Agent Server</h4>
-                  <div class="flex flex-wrap gap-3 items-end">
-                    <div class="flex-1 min-w-[250px]">
-                      <label class="block text-xs font-medium text-slate-600 mb-1">Server URL</label>
-                      <input type="text" id="vaServerUrl" value="http://13.246.211.152:8080" class="w-full px-3 py-2 border rounded-lg text-sm font-mono">
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <div id="vaServerDot" class="w-3 h-3 rounded-full bg-red-400"></div>
-                      <span id="vaServerStatus" class="text-sm text-slate-500">Checking...</span>
-                    </div>
-                    <button onclick="VoiceAgent.checkHealth()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-300">Test Connection</button>
-                    <button onclick="VoiceAgent.saveSettings()" class="px-4 py-2 bg-yellow-400 text-black font-medium rounded-lg hover:bg-yellow-300 text-sm">Save Settings</button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -5975,12 +5698,6 @@ Total Players: ${s.total}`;
         // Show/hide content
         document.getElementById('ccContent-calls')?.classList.toggle('hidden', tab !== 'calls');
         document.getElementById('ccContent-admin')?.classList.toggle('hidden', tab !== 'admin');
-        document.getElementById('ccContent-voiceagent')?.classList.toggle('hidden', tab !== 'voiceagent');
-        
-        // Initialize VoiceAgent when switching to it
-        if (tab === 'voiceagent' && typeof VoiceAgent !== 'undefined') {
-          VoiceAgent.init();
-        }
         
         // Refresh admin content when switching to admin tab
         if (tab === 'admin') {
@@ -5995,16 +5712,10 @@ Total Players: ${s.total}`;
         // Hide admin tab for non-admin users
         const isAdmin = App.role === 'admin' || App.role === 'developer';
         const adminTabBtn = document.getElementById('ccSubTab-admin');
-        const voiceAgentTabBtn = document.getElementById('ccSubTab-voiceagent');
         const subTabsContainer = document.getElementById('ccSubTabs');
         
         if (adminTabBtn) {
           adminTabBtn.classList.toggle('hidden', !isAdmin);
-        }
-        
-        // Voice Agent tab visible to admin and developer only
-        if (voiceAgentTabBtn) {
-          voiceAgentTabBtn.classList.toggle('hidden', !isAdmin);
         }
         
         // If call center role, hide the entire sub-tabs bar
@@ -7123,7 +6834,6 @@ Total Players: ${s.total}`;
       };
 
       let processed = 0, skipped = 0, errors = [];
-      const BATCH_SIZE = 100;
       
       // Build all player records first
       const players = [];
@@ -7162,36 +6872,52 @@ Total Players: ${s.total}`;
         players.push(player);
       }
 
-      // Batch upsert for performance
+      // Batch upsert for performance — 1000 per batch, 10 concurrent
       showLoading(true, 'Importing players...');
+      const BATCH_SIZE = 1000;
+      const CONCURRENCY = 10;
+      
+      // Build all batches upfront
+      const batches = [];
       for (let i = 0; i < players.length; i += BATCH_SIZE) {
-        const batch = players.slice(i, i + BATCH_SIZE);
-        try {
-          const { error } = await App.db.from('customers').upsert(batch, { 
+        batches.push(players.slice(i, i + BATCH_SIZE));
+      }
+      
+      // Process batches in parallel waves
+      let batchIndex = 0;
+      while (batchIndex < batches.length) {
+        const wave = batches.slice(batchIndex, batchIndex + CONCURRENCY);
+        const wavePromises = wave.map(batch => 
+          App.db.from('customers').upsert(batch, { 
             onConflict: 'id', 
             ignoreDuplicates: !updateExisting 
-          });
-          if (error) throw error;
-          processed += batch.length;
-        } catch(e) {
-          // If batch fails, try one by one to isolate bad rows
-          for (const player of batch) {
-            try {
-              const { error } = await App.db.from('customers').upsert(player, { 
-                onConflict: 'id', 
-                ignoreDuplicates: !updateExisting 
-              });
-              if (error) throw error;
-              processed++;
-            } catch(e2) {
-              errors.push(`${player.id}: ${e2.message}`);
+          }).then(({ error }) => {
+            if (error) throw error;
+            processed += batch.length;
+          }).catch(async (e) => {
+            // If batch fails, try one by one to isolate bad rows
+            for (const player of batch) {
+              try {
+                const { error } = await App.db.from('customers').upsert(player, { 
+                  onConflict: 'id', 
+                  ignoreDuplicates: !updateExisting 
+                });
+                if (error) throw error;
+                processed++;
+              } catch(e2) {
+                errors.push(`${player.id}: ${e2.message}`);
+              }
             }
-          }
-        }
-        // Update progress and yield to UI
-        const progress = Math.min(i + BATCH_SIZE, players.length);
-        btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline mr-1" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> ${progress}/${players.length}`;
-        showLoading(true, `Importing players... ${progress}/${players.length}`);
+          })
+        );
+        
+        await Promise.all(wavePromises);
+        batchIndex += CONCURRENCY;
+        
+        // Update progress
+        const progress = Math.min(batchIndex * BATCH_SIZE, players.length);
+        btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline mr-1" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> ${progress.toLocaleString()}/${players.length.toLocaleString()}`;
+        showLoading(true, `Importing players... ${progress.toLocaleString()}/${players.length.toLocaleString()}`);
         await new Promise(r => setTimeout(r, 0)); // Yield to browser
       }
       showLoading(false);
@@ -7261,8 +6987,18 @@ Total Players: ${s.total}`;
           if (rec.id) records.push(rec);
         }
         // FIXED: Changed from 'players' to 'customers'
-        for (let i = 0; i < records.length; i += 100) {
-          await App.db.from('customers').upsert(records.slice(i, i+100), { onConflict: 'id' });
+        // Parallel batch upsert — 1000 per batch, 10 concurrent
+        const BATCH_SIZE = 1000;
+        const CONCURRENCY = 10;
+        const batches = [];
+        for (let i = 0; i < records.length; i += BATCH_SIZE) {
+          batches.push(records.slice(i, i + BATCH_SIZE));
+        }
+        for (let b = 0; b < batches.length; b += CONCURRENCY) {
+          const wave = batches.slice(b, b + CONCURRENCY);
+          await Promise.all(wave.map(batch => 
+            App.db.from('customers').upsert(batch, { onConflict: 'id' })
+          ));
         }
         showNotification(App.currentLang === 'ru' ? `Импортировано ${records.length} игроков` : `Imported ${records.length} players`, 'success');
         await loadPlayers(true); // Force reload after import
@@ -7822,439 +7558,6 @@ Total Players: ${s.total}`;
         switchTab('dashboard');
       }
     }
-
-    // ============================================================
-    // VOICE AGENT MODULE
-    // ============================================================
-    const VoiceAgent = {
-      initialized: false,
-      scripts: JSON.parse(localStorage.getItem('va_scripts') || '[]'),
-      campaigns: JSON.parse(localStorage.getItem('va_campaigns') || '[]'),
-      callerIds: JSON.parse(localStorage.getItem('va_callerids') || '[{"phone":"260963065588","label":"Main Line","gateway":"smsala","active":true}]'),
-      callHistory: JSON.parse(localStorage.getItem('va_calls') || '[]'),
-      serverUrl: localStorage.getItem('va_server_url') || 'http://13.246.211.152:8080',
-      healthInterval: null,
-
-      init() {
-        if (this.initialized) return;
-        this.initialized = true;
-        document.getElementById('vaServerUrl').value = this.serverUrl;
-        this.renderScripts();
-        this.renderCampaigns();
-        this.renderCallerIds();
-        this.renderHistory();
-        this.updateScriptDropdown();
-        this.checkHealth();
-        if (this.healthInterval) clearInterval(this.healthInterval);
-        this.healthInterval = setInterval(() => this.checkHealth(), 15000);
-      },
-
-      // ── Server Health ──
-      async checkHealth() {
-        try {
-          const url = document.getElementById('vaServerUrl')?.value || this.serverUrl;
-          const res = await fetch(url + '/api/health', { signal: AbortSignal.timeout(5000) });
-          const data = await res.json();
-          document.getElementById('vaServerDot').className = 'w-3 h-3 rounded-full bg-emerald-400 animate-pulse';
-          document.getElementById('vaServerStatus').textContent = 'v' + data.version + ' • ' + (data.llm_provider || '');
-          document.getElementById('va-active-calls').textContent = data.active_calls || 0;
-          document.getElementById('va-llm-provider').textContent = data.llm_model || data.llm_provider || '—';
-          return data;
-        } catch(e) {
-          document.getElementById('vaServerDot').className = 'w-3 h-3 rounded-full bg-red-400';
-          document.getElementById('vaServerStatus').textContent = 'Offline';
-          return null;
-        }
-      },
-
-      // ── Inner Tab Navigation ──
-      switchInnerTab(tab) {
-        document.querySelectorAll('.va-inner-tab').forEach(b => {
-          b.classList.remove('bg-slate-800', 'text-white');
-          b.classList.add('text-slate-500');
-        });
-        document.querySelectorAll('.va-panel').forEach(p => p.classList.add('hidden'));
-        event.currentTarget.classList.remove('text-slate-500');
-        event.currentTarget.classList.add('bg-slate-800', 'text-white');
-        document.getElementById('vaPanel-' + tab)?.classList.remove('hidden');
-        lucide.createIcons();
-      },
-
-      // ── Quick Call ──
-      async quickCall() {
-        const phone = document.getElementById('vaQuickPhone')?.value.trim();
-        if (!phone) { this.notify('Enter a phone number', 'error'); return; }
-        try {
-          const res = await fetch(this.serverUrl + '/api/call/start', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone_number: phone })
-          });
-          const data = await res.json();
-          if (data.call_id) {
-            this.notify('Call started: ' + data.call_id.slice(0, 8), 'success');
-            this.callHistory.unshift({
-              id: data.call_id, phone, status: 'ringing', outcome: null,
-              duration: 0, turns: 0, transcript: [],
-              started_at: new Date().toISOString()
-            });
-            this.save();
-            this.renderHistory();
-            this.updateStats();
-            document.getElementById('vaQuickPhone').value = '';
-          } else {
-            this.notify(data.detail || 'Call failed', 'error');
-          }
-        } catch(e) {
-          this.notify('Cannot connect to server', 'error');
-        }
-      },
-
-      // ── Scripts CRUD ──
-      openScriptModal(editId) {
-        const existing = editId ? this.scripts.find(s => s.id === editId) : null;
-        const html = `
-          <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" id="vaScriptModal" onclick="if(event.target===this) this.remove()">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-              <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
-                <h3 class="font-bold">${existing ? 'Edit' : 'New'} Script</h3>
-                <button onclick="document.getElementById('vaScriptModal').remove()" class="text-slate-400 hover:text-white">&times;</button>
-              </div>
-              <div class="p-5 space-y-4">
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Script Name</label><input type="text" id="vaScriptName" value="${existing?.name || ''}" placeholder="e.g. Welcome Back Campaign" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Description</label><input type="text" id="vaScriptDesc" value="${existing?.description || ''}" placeholder="Brief description" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Script Instructions</label><textarea id="vaScriptText" rows="8" placeholder="You are calling on behalf of Bwana Bet..." class="w-full px-3 py-2 border rounded-lg text-sm font-mono">${existing?.script_text || ''}</textarea></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Custom Greeting (optional)</label><textarea id="vaScriptGreeting" rows="2" placeholder="Hi, I'm calling from Bwana Bet..." class="w-full px-3 py-2 border rounded-lg text-sm">${existing?.greeting || ''}</textarea></div>
-              </div>
-              <div class="p-4 border-t flex justify-end gap-2">
-                <button onclick="document.getElementById('vaScriptModal').remove()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm">Cancel</button>
-                <button onclick="VoiceAgent.saveScript('${editId || ''}')" class="px-6 py-2 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 text-sm">Save</button>
-              </div>
-            </div>
-          </div>`;
-        document.body.insertAdjacentHTML('beforeend', html);
-      },
-
-      saveScript(editId) {
-        const name = document.getElementById('vaScriptName')?.value.trim();
-        const text = document.getElementById('vaScriptText')?.value.trim();
-        if (!name || !text) { this.notify('Name and script text required', 'error'); return; }
-        if (editId) this.scripts = this.scripts.filter(s => s.id !== editId);
-        this.scripts.push({
-          id: editId || crypto.randomUUID(),
-          name,
-          description: document.getElementById('vaScriptDesc')?.value.trim() || '',
-          script_text: text,
-          greeting: document.getElementById('vaScriptGreeting')?.value.trim() || '',
-          is_default: this.scripts.length === 0,
-          created_at: new Date().toISOString()
-        });
-        this.save();
-        this.renderScripts();
-        this.updateScriptDropdown();
-        document.getElementById('vaScriptModal')?.remove();
-        this.notify('Script saved', 'success');
-      },
-
-      deleteScript(id) {
-        this.scripts = this.scripts.filter(s => s.id !== id);
-        this.save();
-        this.renderScripts();
-        this.updateScriptDropdown();
-      },
-
-      setDefaultScript(id) {
-        this.scripts.forEach(s => s.is_default = (s.id === id));
-        this.save();
-        this.renderScripts();
-      },
-
-      renderScripts() {
-        const tbody = document.getElementById('vaScriptsTable');
-        if (!tbody) return;
-        if (this.scripts.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">No scripts yet. Create one to get started.</td></tr>';
-          return;
-        }
-        tbody.innerHTML = this.scripts.map(s => `
-          <tr class="hover:bg-slate-50">
-            <td class="px-4 py-3 font-medium text-slate-800">${s.name}</td>
-            <td class="px-4 py-3 text-slate-500 text-sm">${s.description || '—'}</td>
-            <td class="px-4 py-3 text-center">${s.is_default ? '<span class="va-badge va-badge-green">Default</span>' : `<button onclick="VoiceAgent.setDefaultScript('${s.id}')" class="text-xs text-blue-600 hover:underline">Set Default</button>`}</td>
-            <td class="px-4 py-3 text-center">
-              <button onclick="VoiceAgent.openScriptModal('${s.id}')" class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs hover:bg-slate-200 mr-1">Edit</button>
-              <button onclick="VoiceAgent.deleteScript('${s.id}')" class="px-2 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100">Delete</button>
-            </td>
-          </tr>`).join('');
-        lucide.createIcons();
-      },
-
-      updateScriptDropdown() {
-        const sel = document.getElementById('vaQuickScript');
-        const campSel = document.getElementById('vaCampaignScript');
-        const opts = '<option value="">Default Script</option>' + this.scripts.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-        if (sel) sel.innerHTML = opts;
-        if (campSel) campSel.innerHTML = opts;
-      },
-
-      // ── Campaigns ──
-      openCampaignModal() {
-        this.updateScriptDropdown();
-        const html = `
-          <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" id="vaCampaignModal" onclick="if(event.target===this) this.remove()">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-              <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
-                <h3 class="font-bold">New Campaign</h3>
-                <button onclick="document.getElementById('vaCampaignModal').remove()" class="text-slate-400 hover:text-white">&times;</button>
-              </div>
-              <div class="p-5 space-y-4">
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Campaign Name</label><input type="text" id="vaCampaignName" placeholder="e.g. Feb 2026 Reactivation" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Script</label><select id="vaCampaignScript" class="w-full px-3 py-2 border rounded-lg text-sm bg-white"><option value="">Default Script</option>${this.scripts.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}</select></div>
-                <div class="grid grid-cols-2 gap-3">
-                  <div><label class="block text-sm font-medium text-slate-700 mb-1">Calls/Min</label><input type="number" id="vaCampaignCPM" value="2" min="1" max="10" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
-                  <div><label class="block text-sm font-medium text-slate-700 mb-1">Caller ID</label><select id="vaCampaignCaller" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">${this.callerIds.map(c => `<option value="${c.phone}">${c.phone} (${c.label})</option>`).join('')}</select></div>
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-1">Upload Contacts (CSV: phone_number, customer_name)</label>
-                  <div onclick="document.getElementById('vaCsvFile').click()" class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-yellow-400 cursor-pointer">
-                    <i data-lucide="upload" class="h-8 w-8 text-slate-400 mx-auto mb-2"></i>
-                    <p class="text-sm text-slate-500">Click to upload CSV</p>
-                    <p id="vaCsvInfo" class="text-xs text-emerald-600 mt-1 hidden"></p>
-                  </div>
-                  <input type="file" id="vaCsvFile" accept=".csv" class="hidden" onchange="VoiceAgent.handleCSV(this)">
-                </div>
-              </div>
-              <div class="p-4 border-t flex justify-end gap-2">
-                <button onclick="document.getElementById('vaCampaignModal').remove()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm">Cancel</button>
-                <button onclick="VoiceAgent.createCampaign()" class="px-6 py-2 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 text-sm">Create & Start</button>
-              </div>
-            </div>
-          </div>`;
-        document.body.insertAdjacentHTML('beforeend', html);
-        lucide.createIcons();
-      },
-
-      uploadedContacts: [],
-
-      handleCSV(input) {
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const lines = e.target.result.split('\n').filter(l => l.trim());
-          this.uploadedContacts = [];
-          const start = lines[0].toLowerCase().includes('phone') ? 1 : 0;
-          for (let i = start; i < lines.length; i++) {
-            const parts = lines[i].split(',').map(p => p.trim().replace(/"/g, ''));
-            if (parts[0]) this.uploadedContacts.push({ phone_number: parts[0], customer_name: parts[1] || '' });
-          }
-          const info = document.getElementById('vaCsvInfo');
-          if (info) { info.textContent = file.name + ' (' + this.uploadedContacts.length + ' contacts)'; info.classList.remove('hidden'); }
-        };
-        reader.readAsText(file);
-      },
-
-      async createCampaign() {
-        const name = document.getElementById('vaCampaignName')?.value.trim();
-        if (!name) { this.notify('Campaign name required', 'error'); return; }
-        if (this.uploadedContacts.length === 0) { this.notify('Upload contacts CSV', 'error'); return; }
-        const scriptId = document.getElementById('vaCampaignScript')?.value;
-        const script = this.scripts.find(s => s.id === scriptId);
-        const cpm = parseInt(document.getElementById('vaCampaignCPM')?.value) || 2;
-        const campaignId = crypto.randomUUID().slice(0, 8);
-
-        try {
-          const res = await fetch(this.serverUrl + '/api/campaign/start', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ campaign_id: campaignId, contacts: this.uploadedContacts, script: script?.script_text || '', calls_per_minute: cpm })
-          });
-          const data = await res.json();
-          if (data.status === 'started') {
-            this.campaigns.push({ id: campaignId, name, script_id: scriptId, status: 'running', total: this.uploadedContacts.length, called: 0, interested: 0, not_interested: 0, no_answer: 0, created_at: new Date().toISOString() });
-            this.save();
-            this.renderCampaigns();
-            this.uploadedContacts = [];
-            document.getElementById('vaCampaignModal')?.remove();
-            this.notify('Campaign started!', 'success');
-          }
-        } catch(e) {
-          this.notify('Failed to start campaign', 'error');
-        }
-      },
-
-      async stopCampaign(id) {
-        try {
-          await fetch(this.serverUrl + '/api/campaign/stop', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ campaign_id: id })
-          });
-        } catch(e) {}
-        const c = this.campaigns.find(x => x.id === id);
-        if (c) c.status = 'paused';
-        this.save();
-        this.renderCampaigns();
-        this.notify('Campaign stopped', 'info');
-      },
-
-      deleteCampaign(id) {
-        this.campaigns = this.campaigns.filter(c => c.id !== id);
-        this.save();
-        this.renderCampaigns();
-      },
-
-      renderCampaigns() {
-        const tbody = document.getElementById('vaCampaignsTable');
-        if (!tbody) return;
-        if (this.campaigns.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No campaigns yet</td></tr>';
-          return;
-        }
-        tbody.innerHTML = this.campaigns.map(c => `
-          <tr class="hover:bg-slate-50">
-            <td class="px-4 py-3 font-medium text-slate-800">${c.name}</td>
-            <td class="px-4 py-3 text-center"><span class="va-badge va-badge-${c.status==='running'?'green':c.status==='paused'?'yellow':'gray'}">${c.status}</span></td>
-            <td class="px-4 py-3 text-center font-mono text-sm">${c.called||0}/${c.total}</td>
-            <td class="px-4 py-3 text-center text-emerald-600 font-bold">${c.interested||0}</td>
-            <td class="px-4 py-3 text-center text-red-600 font-bold">${c.not_interested||0}</td>
-            <td class="px-4 py-3 text-center">
-              ${c.status === 'running' ?
-                `<button onclick="VoiceAgent.stopCampaign('${c.id}')" class="px-2 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100">Stop</button>` :
-                `<button onclick="VoiceAgent.deleteCampaign('${c.id}')" class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs hover:bg-slate-200">Delete</button>`}
-            </td>
-          </tr>`).join('');
-      },
-
-      // ── Call History ──
-      renderHistory() {
-        const tbody = document.getElementById('vaHistoryTable');
-        if (!tbody) return;
-        if (this.callHistory.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No call history yet</td></tr>';
-          return;
-        }
-        tbody.innerHTML = this.callHistory.slice(0, 50).map(c => `
-          <tr class="hover:bg-slate-50">
-            <td class="px-4 py-2 font-mono text-sm">${c.phone}</td>
-            <td class="px-4 py-2 text-center"><span class="va-badge va-badge-${c.outcome==='interested'?'green':c.outcome==='not_interested'?'red':'gray'}">${(c.outcome||c.status||'—').replace('_',' ')}</span></td>
-            <td class="px-4 py-2 text-center font-mono text-sm">${c.duration||0}s</td>
-            <td class="px-4 py-2 text-center">${c.turns||0}</td>
-            <td class="px-4 py-2 text-slate-500 text-sm">${this.timeAgo(c.started_at)}</td>
-            <td class="px-4 py-2 text-center">${c.transcript?.length ? `<button onclick="VoiceAgent.showTranscript('${c.id}')" class="text-xs text-blue-600 hover:underline">View</button>` : '—'}</td>
-          </tr>`).join('');
-        this.updateStats();
-      },
-
-      searchHistory() {
-        this.notify('Connect Supabase to enable search', 'info');
-      },
-
-      showTranscript(callId) {
-        const call = this.callHistory.find(c => c.id === callId);
-        if (!call || !call.transcript?.length) return;
-        const html = `
-          <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" id="vaTranscriptModal" onclick="if(event.target===this) this.remove()">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden">
-              <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
-                <h3 class="font-bold">Transcript — ${call.phone}</h3>
-                <button onclick="document.getElementById('vaTranscriptModal').remove()" class="text-slate-400 hover:text-white">&times;</button>
-              </div>
-              <div class="p-4 max-h-[60vh] overflow-y-auto">
-                ${call.transcript.map(t => `<div class="va-transcript-line ${t.role}"><div class="va-transcript-role ${t.role}">${t.role==='user'?'Customer':'Agent'}</div>${t.text}</div>`).join('')}
-              </div>
-            </div>
-          </div>`;
-        document.body.insertAdjacentHTML('beforeend', html);
-      },
-
-      updateStats() {
-        const today = this.callHistory.filter(c => new Date(c.started_at).toDateString() === new Date().toDateString());
-        document.getElementById('va-calls-today').textContent = today.length;
-        document.getElementById('va-interested').textContent = this.callHistory.filter(c => c.outcome === 'interested').length;
-        document.getElementById('va-not-interested').textContent = this.callHistory.filter(c => c.outcome === 'not_interested').length;
-      },
-
-      // ── Caller IDs ──
-      openCallerIdModal() {
-        const html = `
-          <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" id="vaCallerIdModal" onclick="if(event.target===this) this.remove()">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
-              <div class="bg-slate-800 text-white p-4"><h3 class="font-bold">Add Caller ID</h3></div>
-              <div class="p-5 space-y-3">
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Phone Number</label><input type="tel" id="vaNewCallerPhone" placeholder="e.g. 260971133129" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Label</label><input type="text" id="vaNewCallerLabel" placeholder="e.g. Campaign Line" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
-              </div>
-              <div class="p-4 border-t flex justify-end gap-2">
-                <button onclick="document.getElementById('vaCallerIdModal').remove()" class="px-4 py-2 text-slate-600 text-sm">Cancel</button>
-                <button onclick="VoiceAgent.addCallerId()" class="px-6 py-2 bg-yellow-400 text-black font-bold rounded-lg text-sm">Add</button>
-              </div>
-            </div>
-          </div>`;
-        document.body.insertAdjacentHTML('beforeend', html);
-      },
-
-      addCallerId() {
-        const phone = document.getElementById('vaNewCallerPhone')?.value.trim();
-        if (!phone) { this.notify('Phone required', 'error'); return; }
-        const label = document.getElementById('vaNewCallerLabel')?.value.trim() || phone;
-        this.callerIds.push({ phone, label, gateway: 'smsala', active: true });
-        this.save();
-        this.renderCallerIds();
-        document.getElementById('vaCallerIdModal')?.remove();
-        this.notify('Caller ID added', 'success');
-      },
-
-      renderCallerIds() {
-        const tbody = document.getElementById('vaCallerIdsTable');
-        if (!tbody) return;
-        tbody.innerHTML = this.callerIds.map(c => `
-          <tr>
-            <td class="py-1 font-mono text-sm">${c.phone}</td>
-            <td class="py-1">${c.label}</td>
-            <td class="py-1 text-center"><span class="px-2 py-0.5 ${c.active?'bg-emerald-100 text-emerald-700':'bg-slate-100 text-slate-500'} rounded-full text-xs font-medium">${c.active?'Active':'Inactive'}</span></td>
-          </tr>`).join('');
-      },
-
-      // ── Settings ──
-      saveSettings() {
-        this.serverUrl = document.getElementById('vaServerUrl')?.value.trim() || this.serverUrl;
-        localStorage.setItem('va_server_url', this.serverUrl);
-        this.notify('Settings saved', 'success');
-        this.checkHealth();
-      },
-
-      // ── Helpers ──
-      save() {
-        localStorage.setItem('va_scripts', JSON.stringify(this.scripts));
-        localStorage.setItem('va_campaigns', JSON.stringify(this.campaigns));
-        localStorage.setItem('va_callerids', JSON.stringify(this.callerIds));
-        localStorage.setItem('va_calls', JSON.stringify(this.callHistory));
-      },
-
-      timeAgo(d) {
-        if (!d) return '—';
-        const s = (Date.now() - new Date(d).getTime()) / 1000;
-        if (s < 60) return 'just now';
-        if (s < 3600) return Math.floor(s/60) + 'm ago';
-        if (s < 86400) return Math.floor(s/3600) + 'h ago';
-        return new Date(d).toLocaleDateString();
-      },
-
-      notify(msg, type) {
-        if (typeof showNotification === 'function') {
-          showNotification(msg, type === 'error' ? 'error' : type === 'success' ? 'success' : 'info');
-        } else {
-          // Fallback notification
-          const colors = { success: 'bg-emerald-500', error: 'bg-red-500', info: 'bg-blue-500' };
-          const el = document.createElement('div');
-          el.className = `fixed top-4 right-4 z-[1001] px-4 py-3 rounded-lg text-white text-sm font-medium shadow-lg ${colors[type]||colors.info}`;
-          el.textContent = msg;
-          el.style.animation = 'slideIn 0.3s ease';
-          document.body.appendChild(el);
-          setTimeout(() => el.remove(), 3500);
-        }
-      }
-    };
   </script>
 </body>
 </html>
