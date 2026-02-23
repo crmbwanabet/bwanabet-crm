@@ -381,7 +381,6 @@
           <button id="tab-players" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="users" class="h-4 w-4"></i><span data-translate="players">Players</span></button>
           <button id="tab-callcenter" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="phone" class="h-4 w-4"></i><span>Call Center</span></button>
           <button id="tab-agents" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="megaphone" class="h-4 w-4"></i><span>Agents</span></button>
-          <button id="tab-voiceagent" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="bot" class="h-4 w-4"></i><span>AI Caller</span></button>
           <button id="tab-settings" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="settings" class="h-4 w-4"></i><span data-translate="settings">Settings</span></button>
         </nav>
       </div>
@@ -1058,513 +1057,6 @@
       </div>
 
       <!-- SETTINGS -->
-      <!-- ══════════════════════════════════════════════════════ -->
-      <!-- VOICE AGENT TAB                                        -->
-      <!-- ══════════════════════════════════════════════════════ -->
-      <div id="content-voiceagent" class="tab-content hidden">
-        <!-- Sub-tab Navigation -->
-        <div class="bg-white rounded-xl shadow-sm p-1.5 mb-5 flex gap-1 overflow-x-auto" style="border:1px solid #e2e8f0;">
-          <button id="vaSubTab-overview" onclick="VA.switchSubTab('overview')" class="va-subtab active flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold bg-slate-800 text-white whitespace-nowrap transition-all">
-            <i data-lucide="layout-dashboard" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Overview
-          </button>
-          <button id="vaSubTab-campaigns" onclick="VA.switchSubTab('campaigns')" class="va-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 whitespace-nowrap transition-all">
-            <i data-lucide="radio" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Campaigns
-          </button>
-          <button id="vaSubTab-scripts" onclick="VA.switchSubTab('scripts')" class="va-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 whitespace-nowrap transition-all">
-            <i data-lucide="file-text" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Script Builder
-          </button>
-          <button id="vaSubTab-monitor" onclick="VA.switchSubTab('monitor')" class="va-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 whitespace-nowrap transition-all relative">
-            <i data-lucide="activity" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Live Monitor
-            <span id="va-live-badge" class="hidden absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">0</span>
-          </button>
-          <button id="vaSubTab-outcomes" onclick="VA.switchSubTab('outcomes')" class="va-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 whitespace-nowrap transition-all relative">
-            <i data-lucide="inbox" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Outcome Lists
-            <span id="va-outcome-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">0</span>
-          </button>
-          <button id="vaSubTab-settings" onclick="VA.switchSubTab('settings')" class="va-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 whitespace-nowrap transition-all">
-            <i data-lucide="sliders" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i>Settings
-          </button>
-        </div>
-
-        <!-- ── OVERVIEW ──────────────────────────────────────── -->
-        <div id="vaContent-overview">
-          <!-- Status Bar -->
-          <div id="va-status-bar" class="rounded-xl p-4 mb-4 flex items-center justify-between bg-emerald-50 border border-emerald-200">
-            <div class="flex items-center gap-3">
-              <div id="va-status-dot" class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
-              <span id="va-status-text" class="font-semibold text-emerald-800">Voice Agent Online</span>
-              <span id="va-version-badge" class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">v6.0</span>
-            </div>
-            <div class="flex items-center gap-4 text-sm text-emerald-700">
-              <span>Active Calls: <strong id="va-active-count">0</strong></span>
-              <span>Fillers: <strong id="va-filler-count">0</strong></span>
-              <button onclick="VA.refreshHealth()" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs hover:bg-emerald-700">
-                <i data-lucide="refresh-cw" class="h-3 w-3 inline mr-1"></i>Refresh
-              </button>
-            </div>
-          </div>
-
-          <!-- Stats Grid -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white rounded-xl shadow-sm p-4 text-center">
-              <p class="text-3xl font-bold text-slate-800" id="va-stat-total">0</p>
-              <p class="text-xs text-slate-500 mt-1">Total Calls</p>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-4 text-center">
-              <p class="text-3xl font-bold text-emerald-600" id="va-stat-success">0</p>
-              <p class="text-xs text-slate-500 mt-1">Successful</p>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-4 text-center">
-              <p class="text-3xl font-bold text-amber-600" id="va-stat-callbacks">0</p>
-              <p class="text-xs text-slate-500 mt-1">Callbacks Needed</p>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-4 text-center">
-              <p class="text-3xl font-bold text-blue-600" id="va-stat-actions">0</p>
-              <p class="text-xs text-slate-500 mt-1">Actions Pending</p>
-            </div>
-          </div>
-
-          <!-- Recent Calls -->
-          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
-              <h3 class="font-bold flex items-center gap-2"><i data-lucide="clock" class="h-4 w-4"></i>Recent Calls</h3>
-              <button onclick="VA.loadRecentCalls()" class="text-slate-400 hover:text-white"><i data-lucide="refresh-cw" class="h-4 w-4"></i></button>
-            </div>
-            <div id="va-recent-calls" class="max-h-96 overflow-y-auto">
-              <div class="p-8 text-center text-slate-400"><i data-lucide="phone" class="h-8 w-8 mx-auto mb-2 opacity-40"></i><p>No recent calls</p></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── CAMPAIGNS ─────────────────────────────────────── -->
-        <div id="vaContent-campaigns" class="hidden">
-          <!-- Launch New Campaign -->
-          <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-            <div class="bg-gradient-to-r from-slate-800 to-slate-700 text-white p-4">
-              <h3 class="font-bold flex items-center gap-2"><i data-lucide="radio" class="h-4 w-4"></i>Launch Campaign</h3>
-            </div>
-            <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Campaign Name</label>
-                <input id="va-camp-name" type="text" placeholder="e.g. March Reactivation" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Script</label>
-                <select id="va-camp-script" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                  <option value="">-- Select Script --</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Caller ID</label>
-                <input id="va-camp-callerid" type="text" placeholder="260963065588" value="260963065588" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Calls per Minute</label>
-                <input id="va-camp-cpm" type="number" value="2" min="1" max="10" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-              </div>
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-slate-700 mb-1">Contact List (CSV format: phone or phone,name)</label>
-                <textarea id="va-camp-contacts" rows="5" placeholder="260971234567&#10;260977654321,John Banda&#10;260955555555,Mary Phiri" class="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
-                <p id="va-camp-contact-count" class="text-xs text-slate-500 mt-1">0 contacts</p>
-              </div>
-              <div class="md:col-span-2 flex gap-3">
-                <button onclick="VA.launchCampaign()" class="flex-1 py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 flex items-center justify-center gap-2">
-                  <i data-lucide="play" class="h-4 w-4"></i>Launch Campaign
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Active Campaigns -->
-          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
-              <h3 class="font-bold flex items-center gap-2"><i data-lucide="list" class="h-4 w-4"></i>Active Campaigns</h3>
-              <button onclick="VA.refreshCampaigns()" class="text-slate-400 hover:text-white"><i data-lucide="refresh-cw" class="h-4 w-4"></i></button>
-            </div>
-            <div id="va-campaigns-list" class="p-4">
-              <div class="text-center text-slate-400 py-8"><i data-lucide="inbox" class="h-8 w-8 mx-auto mb-2 opacity-40"></i><p>No active campaigns</p></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── SCRIPT BUILDER ────────────────────────────────── -->
-        <div id="vaContent-scripts" class="hidden">
-          <!-- Mode Switcher + New Script Button -->
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-white rounded-xl shadow-sm p-1.5 flex gap-1 border border-slate-200">
-              <button id="va-script-mode-library" onclick="VA.showScriptView('library')" class="va-script-view-btn active px-4 py-2 rounded-lg text-sm font-semibold bg-slate-800 text-white transition-all">
-                <i data-lucide="library" class="h-4 w-4 inline mr-1"></i>Script Library
-              </button>
-              <button id="va-script-mode-builder" onclick="VA.showScriptView('builder')" class="va-script-view-btn px-4 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-all">
-                <i data-lucide="plus-circle" class="h-4 w-4 inline mr-1"></i>New Script
-              </button>
-            </div>
-          </div>
-
-          <!-- LIBRARY VIEW -->
-          <div id="va-script-library">
-            <div id="va-scripts-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="col-span-2 text-center py-12 text-slate-400">
-                <i data-lucide="file-text" class="h-10 w-10 mx-auto mb-3 opacity-40"></i>
-                <p class="font-medium">No scripts yet</p>
-                <p class="text-sm mt-1">Click "New Script" to create your first script</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- BUILDER VIEW -->
-          <div id="va-script-builder" class="hidden">
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div class="bg-gradient-to-r from-slate-800 to-slate-700 text-white p-4 flex items-center justify-between">
-                <h3 class="font-bold flex items-center gap-2"><i data-lucide="pencil" class="h-4 w-4"></i><span id="va-builder-title">New Script</span></h3>
-                <div class="flex gap-2">
-                  <button onclick="VA.showScriptView('library')" class="px-3 py-1 bg-slate-600 text-white rounded-lg text-xs hover:bg-slate-500">← Back to Library</button>
-                </div>
-              </div>
-
-              <div class="p-5">
-                <!-- Script Name + Mode -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-                  <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Script Name <span class="text-red-500">*</span></label>
-                    <input id="va-sb-name" type="text" placeholder="e.g. March Reactivation Bonus" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Build Mode</label>
-                    <div class="flex gap-2">
-                      <button id="va-mode-guided" onclick="VA.setBuilderMode('guided')" class="flex-1 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium">
-                        <i data-lucide="sliders" class="h-4 w-4 inline mr-1"></i>Guided
-                      </button>
-                      <button id="va-mode-freewrite" onclick="VA.setBuilderMode('freewrite')" class="flex-1 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-200">
-                        <i data-lucide="pencil" class="h-4 w-4 inline mr-1"></i>Free Write
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- GUIDED MODE FIELDS -->
-                <div id="va-guided-fields">
-                  <!-- Section: Identity -->
-                  <div class="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                    <h4 class="font-semibold text-slate-700 mb-3 flex items-center gap-2"><i data-lucide="building-2" class="h-4 w-4 text-slate-500"></i>Identity & Purpose</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Company Name <span class="text-red-500">*</span></label>
-                        <input id="va-sb-company" type="text" placeholder="Bwana Bet" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Agent Name</label>
-                        <input id="va-sb-agent" type="text" placeholder="Sarah" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Call Purpose</label>
-                        <input id="va-sb-purpose" type="text" placeholder="Re-engaging inactive customers" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Section: Offers -->
-                  <div class="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                    <h4 class="font-semibold text-slate-700 mb-3 flex items-center gap-2"><i data-lucide="gift" class="h-4 w-4 text-slate-500"></i>Offers & Bonuses</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Offer 1 Name</label>
-                        <input id="va-sb-offer1-name" type="text" placeholder="100% Match Bonus" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Offer 1 Details</label>
-                        <input id="va-sb-offer1-details" type="text" placeholder="Up to K500 on your next deposit" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Offer 2 Name</label>
-                        <input id="va-sb-offer2-name" type="text" placeholder="Free Bet (optional)" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Offer 2 Details</label>
-                        <input id="va-sb-offer2-details" type="text" placeholder="K50 free football bet" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                      </div>
-                      <div class="md:col-span-2">
-                        <label class="block text-xs font-medium text-slate-600 mb-1">How to Claim</label>
-                        <input id="va-sb-claim" type="text" placeholder="Log into the app or visit our website" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Section: Behaviour -->
-                  <div class="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                    <h4 class="font-semibold text-slate-700 mb-3 flex items-center gap-2"><i data-lucide="settings-2" class="h-4 w-4 text-slate-500"></i>AI Behaviour</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Tone</label>
-                        <select id="va-sb-tone" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                          <option value="friendly">Friendly & Casual</option>
-                          <option value="professional">Professional</option>
-                          <option value="energetic">Energetic</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Max Response Words</label>
-                        <input id="va-sb-maxwords" type="number" value="15" min="8" max="30" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Currency Format</label>
-                        <input id="va-sb-currency" type="text" placeholder="kwacha" value="kwacha" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Section: Messages -->
-                  <div class="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                    <h4 class="font-semibold text-slate-700 mb-3 flex items-center gap-2"><i data-lucide="message-square" class="h-4 w-4 text-slate-500"></i>Custom Messages</h4>
-                    <div class="grid grid-cols-1 gap-4">
-                      <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Silence Nudge (when customer goes quiet)</label>
-                        <input id="va-sb-silence" type="text" placeholder="Hello? Are you still there? I was calling from {company}." class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Not Interested Goodbye</label>
-                        <input id="va-sb-notinterested" type="text" placeholder="No problem at all. Have a great day. Goodbye." class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Cannot Help Goodbye (triggers Callback list)</label>
-                        <input id="va-sb-canthelp" type="text" placeholder="No problem. Someone from {company} will call you back shortly. Goodbye." class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- FREE WRITE MODE -->
-                <div id="va-freewrite-fields" class="hidden">
-                  <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 mb-5">
-                    <h4 class="font-semibold text-slate-700 mb-2 flex items-center gap-2"><i data-lucide="pencil" class="h-4 w-4 text-slate-500"></i>Write Your Own Script</h4>
-                    <p class="text-xs text-slate-500 mb-3">Write the full system prompt exactly as you want the AI to behave. Full control, no restrictions.</p>
-                    <textarea id="va-sb-freewrite" rows="14" placeholder="You are Sarah, a phone agent calling on behalf of BwanaBet. You are calling to offer customers a special 100% match bonus...&#10;&#10;RULES:&#10;- Keep responses under 15 words&#10;- Always end with a question&#10;- Be friendly and warm..." class="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
-                  </div>
-                </div>
-
-                <!-- Voice Settings -->
-                <div class="mb-5 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                  <h4 class="font-semibold text-blue-700 mb-3 flex items-center gap-2"><i data-lucide="mic" class="h-4 w-4 text-blue-500"></i>Voice Settings</h4>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label class="block text-xs font-medium text-blue-700 mb-1">ElevenLabs Voice ID</label>
-                      <input id="va-sb-voiceid" type="text" placeholder="21m00Tcm4TlvDq8ikWAM" class="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
-                      <p class="text-xs text-blue-500 mt-1">Changing voice will regenerate all filler phrases (~15 seconds)</p>
-                    </div>
-                    <div class="space-y-3">
-                      <div>
-                        <label class="block text-xs font-medium text-blue-700 mb-1">Stability: <span id="va-stability-val">0.5</span></label>
-                        <input id="va-sb-stability" type="range" min="0" max="1" step="0.05" value="0.5" oninput="document.getElementById('va-stability-val').textContent=this.value" class="w-full">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-blue-700 mb-1">Similarity: <span id="va-similarity-val">0.8</span></label>
-                        <input id="va-sb-similarity" type="range" min="0" max="1" step="0.05" value="0.8" oninput="document.getElementById('va-similarity-val').textContent=this.value" class="w-full">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-blue-700 mb-1">Style: <span id="va-style-val">0.0</span></label>
-                        <input id="va-sb-style" type="range" min="0" max="1" step="0.05" value="0.0" oninput="document.getElementById('va-style-val').textContent=this.value" class="w-full">
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Preview + Options -->
-                <div class="mb-5">
-                  <div class="flex items-center gap-3 mb-3">
-                    <label class="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
-                      <input id="va-sb-isdefault" type="checkbox" class="rounded">
-                      Set as default script
-                    </label>
-                  </div>
-                  <button onclick="VA.previewScript()" class="w-full py-2 mb-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 flex items-center justify-center gap-2">
-                    <i data-lucide="eye" class="h-4 w-4"></i>Preview Compiled Script
-                  </button>
-                  <div id="va-script-preview" class="hidden p-3 bg-slate-900 text-green-400 rounded-lg text-xs font-mono whitespace-pre-wrap max-h-48 overflow-y-auto mb-2"></div>
-                </div>
-
-                <!-- Save + Test Call Buttons -->
-                <div class="flex gap-3">
-                  <button onclick="VA.saveScript()" class="flex-1 py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 flex items-center justify-center gap-2">
-                    <i data-lucide="save" class="h-4 w-4"></i>Save Script
-                  </button>
-                  <button onclick="VA.showTestCallModal()" id="va-test-call-btn" class="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2">
-                    <i data-lucide="phone-call" class="h-4 w-4"></i>Test Call
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── LIVE MONITOR ──────────────────────────────────── -->
-        <div id="vaContent-monitor" class="hidden">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-3">
-              <div id="va-monitor-dot" class="w-3 h-3 rounded-full bg-slate-400"></div>
-              <span id="va-monitor-status" class="font-semibold text-slate-700">No active calls</span>
-            </div>
-            <button onclick="VA.refreshMonitor()" class="px-3 py-2 bg-slate-800 text-white rounded-lg text-sm hover:bg-slate-700">
-              <i data-lucide="refresh-cw" class="h-4 w-4 inline mr-1"></i>Refresh
-            </button>
-          </div>
-
-          <!-- Active Calls Grid -->
-          <div id="va-monitor-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="col-span-2 bg-white rounded-xl shadow-sm p-8 text-center text-slate-400">
-              <i data-lucide="phone-off" class="h-10 w-10 mx-auto mb-3 opacity-40"></i>
-              <p>No active calls. Start a campaign or test call to see live transcripts here.</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── OUTCOME LISTS ──────────────────────────────────── -->
-        <div id="vaContent-outcomes" class="hidden">
-          <!-- Outcome List Tabs -->
-          <div class="bg-white rounded-xl shadow-sm p-1.5 mb-4 flex gap-1 border border-slate-200">
-            <button id="va-ol-tab-callback" onclick="VA.switchOutcomeList('callback')" class="va-ol-tab active flex-1 px-4 py-2 rounded-lg text-sm font-semibold bg-amber-500 text-white transition-all">
-              <i data-lucide="phone-incoming" class="h-4 w-4 inline mr-1"></i>Callback <span id="va-ol-count-callback" class="ml-1 bg-white bg-opacity-30 px-1.5 py-0.5 rounded text-xs">0</span>
-            </button>
-            <button id="va-ol-tab-take_action" onclick="VA.switchOutcomeList('take_action')" class="va-ol-tab flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-all">
-              <i data-lucide="zap" class="h-4 w-4 inline mr-1"></i>Take Action <span id="va-ol-count-take_action" class="ml-1 bg-slate-200 px-1.5 py-0.5 rounded text-xs">0</span>
-            </button>
-            <button id="va-ol-tab-blacklist" onclick="VA.switchOutcomeList('blacklist')" class="va-ol-tab flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-all">
-              <i data-lucide="ban" class="h-4 w-4 inline mr-1"></i>Blacklist <span id="va-ol-count-blacklist" class="ml-1 bg-slate-200 px-1.5 py-0.5 rounded text-xs">0</span>
-            </button>
-          </div>
-
-          <!-- List Controls -->
-          <div class="bg-white rounded-xl shadow-sm p-3 mb-4 flex flex-wrap items-center gap-3">
-            <select id="va-ol-filter-actioned" onchange="VA.loadOutcomeList()" class="px-3 py-2 border rounded-lg text-sm">
-              <option value="false">Pending Only</option>
-              <option value="true">Done Only</option>
-              <option value="">All</option>
-            </select>
-            <button onclick="VA.markAllDone()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 flex items-center gap-2">
-              <i data-lucide="check-check" class="h-4 w-4"></i>Mark All Done
-            </button>
-            <button onclick="VA.loadOutcomeList()" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200">
-              <i data-lucide="refresh-cw" class="h-4 w-4 inline mr-1"></i>Refresh
-            </button>
-            <div class="ml-auto text-sm text-slate-500">Showing: <strong id="va-ol-showing">0</strong> records</div>
-          </div>
-
-          <!-- List Content -->
-          <div id="va-outcome-list-content">
-            <div class="bg-white rounded-xl shadow-sm p-8 text-center text-slate-400">
-              <i data-lucide="inbox" class="h-10 w-10 mx-auto mb-3 opacity-40"></i>
-              <p>Loading outcome lists...</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── SETTINGS ───────────────────────────────────────── -->
-        <div id="vaContent-settings" class="hidden">
-          <!-- Voice Settings -->
-          <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-5">
-            <div class="bg-gradient-to-r from-blue-700 to-blue-600 text-white p-4">
-              <h3 class="font-bold flex items-center gap-2"><i data-lucide="mic" class="h-4 w-4"></i>Global Voice Settings</h3>
-              <p class="text-blue-200 text-xs mt-1">Changing the voice will regenerate all filler phrases (~15 seconds). New campaigns will use these settings unless overridden by the script.</p>
-            </div>
-            <div class="p-5">
-              <!-- Voice Regeneration Status -->
-              <div id="va-voice-regen-status" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div class="flex items-center gap-3">
-                  <div class="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
-                  <div>
-                    <p class="font-medium text-blue-800">Regenerating Filler Phrases...</p>
-                    <p id="va-voice-regen-msg" class="text-sm text-blue-600">Please wait. Test calls are disabled until complete.</p>
-                  </div>
-                </div>
-              </div>
-              <div id="va-voice-ready-status" class="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-3">
-                <i data-lucide="check-circle" class="h-5 w-5 text-emerald-500 flex-shrink-0"></i>
-                <div>
-                  <p class="font-medium text-emerald-800">Voice Ready</p>
-                  <p id="va-voice-current" class="text-sm text-emerald-600">Current: <span id="va-current-voice-id">loading...</span></p>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-1">ElevenLabs Voice ID</label>
-                  <input id="va-settings-voiceid" type="text" placeholder="21m00Tcm4TlvDq8ikWAM" class="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
-                  <p class="text-xs text-slate-500 mt-1">Find voice IDs in your ElevenLabs dashboard</p>
-                </div>
-                <div class="space-y-3">
-                  <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">Stability: <span id="va-set-stability-val">0.5</span></label>
-                    <input id="va-settings-stability" type="range" min="0" max="1" step="0.05" value="0.5" oninput="document.getElementById('va-set-stability-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">Similarity: <span id="va-set-similarity-val">0.8</span></label>
-                    <input id="va-settings-similarity" type="range" min="0" max="1" step="0.05" value="0.8" oninput="document.getElementById('va-set-similarity-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">Style: <span id="va-set-style-val">0.0</span></label>
-                    <input id="va-settings-style" type="range" min="0" max="1" step="0.05" value="0.0" oninput="document.getElementById('va-set-style-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600">
-                  </div>
-                </div>
-              </div>
-
-              <button onclick="VA.updateVoice()" class="mt-4 w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2">
-                <i data-lucide="refresh-cw" class="h-4 w-4"></i>Update Voice & Regenerate Fillers
-              </button>
-            </div>
-          </div>
-
-          <!-- Call Settings -->
-          <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-5">
-            <div class="bg-slate-800 text-white p-4">
-              <h3 class="font-bold flex items-center gap-2"><i data-lucide="sliders" class="h-4 w-4"></i>Call Settings</h3>
-            </div>
-            <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-xs font-medium text-slate-700 mb-1">Max Concurrent Calls</label>
-                <input id="va-set-maxcalls" type="number" value="10" min="1" max="100" class="w-full px-3 py-2 border rounded-lg text-sm">
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-slate-700 mb-1">Call Timeout (seconds)</label>
-                <input id="va-set-timeout" type="number" value="45" min="15" max="120" class="w-full px-3 py-2 border rounded-lg text-sm">
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-slate-700 mb-1">Max Turns per Call</label>
-                <input id="va-set-maxturns" type="number" value="10" min="3" max="25" class="w-full px-3 py-2 border rounded-lg text-sm">
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-slate-700 mb-1">Greeting Delay (ms)</label>
-                <input id="va-set-greetdelay" type="number" value="4500" min="2000" max="8000" class="w-full px-3 py-2 border rounded-lg text-sm">
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-slate-700 mb-1">Endpointing (ms)</label>
-                <input id="va-set-endpointing" type="number" value="300" min="100" max="1000" class="w-full px-3 py-2 border rounded-lg text-sm">
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-slate-700 mb-1">Max Silence Count</label>
-                <input id="va-set-silence" type="number" value="2" min="1" max="5" class="w-full px-3 py-2 border rounded-lg text-sm">
-              </div>
-            </div>
-            <div class="p-4 border-t">
-              <button onclick="VA.saveSettings()" class="w-full py-2.5 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-700 flex items-center justify-center gap-2">
-                <i data-lucide="save" class="h-4 w-4"></i>Save Call Settings
-              </button>
-            </div>
-          </div>
-
-          <!-- Server Connection -->
-          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="bg-slate-800 text-white p-4">
-              <h3 class="font-bold flex items-center gap-2"><i data-lucide="server" class="h-4 w-4"></i>Server Connection</h3>
-            </div>
-            <div class="p-5">
-              <div class="flex gap-3">
-                <input id="va-server-url" type="text" value="http://13.246.211.152:8080" class="flex-1 px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-400">
-                <button onclick="VA.testServerConnection()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">Test Connection</button>
-              </div>
-              <div id="va-conn-result" class="mt-3 hidden p-3 rounded-lg text-sm"></div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- Test Call Modal -->
       <div id="va-test-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
@@ -1742,6 +1234,9 @@
         <div id="ccSubTabs" class="bg-white rounded-xl shadow-sm p-2 mb-4 flex gap-2">
           <button id="ccSubTab-calls" onclick="CallCenter.switchSubTab('calls')" class="cc-subtab active flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 text-white">
             <i data-lucide="phone" class="h-4 w-4 inline mr-2"></i>Calls
+          </button>
+          <button id="ccSubTab-aiagent" onclick="CallCenter.switchSubTab('aiagent')" class="cc-subtab flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">
+            <i data-lucide="bot" class="h-4 w-4 inline mr-2"></i>AI Call Agent
           </button>
           <button id="ccSubTab-admin" onclick="CallCenter.switchSubTab('admin')" class="cc-subtab flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">
             <i data-lucide="settings" class="h-4 w-4 inline mr-2"></i>Admin Panel
@@ -1982,7 +1477,349 @@
             </div>
           </div>
         </div>
-      </div>
+
+        <!-- AI CALL AGENT SUB-TAB -->
+        <div id="ccContent-aiagent" class="hidden">
+          <!-- Sub-sub tabs inside AI Call Agent -->
+          <div class="bg-white rounded-xl shadow-sm p-1.5 mb-4 flex gap-1 overflow-x-auto border border-slate-200">
+            <button id="vaSubTab-overview" onclick="VA.switchSubTab('overview')" class="va-subtab active flex-1 px-3 py-2 rounded-lg text-sm font-semibold bg-slate-800 text-white whitespace-nowrap transition-all">
+              <i data-lucide="layout-dashboard" class="h-4 w-4 inline mr-1"></i>Overview
+            </button>
+            <button id="vaSubTab-campaigns" onclick="VA.switchSubTab('campaigns')" class="va-subtab flex-1 px-3 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 whitespace-nowrap transition-all">
+              <i data-lucide="radio" class="h-4 w-4 inline mr-1"></i>Campaigns
+            </button>
+            <button id="vaSubTab-scripts" onclick="VA.switchSubTab('scripts')" class="va-subtab flex-1 px-3 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 whitespace-nowrap transition-all">
+              <i data-lucide="file-text" class="h-4 w-4 inline mr-1"></i>Script Builder
+            </button>
+            <button id="vaSubTab-monitor" onclick="VA.switchSubTab('monitor')" class="va-subtab flex-1 px-3 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 whitespace-nowrap transition-all relative">
+              <i data-lucide="activity" class="h-4 w-4 inline mr-1"></i>Live Monitor
+              <span id="va-live-badge" class="hidden absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">0</span>
+            </button>
+            <button id="vaSubTab-outcomes" onclick="VA.switchSubTab('outcomes')" class="va-subtab flex-1 px-3 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 whitespace-nowrap transition-all relative">
+              <i data-lucide="inbox" class="h-4 w-4 inline mr-1"></i>Outcome Lists
+              <span id="va-outcome-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">0</span>
+            </button>
+            <button id="vaSubTab-settings" onclick="VA.switchSubTab('settings')" class="va-subtab flex-1 px-3 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 whitespace-nowrap transition-all">
+              <i data-lucide="sliders" class="h-4 w-4 inline mr-1"></i>Settings
+            </button>
+          </div>
+
+          <!-- VA content panels (pulled from content-voiceagent) -->
+          <div id="vaContent-overview">
+            <div id="va-status-bar" class="rounded-xl p-4 mb-4 flex items-center justify-between bg-emerald-50 border border-emerald-200">
+              <div class="flex items-center gap-3">
+                <div id="va-status-dot" class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span id="va-status-text" class="font-semibold text-emerald-800">Voice Agent Online</span>
+                <span id="va-version-badge" class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">v6.0</span>
+              </div>
+              <div class="flex items-center gap-4 text-sm text-emerald-700">
+                <span>Active Calls: <strong id="va-active-count">0</strong></span>
+                <span>Fillers: <strong id="va-filler-count">0</strong></span>
+                <button onclick="VA.refreshHealth()" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs hover:bg-emerald-700"><i data-lucide="refresh-cw" class="h-3 w-3 inline mr-1"></i>Refresh</button>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+              <div class="bg-white rounded-xl shadow-sm p-4 text-center"><p class="text-3xl font-bold text-slate-800" id="va-stat-total">0</p><p class="text-xs text-slate-500 mt-1">Total Calls</p></div>
+              <div class="bg-white rounded-xl shadow-sm p-4 text-center"><p class="text-3xl font-bold text-emerald-600" id="va-stat-success">0</p><p class="text-xs text-slate-500 mt-1">Successful</p></div>
+              <div class="bg-white rounded-xl shadow-sm p-4 text-center"><p class="text-3xl font-bold text-amber-600" id="va-stat-callbacks">0</p><p class="text-xs text-slate-500 mt-1">Callbacks Needed</p></div>
+              <div class="bg-white rounded-xl shadow-sm p-4 text-center"><p class="text-3xl font-bold text-blue-600" id="va-stat-actions">0</p><p class="text-xs text-slate-500 mt-1">Actions Pending</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
+                <h3 class="font-bold flex items-center gap-2"><i data-lucide="clock" class="h-4 w-4"></i>Recent Calls</h3>
+                <button onclick="VA.loadRecentCalls()" class="text-slate-400 hover:text-white"><i data-lucide="refresh-cw" class="h-4 w-4"></i></button>
+              </div>
+              <div id="va-recent-calls" class="max-h-96 overflow-y-auto">
+                <div class="p-8 text-center text-slate-400"><i data-lucide="phone" class="h-8 w-8 mx-auto mb-2 opacity-40"></i><p>No recent calls</p></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="vaContent-campaigns" class="hidden">
+            <!-- Mixed content warning -->
+            <div id="va-mixed-content-warning" class="mb-4 p-4 bg-amber-50 border border-amber-300 rounded-xl">
+              <div class="flex items-start gap-3">
+                <i data-lucide="alert-triangle" class="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5"></i>
+                <div>
+                  <p class="font-semibold text-amber-800">HTTPS → HTTP Connection Issue</p>
+                  <p class="text-sm text-amber-700 mt-1">This CRM is on HTTPS but your voice agent server is HTTP. Browsers block this. <strong>To fix:</strong> Access the CRM at <a href="http://crmbwanabet.github.io" class="underline font-medium">http://crmbwanabet.github.io</a> (not https) — or set up SSL on your server. The warning will disappear once connected.</p>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+              <div class="bg-gradient-to-r from-slate-800 to-slate-700 text-white p-4">
+                <h3 class="font-bold flex items-center gap-2"><i data-lucide="radio" class="h-4 w-4"></i>Launch Campaign</h3>
+              </div>
+              <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Campaign Name</label>
+                  <input id="va-camp-name" type="text" placeholder="e.g. March Reactivation" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Script</label>
+                  <select id="va-camp-script" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                    <option value="">-- Select Script --</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Caller ID</label>
+                  <input id="va-camp-callerid" type="text" placeholder="260963065588" value="260963065588" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Calls per Minute</label>
+                  <input id="va-camp-cpm" type="number" value="2" min="1" max="10" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Contact List <span id="va-camp-contact-count" class="text-slate-400 font-normal">(0 contacts)</span></label>
+                  <textarea id="va-camp-contacts" rows="6" placeholder="260971234567&#10;260977654321,John Banda&#10;260955555555,Mary Phiri&#10;&#10;Paste phone numbers, one per line. Optional: phone,name" class="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
+                  <p class="text-xs text-slate-400 mt-1">Format: phone number per line, or phone,name</p>
+                </div>
+                <div class="md:col-span-2">
+                  <button onclick="VA.launchCampaign()" class="w-full py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 flex items-center justify-center gap-2">
+                    <i data-lucide="play" class="h-4 w-4"></i>Launch Campaign
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
+                <h3 class="font-bold flex items-center gap-2"><i data-lucide="list" class="h-4 w-4"></i>Active Campaigns</h3>
+                <button onclick="VA.refreshCampaigns()" class="text-slate-400 hover:text-white"><i data-lucide="refresh-cw" class="h-4 w-4"></i></button>
+              </div>
+              <div id="va-campaigns-list" class="p-4">
+                <div class="text-center text-slate-400 py-8"><i data-lucide="inbox" class="h-8 w-8 mx-auto mb-2 opacity-40"></i><p>No active campaigns</p></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="vaContent-scripts" class="hidden">
+            <div class="flex items-center justify-between mb-4">
+              <div class="bg-white rounded-xl shadow-sm p-1.5 flex gap-1 border border-slate-200">
+                <button id="va-script-mode-library" onclick="VA.showScriptView('library')" class="va-script-view-btn active px-4 py-2 rounded-lg text-sm font-semibold bg-slate-800 text-white transition-all">
+                  <i data-lucide="library" class="h-4 w-4 inline mr-1"></i>Script Library
+                </button>
+                <button id="va-script-mode-builder" onclick="VA.showScriptView('builder')" class="va-script-view-btn px-4 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-all">
+                  <i data-lucide="plus-circle" class="h-4 w-4 inline mr-1"></i>New Script
+                </button>
+              </div>
+            </div>
+            <div id="va-script-library">
+              <div id="va-scripts-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="col-span-2 text-center py-12 text-slate-400"><i data-lucide="file-text" class="h-10 w-10 mx-auto mb-3 opacity-40"></i><p class="font-medium">No scripts yet</p><p class="text-sm mt-1">Click "New Script" to create your first</p></div>
+              </div>
+            </div>
+            <div id="va-script-builder" class="hidden">
+              <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="bg-gradient-to-r from-slate-800 to-slate-700 text-white p-4 flex items-center justify-between">
+                  <h3 class="font-bold flex items-center gap-2"><i data-lucide="pencil" class="h-4 w-4"></i><span id="va-builder-title">New Script</span></h3>
+                  <button onclick="VA.showScriptView('library')" class="px-3 py-1 bg-slate-600 text-white rounded-lg text-xs hover:bg-slate-500">← Back to Library</button>
+                </div>
+                <div class="p-5">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                    <div>
+                      <label class="block text-sm font-medium text-slate-700 mb-1">Script Name <span class="text-red-500">*</span></label>
+                      <input id="va-sb-name" type="text" placeholder="e.g. March Reactivation Bonus" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-slate-700 mb-1">Build Mode</label>
+                      <div class="flex gap-2">
+                        <button id="va-mode-guided" onclick="VA.setBuilderMode('guided')" class="flex-1 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium"><i data-lucide="sliders" class="h-4 w-4 inline mr-1"></i>Guided</button>
+                        <button id="va-mode-freewrite" onclick="VA.setBuilderMode('freewrite')" class="flex-1 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-200"><i data-lucide="pencil" class="h-4 w-4 inline mr-1"></i>Free Write</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="va-guided-fields">
+                    <div class="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <h4 class="font-semibold text-slate-700 mb-3 flex items-center gap-2"><i data-lucide="building-2" class="h-4 w-4 text-slate-500"></i>Identity & Purpose</h4>
+                      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-xs font-medium text-slate-600 mb-1">Company Name <span class="text-red-500">*</span></label><input id="va-sb-company" type="text" placeholder="Bwana Bet" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"></div>
+                        <div><label class="block text-xs font-medium text-slate-600 mb-1">Agent Name</label><input id="va-sb-agent" type="text" placeholder="Sarah" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"></div>
+                        <div><label class="block text-xs font-medium text-slate-600 mb-1">Call Purpose</label><input id="va-sb-purpose" type="text" placeholder="Re-engaging inactive customers" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"></div>
+                      </div>
+                    </div>
+                    <div class="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <h4 class="font-semibold text-slate-700 mb-3 flex items-center gap-2"><i data-lucide="gift" class="h-4 w-4 text-slate-500"></i>Offers & Bonuses</h4>
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-medium text-slate-600 mb-1">Offer 1 Name</label><input id="va-sb-offer1-name" type="text" placeholder="100% Match Bonus" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"></div>
+                        <div><label class="block text-xs font-medium text-slate-600 mb-1">Offer 1 Details</label><input id="va-sb-offer1-details" type="text" placeholder="Up to K500 on your next deposit" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"></div>
+                        <div><label class="block text-xs font-medium text-slate-600 mb-1">Offer 2 Name (optional)</label><input id="va-sb-offer2-name" type="text" placeholder="Free Bet" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"></div>
+                        <div><label class="block text-xs font-medium text-slate-600 mb-1">Offer 2 Details (optional)</label><input id="va-sb-offer2-details" type="text" placeholder="K50 free football bet" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"></div>
+                        <div class="md:col-span-2"><label class="block text-xs font-medium text-slate-600 mb-1">How to Claim</label><input id="va-sb-claim" type="text" placeholder="Log into the app or visit our website" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"></div>
+                      </div>
+                    </div>
+                    <div class="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <h4 class="font-semibold text-slate-700 mb-3 flex items-center gap-2"><i data-lucide="settings-2" class="h-4 w-4 text-slate-500"></i>AI Behaviour</h4>
+                      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-xs font-medium text-slate-600 mb-1">Tone</label><select id="va-sb-tone" class="w-full px-3 py-2 border rounded-lg text-sm"><option value="friendly">Friendly & Casual</option><option value="professional">Professional</option><option value="energetic">Energetic</option></select></div>
+                        <div><label class="block text-xs font-medium text-slate-600 mb-1">Max Response Words</label><input id="va-sb-maxwords" type="number" value="15" min="8" max="30" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                        <div><label class="block text-xs font-medium text-slate-600 mb-1">Currency Format</label><input id="va-sb-currency" type="text" value="kwacha" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                      </div>
+                    </div>
+                    <div class="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <h4 class="font-semibold text-slate-700 mb-3 flex items-center gap-2"><i data-lucide="message-square" class="h-4 w-4 text-slate-500"></i>Custom Messages</h4>
+                      <div class="grid grid-cols-1 gap-3">
+                        <div><label class="block text-xs font-medium text-slate-600 mb-1">Silence Nudge</label><input id="va-sb-silence" type="text" placeholder="Hello? Are you still there? I was calling from {company}." class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                        <div><label class="block text-xs font-medium text-slate-600 mb-1">Not Interested Goodbye</label><input id="va-sb-notinterested" type="text" placeholder="No problem at all. Have a great day. Goodbye." class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                        <div><label class="block text-xs font-medium text-slate-600 mb-1">Cannot Help Goodbye (triggers Callback list)</label><input id="va-sb-canthelp" type="text" placeholder="Someone will call you back shortly. Goodbye." class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="va-freewrite-fields" class="hidden">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 mb-5">
+                      <h4 class="font-semibold text-slate-700 mb-2">Write Your Own Script</h4>
+                      <p class="text-xs text-slate-500 mb-3">Write the full system prompt. Full control, no restrictions.</p>
+                      <textarea id="va-sb-freewrite" rows="12" placeholder="You are Sarah, a phone agent calling on behalf of BwanaBet..." class="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
+                    </div>
+                  </div>
+                  <!-- Voice Settings with Picker -->
+                  <div class="mb-5 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                    <h4 class="font-semibold text-blue-700 mb-3 flex items-center gap-2"><i data-lucide="mic" class="h-4 w-4 text-blue-500"></i>Voice Settings</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-xs font-medium text-blue-700 mb-1">Voice</label>
+                        <div class="flex gap-2">
+                          <select id="va-sb-voicepick" class="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="VA.onVoicePickerChange('sb')">
+                            <option value="">-- Select or enter ID below --</option>
+                          </select>
+                          <button onclick="VA.loadVoices('sb')" class="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 whitespace-nowrap">Load Voices</button>
+                        </div>
+                        <input id="va-sb-voiceid" type="text" placeholder="Voice ID (auto-filled from picker)" class="w-full mt-2 px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <p class="text-xs text-blue-500 mt-1">Changing voice regenerates all filler phrases (~15s)</p>
+                      </div>
+                      <div class="space-y-3">
+                        <div><label class="block text-xs font-medium text-blue-700 mb-1">Stability: <span id="va-stability-val">0.5</span></label><input id="va-sb-stability" type="range" min="0" max="1" step="0.05" value="0.5" oninput="document.getElementById('va-stability-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
+                        <div><label class="block text-xs font-medium text-blue-700 mb-1">Similarity: <span id="va-similarity-val">0.8</span></label><input id="va-sb-similarity" type="range" min="0" max="1" step="0.05" value="0.8" oninput="document.getElementById('va-similarity-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
+                        <div><label class="block text-xs font-medium text-blue-700 mb-1">Style: <span id="va-style-val">0.0</span></label><input id="va-sb-style" type="range" min="0" max="1" step="0.05" value="0.0" oninput="document.getElementById('va-style-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mb-4 flex items-center gap-3">
+                    <label class="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer"><input id="va-sb-isdefault" type="checkbox" class="rounded"> Set as default script</label>
+                  </div>
+                  <button onclick="VA.previewScript()" class="w-full py-2 mb-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 flex items-center justify-center gap-2"><i data-lucide="eye" class="h-4 w-4"></i>Preview Compiled Script</button>
+                  <div id="va-script-preview" class="hidden p-3 bg-slate-900 text-green-400 rounded-lg text-xs font-mono whitespace-pre-wrap max-h-48 overflow-y-auto mb-3"></div>
+                  <div class="flex gap-3">
+                    <button onclick="VA.saveScript()" class="flex-1 py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 flex items-center justify-center gap-2"><i data-lucide="save" class="h-4 w-4"></i>Save Script</button>
+                    <button onclick="VA.showTestCallModal()" id="va-test-call-btn" class="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2"><i data-lucide="phone-call" class="h-4 w-4"></i>Test Call</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="vaContent-monitor" class="hidden">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div id="va-monitor-dot" class="w-3 h-3 rounded-full bg-slate-400"></div>
+                <span id="va-monitor-status" class="font-semibold text-slate-700">No active calls</span>
+              </div>
+              <button onclick="VA.refreshMonitor()" class="px-3 py-2 bg-slate-800 text-white rounded-lg text-sm hover:bg-slate-700"><i data-lucide="refresh-cw" class="h-4 w-4 inline mr-1"></i>Refresh</button>
+            </div>
+            <div id="va-monitor-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div class="col-span-2 bg-white rounded-xl shadow-sm p-8 text-center text-slate-400"><i data-lucide="phone-off" class="h-10 w-10 mx-auto mb-3 opacity-40"></i><p>No active calls.</p></div>
+            </div>
+          </div>
+
+          <div id="vaContent-outcomes" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm p-1.5 mb-4 flex gap-1 border border-slate-200">
+              <button id="va-ol-tab-callback" onclick="VA.switchOutcomeList('callback')" class="va-ol-tab active flex-1 px-4 py-2 rounded-lg text-sm font-semibold bg-amber-500 text-white transition-all">
+                <i data-lucide="phone-incoming" class="h-4 w-4 inline mr-1"></i>Callback <span id="va-ol-count-callback" class="ml-1 bg-white bg-opacity-30 px-1.5 py-0.5 rounded text-xs">0</span>
+              </button>
+              <button id="va-ol-tab-take_action" onclick="VA.switchOutcomeList('take_action')" class="va-ol-tab flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-all">
+                <i data-lucide="zap" class="h-4 w-4 inline mr-1"></i>Take Action <span id="va-ol-count-take_action" class="ml-1 bg-slate-200 px-1.5 py-0.5 rounded text-xs">0</span>
+              </button>
+              <button id="va-ol-tab-blacklist" onclick="VA.switchOutcomeList('blacklist')" class="va-ol-tab flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-all">
+                <i data-lucide="ban" class="h-4 w-4 inline mr-1"></i>Blacklist <span id="va-ol-count-blacklist" class="ml-1 bg-slate-200 px-1.5 py-0.5 rounded text-xs">0</span>
+              </button>
+            </div>
+            <!-- Run Campaign banner — always visible on outcome lists -->
+            <div id="va-run-campaign-banner" class="mb-4 p-4 bg-gradient-to-r from-yellow-400 to-yellow-300 rounded-xl flex items-center justify-between shadow-sm">
+              <div>
+                <p class="font-bold text-black">Run a Campaign on this List</p>
+                <p id="va-run-campaign-desc" class="text-sm text-yellow-900">Use these contacts as the audience for a new AI call campaign</p>
+              </div>
+              <button onclick="VA.runCampaignFromList()" class="px-5 py-2.5 bg-black text-yellow-400 font-bold rounded-lg hover:bg-slate-800 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="play" class="h-4 w-4"></i>Run Campaign
+              </button>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-3 mb-4 flex flex-wrap items-center gap-3">
+              <select id="va-ol-filter-actioned" onchange="VA.loadOutcomeList()" class="px-3 py-2 border rounded-lg text-sm">
+                <option value="false">Pending Only</option>
+                <option value="true">Done Only</option>
+                <option value="">All</option>
+              </select>
+              <button onclick="VA.markAllDone()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 flex items-center gap-2"><i data-lucide="check-check" class="h-4 w-4"></i>Mark All Done</button>
+              <button onclick="VA.loadOutcomeList()" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200"><i data-lucide="refresh-cw" class="h-4 w-4 inline mr-1"></i>Refresh</button>
+              <div class="ml-auto text-sm text-slate-500">Showing: <strong id="va-ol-showing">0</strong> records</div>
+            </div>
+            <div id="va-outcome-list-content">
+              <div class="bg-white rounded-xl shadow-sm p-8 text-center text-slate-400"><i data-lucide="inbox" class="h-10 w-10 mx-auto mb-3 opacity-40"></i><p>Select a list above</p></div>
+            </div>
+          </div>
+
+          <div id="vaContent-settings" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-5">
+              <div class="bg-gradient-to-r from-blue-700 to-blue-600 text-white p-4">
+                <h3 class="font-bold flex items-center gap-2"><i data-lucide="mic" class="h-4 w-4"></i>Global Voice Settings</h3>
+                <p class="text-blue-200 text-xs mt-1">Changing voice regenerates all filler phrases (~15 seconds). Test calls disabled during regeneration.</p>
+              </div>
+              <div class="p-5">
+                <div id="va-voice-regen-status" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div class="flex items-center gap-3"><div class="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div><div><p class="font-medium text-blue-800">Regenerating Filler Phrases...</p><p id="va-voice-regen-msg" class="text-sm text-blue-600">Please wait...</p></div></div>
+                </div>
+                <div id="va-voice-ready-status" class="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-3">
+                  <i data-lucide="check-circle" class="h-5 w-5 text-emerald-500 flex-shrink-0"></i>
+                  <div><p class="font-medium text-emerald-800">Voice Ready</p><p class="text-sm text-emerald-600">Current: <span id="va-current-voice-id">loading...</span></p></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Voice</label>
+                    <div class="flex gap-2 mb-2">
+                      <select id="va-settings-voicepick" class="flex-1 px-3 py-2 border rounded-lg text-sm" onchange="VA.onVoicePickerChange('settings')">
+                        <option value="">-- Select or enter ID below --</option>
+                      </select>
+                      <button onclick="VA.loadVoices('settings')" class="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 whitespace-nowrap">Load Voices</button>
+                    </div>
+                    <input id="va-settings-voiceid" type="text" placeholder="Voice ID" class="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    <p class="text-xs text-slate-500 mt-1">Find more voices in your ElevenLabs dashboard</p>
+                  </div>
+                  <div class="space-y-3">
+                    <div><label class="block text-xs font-medium text-slate-700 mb-1">Stability: <span id="va-set-stability-val">0.50</span></label><input id="va-settings-stability" type="range" min="0" max="1" step="0.05" value="0.5" oninput="document.getElementById('va-set-stability-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
+                    <div><label class="block text-xs font-medium text-slate-700 mb-1">Similarity: <span id="va-set-similarity-val">0.80</span></label><input id="va-settings-similarity" type="range" min="0" max="1" step="0.05" value="0.8" oninput="document.getElementById('va-set-similarity-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
+                    <div><label class="block text-xs font-medium text-slate-700 mb-1">Style: <span id="va-set-style-val">0.00</span></label><input id="va-settings-style" type="range" min="0" max="1" step="0.05" value="0.0" oninput="document.getElementById('va-set-style-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
+                  </div>
+                </div>
+                <button onclick="VA.updateVoice()" class="mt-4 w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Update Voice & Regenerate Fillers</button>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-5">
+              <div class="bg-slate-800 text-white p-4"><h3 class="font-bold flex items-center gap-2"><i data-lucide="sliders" class="h-4 w-4"></i>Call Settings</h3></div>
+              <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div><label class="block text-xs font-medium text-slate-700 mb-1">Max Concurrent Calls</label><input id="va-set-maxcalls" type="number" value="10" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                <div><label class="block text-xs font-medium text-slate-700 mb-1">Call Timeout (seconds)</label><input id="va-set-timeout" type="number" value="45" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                <div><label class="block text-xs font-medium text-slate-700 mb-1">Max Turns per Call</label><input id="va-set-maxturns" type="number" value="10" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                <div><label class="block text-xs font-medium text-slate-700 mb-1">Greeting Delay (ms)</label><input id="va-set-greetdelay" type="number" value="4500" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                <div><label class="block text-xs font-medium text-slate-700 mb-1">Endpointing (ms)</label><input id="va-set-endpointing" type="number" value="300" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                <div><label class="block text-xs font-medium text-slate-700 mb-1">Max Silence Count</label><input id="va-set-silence" type="number" value="2" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+              </div>
+              <div class="p-4 border-t"><button onclick="VA.saveSettings()" class="w-full py-2.5 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-700 flex items-center justify-center gap-2"><i data-lucide="save" class="h-4 w-4"></i>Save Call Settings</button></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div class="bg-slate-800 text-white p-4"><h3 class="font-bold flex items-center gap-2"><i data-lucide="server" class="h-4 w-4"></i>Server Connection</h3></div>
+              <div class="p-5">
+                <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3"><i data-lucide="alert-triangle" class="h-4 w-4 inline mr-1"></i><strong>HTTPS Issue:</strong> If the CRM is on HTTPS, access it via <strong>http://</strong> instead to avoid mixed content errors blocking the server connection.</p>
+                <div class="flex gap-3">
+                  <input id="va-server-url" type="text" value="http://13.246.211.152:8080" class="flex-1 px-3 py-2 border rounded-lg text-sm font-mono">
+                  <button onclick="VA.testServerConnection()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">Test</button>
+                </div>
+                <div id="va-conn-result" class="mt-3 hidden p-3 rounded-lg text-sm"></div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- end ccContent-aiagent -->
+
+      </div><!-- end content-callcenter -->
 
       <!-- AGENTS MANAGEMENT -->
       <div id="content-agents" class="tab-content hidden">
@@ -6263,6 +6100,10 @@ Total Players: ${s.total}`;
         // Show/hide content
         document.getElementById('ccContent-calls')?.classList.toggle('hidden', tab !== 'calls');
         document.getElementById('ccContent-admin')?.classList.toggle('hidden', tab !== 'admin');
+        document.getElementById('ccContent-aiagent')?.classList.toggle('hidden', tab !== 'aiagent');
+        
+        // Init AI Call Agent when switching to it
+        if (tab === 'aiagent') { VA.init(); }
         
         // Refresh admin content when switching to admin tab
         if (tab === 'admin') {
@@ -7180,6 +7021,7 @@ Total Players: ${s.total}`;
       document.querySelectorAll('.tab-btn').forEach(e => e.classList.remove('active')); 
       document.getElementById('content-'+t)?.classList.remove('hidden'); 
       document.getElementById('tab-'+t)?.classList.add('active'); 
+      localStorage.setItem('crmActiveTab', t);
       
       // Only refresh icons, don't reload data
       refreshIcons();
@@ -7235,7 +7077,8 @@ Total Players: ${s.total}`;
       startPolling() {
         if (this.pollingInterval) clearInterval(this.pollingInterval);
         this.pollingInterval = setInterval(() => {
-          if (document.getElementById('content-voiceagent')?.classList.contains('hidden')) return;
+          const aiagentVisible = !document.getElementById('ccContent-aiagent')?.classList.contains('hidden');
+          if (!aiagentVisible) return;
           if (this.currentSubTab === 'overview') this.loadRecentCalls();
           if (this.currentSubTab === 'monitor') this.refreshMonitor();
           if (this.currentSubTab === 'settings') this.refreshVoiceStatus();
@@ -7993,10 +7836,88 @@ Total Players: ${s.total}`;
           const d = await r.json();
           result.className = 'mt-3 p-3 rounded-lg text-sm bg-emerald-50 text-emerald-800 border border-emerald-200';
           result.innerHTML = `✅ Connected — Voice Agent v${d.version} | ${d.active_calls} active calls | Fillers: ${d.fillers_loaded} | FreeSWITCH: ${d.freeswitch_connected?'✅':'❌'}`;
+          // Hide mixed content warning if connected
+          document.getElementById('va-mixed-content-warning')?.classList.add('hidden');
         } catch(e) {
           result.className = 'mt-3 p-3 rounded-lg text-sm bg-red-50 text-red-800 border border-red-200';
           result.textContent = '❌ Cannot connect: ' + e.message;
         }
+      },
+
+      // ── Voice Picker ────────────────────────────────────────────
+      async loadVoices(context) {
+        // context = 'sb' (script builder) or 'settings'
+        const pickerId = context === 'sb' ? 'va-sb-voicepick' : 'va-settings-voicepick';
+        const picker = document.getElementById(pickerId);
+        if (!picker) return;
+        picker.innerHTML = '<option value="">Loading voices...</option>';
+        try {
+          // Use server proxy — keeps ElevenLabs API key off the browser
+          const r = await fetch(this.apiBase + '/api/voices');
+          if (!r.ok) throw new Error('Server error ' + r.status);
+          const d = await r.json();
+          const voices = d.voices || [];
+          picker.innerHTML = '<option value="">-- Select a voice --</option>';
+          voices.sort((a,b) => a.name.localeCompare(b.name)).forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.voice_id;
+            const accent = v.labels?.accent || v.labels?.gender || '';
+            opt.textContent = `${v.name}${accent ? ' · '+accent : ''}`;
+            picker.appendChild(opt);
+          });
+        } catch(e) {
+          picker.innerHTML = '<option value="">Failed to load — is server connected?</option>';
+        }
+      },
+
+      async getElevenLabsKey() { return ''; }, // Not needed — voices load via server proxy
+
+      onVoicePickerChange(context) {
+        const pickerId = context === 'sb' ? 'va-sb-voicepick' : 'va-settings-voicepick';
+        const inputId = context === 'sb' ? 'va-sb-voiceid' : 'va-settings-voiceid';
+        const val = document.getElementById(pickerId)?.value;
+        if (val) document.getElementById(inputId).value = val;
+      },
+
+      // ── Run Campaign from Outcome List ──────────────────────────
+      cachedOutcomeRecords: [],
+
+      async runCampaignFromList() {
+        const list = this.currentOutcomeList;
+        const label = {callback:'Callback',take_action:'Take Action',blacklist:'Blacklist'}[list] || list;
+
+        // Get phone numbers from current list
+        let url;
+        if (list === 'blacklist') url = `${this.apiBase}/api/outcomes/blacklist_list?limit=1000`;
+        else url = `${this.apiBase}/api/outcomes/${list}?actioned=false&limit=1000`;
+
+        let phones = '';
+        try {
+          const r = await fetch(url);
+          const records = await r.json();
+          if (!records.length) return alert('No pending records in this list to use as contacts.');
+          // Build phone list
+          phones = records.map(r => r.phone_number).filter(Boolean).join('\n');
+        } catch(e) {
+          return alert('Error loading contacts: ' + e.message);
+        }
+
+        // Switch to Campaigns sub-tab and pre-fill
+        this.switchSubTab('campaigns');
+
+        // Pre-fill campaign name and contacts
+        const campName = document.getElementById('va-camp-name');
+        const campContacts = document.getElementById('va-camp-contacts');
+        const campCount = document.getElementById('va-camp-contact-count');
+        if (campName) campName.value = `${label} Campaign — ${new Date().toLocaleDateString()}`;
+        if (campContacts) {
+          campContacts.value = phones;
+          const count = phones.split('\n').filter(l=>l.trim()).length;
+          if (campCount) campCount.textContent = `(${count} contacts)`;
+        }
+
+        // Scroll to top
+        document.getElementById('va-camp-name')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       },
     };
     // Contact count updater
@@ -8760,9 +8681,7 @@ Total Players: ${s.total}`;
       AgentManager.init();
       
       document.getElementById('logoutBtn').addEventListener('click', () => App.db.auth.signOut());
-      ['dashboard','profitability','behavior','churn','analytics','players','callcenter','agents','voiceagent','settings'].forEach(t => document.getElementById('tab-'+t)?.addEventListener('click', () => switchTab(t)));
-      // Init Voice Agent on tab click
-      document.getElementById('tab-voiceagent')?.addEventListener('click', () => { VA.init(); });
+      ['dashboard','profitability','behavior','churn','analytics','players','callcenter','agents','settings'].forEach(t => document.getElementById('tab-'+t)?.addEventListener('click', () => switchTab(t)));
       ['searchInput','profitFilter','prefFilter','churnFilter','valueFilter'].forEach(id => document.getElementById(id)?.addEventListener('input', filterTable));
       // Legacy CSV import removed - using new player upload system
       
@@ -8919,8 +8838,10 @@ Total Players: ${s.total}`;
           }
         }
         
-        // Show dashboard by default
-        switchTab('dashboard');
+        // Restore last active tab (default to dashboard)
+        const savedTab = localStorage.getItem('crmActiveTab') || 'dashboard';
+        const validTabs = ['dashboard','profitability','behavior','churn','analytics','players','callcenter','agents','settings'];
+        switchTab(validTabs.includes(savedTab) ? savedTab : 'dashboard');
       }
     }
   </script>
