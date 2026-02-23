@@ -98,22 +98,6 @@
     .chat-bubble-theirs { background:#f1f5f9;color:#1e293b;border-radius:16px 16px 16px 4px; }
     .agent-filter-active { background:#059669;color:white; }
     .agent-filter-inactive { background:#e2e8f0;color:#64748b; }
-    /* Voice Agent */
-    .va-live-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
-    .va-live-card .header { background: linear-gradient(135deg, #059669, #047857); color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
-    .va-live-card .transcript { max-height: 220px; overflow-y: auto; padding: 12px; font-size: 13px; }
-    .va-transcript-line { margin-bottom: 6px; padding: 6px 10px; border-radius: 8px; }
-    .va-transcript-line.user { background: #eff6ff; border-left: 3px solid #3b82f6; }
-    .va-transcript-line.agent { background: #f0fdf4; border-left: 3px solid #22c55e; }
-    .va-transcript-role { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-    .va-transcript-role.user { color: #3b82f6; }
-    .va-transcript-role.agent { color: #22c55e; }
-    .va-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-    .va-badge-green { background: #dcfce7; color: #16a34a; }
-    .va-badge-red { background: #fee2e2; color: #dc2626; }
-    .va-badge-yellow { background: #fef3c7; color: #d97706; }
-    .va-badge-gray { background: #f1f5f9; color: #64748b; }
-    .va-badge-blue { background: #dbeafe; color: #2563eb; }
     .trend-up { color:#059669; } .trend-down { color:#ef4444; } .trend-flat { color:#94a3b8; }
   </style>
 </head>
@@ -141,9 +125,19 @@
   <div id="mainApp" class="hidden">
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-[100]">
-      <div class="bg-white rounded-xl p-6 flex flex-col items-center gap-4 shadow-2xl">
+      <div class="bg-white rounded-xl p-7 flex flex-col items-center gap-4 shadow-2xl min-w-[300px]">
         <svg class="spinner h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
         <span class="text-lg font-medium text-slate-700" id="loadingText">Loading...</span>
+        <!-- Progress bar (hidden when progress not set) -->
+        <div id="loadingProgressWrap" class="hidden w-full">
+          <div class="flex justify-between text-xs text-slate-500 mb-1">
+            <span id="loadingSubtext" class="text-slate-400 text-xs"></span>
+            <span id="loadingPercent" class="font-bold text-yellow-500">0%</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+            <div id="loadingProgressBar" class="bg-yellow-400 h-2.5 rounded-full transition-all duration-300" style="width:0%"></div>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -1197,7 +1191,7 @@
           <button id="ccSubTab-admin" onclick="CallCenter.switchSubTab('admin')" class="cc-subtab flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">
             <i data-lucide="settings" class="h-4 w-4 inline mr-2"></i>Admin Panel
           </button>
-          <button id="ccSubTab-voiceagent" onclick="CallCenter.switchSubTab('voiceagent')" class="cc-subtab flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">
+          <button id="ccSubTab-voiceagent" onclick="CallCenter.switchSubTab('voiceagent')" class="cc-subtab flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 va-admin-only hidden">
             <i data-lucide="bot" class="h-4 w-4 inline mr-2"></i>AI Voice Agent
           </button>
         </div>
@@ -1435,268 +1429,227 @@
               </div>
             </div>
           </div>
-        </div>
+        </div><!-- /ccContent-admin -->
 
-        <!-- AI VOICE AGENT SUB-TAB -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- AI VOICE AGENT SUB-TAB (admin/developer only)   -->
+        <!-- ═══════════════════════════════════════════════ -->
         <div id="ccContent-voiceagent" class="hidden">
-          
+
+          <!-- Mixed Content Warning Banner -->
+          <div id="va-mixed-content-warning" class="hidden mb-4 bg-amber-50 border border-amber-300 rounded-xl p-4 flex items-start gap-3">
+            <i data-lucide="alert-triangle" class="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0"></i>
+            <div class="flex-1 text-sm">
+              <p class="font-bold text-amber-800 mb-1">⚠️ Mixed Content Blocked</p>
+              <p class="text-amber-700">The CRM runs on <strong>HTTPS</strong> but the voice agent server uses <strong>HTTP</strong>. Your browser will block these requests. Fix options:</p>
+              <ol class="list-decimal ml-4 mt-2 text-amber-700 space-y-1">
+                <li>Add SSL to your EC2 server (nginx + Let's Encrypt). See Settings → Server URL tip below.</li>
+                <li>Or: open <code class="bg-amber-100 px-1 rounded text-xs">http://13.246.211.152:8080</code> in a new tab and accept the certificate first.</li>
+              </ol>
+            </div>
+          </div>
+
           <!-- Stats Row -->
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
-            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
-              <p class="text-2xl font-bold text-emerald-600" id="va-active-calls">0</p>
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+            <div class="bg-white rounded-xl shadow-sm p-3 text-center border-l-4 border-emerald-400">
+              <p class="text-2xl font-bold text-emerald-600" id="va-stat-active">0</p>
               <p class="text-xs text-slate-500">Active Calls</p>
             </div>
-            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
-              <p class="text-2xl font-bold text-slate-800" id="va-calls-today">0</p>
-              <p class="text-xs text-slate-500">Calls Today</p>
+            <div class="bg-white rounded-xl shadow-sm p-3 text-center border-l-4 border-blue-400">
+              <p class="text-2xl font-bold text-blue-600" id="va-stat-today">0</p>
+              <p class="text-xs text-slate-500">Today's Calls</p>
             </div>
-            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
-              <p class="text-2xl font-bold text-emerald-600" id="va-interested">0</p>
+            <div class="bg-white rounded-xl shadow-sm p-3 text-center border-l-4 border-yellow-400">
+              <p class="text-2xl font-bold text-yellow-600" id="va-stat-interested">0</p>
               <p class="text-xs text-slate-500">Interested</p>
             </div>
-            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
-              <p class="text-2xl font-bold text-red-600" id="va-not-interested">0</p>
+            <div class="bg-white rounded-xl shadow-sm p-3 text-center border-l-4 border-red-400">
+              <p class="text-2xl font-bold text-red-600" id="va-stat-notinterested">0</p>
               <p class="text-xs text-slate-500">Not Interested</p>
             </div>
-            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
-              <p class="text-2xl font-bold text-blue-600" id="va-llm-provider">—</p>
-              <p class="text-xs text-slate-500">LLM Provider</p>
+            <div class="bg-white rounded-xl shadow-sm p-3 text-center border-l-4 border-purple-400">
+              <p class="text-2xl font-bold text-purple-600" id="va-stat-llm">Groq</p>
+              <p class="text-xs text-slate-500">LLM Engine</p>
             </div>
           </div>
 
-          <!-- Quick Call -->
-          <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
-            <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="phone-call" class="h-4 w-4 text-emerald-500"></i> Quick Call</h3>
-            <div class="flex flex-wrap gap-3 items-end">
-              <div class="flex-1 min-w-[200px]">
-                <label class="block text-xs font-medium text-slate-600 mb-1">Phone Number</label>
-                <input type="tel" id="vaQuickPhone" placeholder="e.g. 260779613904" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 outline-none">
+          <!-- Quick Call Bar -->
+          <div class="bg-white rounded-xl shadow-sm p-4 mb-5 flex flex-wrap items-center gap-3">
+            <i data-lucide="phone-call" class="h-5 w-5 text-yellow-500"></i>
+            <span class="font-medium text-slate-700 text-sm">Quick Call:</span>
+            <input type="text" id="va-quick-number" placeholder="260XXXXXXXXX" class="flex-1 min-w-[180px] px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 outline-none">
+            <button onclick="VoiceAgent.quickCall()" class="px-5 py-2 bg-yellow-400 text-black font-bold rounded-lg text-sm hover:bg-yellow-300 flex items-center gap-2">
+              <i data-lucide="phone" class="h-4 w-4"></i> Call
+            </button>
+            <button onclick="VoiceAgent.hangupAll()" class="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200 flex items-center gap-2">
+              <i data-lucide="phone-off" class="h-4 w-4"></i> Hang Up All
+            </button>
+            <div id="va-call-status" class="text-sm text-slate-400 italic"></div>
+          </div>
+
+          <!-- Inner Tabs -->
+          <div class="bg-white rounded-xl shadow-sm mb-5">
+            <div class="flex gap-1 p-1.5 border-b overflow-x-auto">
+              <button id="vaTab-scripts" onclick="VoiceAgent.switchPanel('scripts')" class="va-inner-tab px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 text-white">📝 Scripts</button>
+              <button id="vaTab-campaigns" onclick="VoiceAgent.switchPanel('campaigns')" class="va-inner-tab px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">📣 Campaigns</button>
+              <button id="vaTab-monitor" onclick="VoiceAgent.switchPanel('monitor')" class="va-inner-tab px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">📡 Live Monitor</button>
+              <button id="vaTab-history" onclick="VoiceAgent.switchPanel('history')" class="va-inner-tab px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">📋 Call History</button>
+              <button id="vaTab-settings" onclick="VoiceAgent.switchPanel('settings')" class="va-inner-tab px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">⚙️ Settings</button>
+            </div>
+
+            <!-- Scripts Panel -->
+            <div id="vaPanel-scripts" class="p-5">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-slate-800">Call Scripts</h3>
+                <button onclick="VoiceAgent.newScript()" class="px-4 py-2 bg-yellow-400 text-black rounded-lg text-sm font-medium hover:bg-yellow-300 flex items-center gap-2"><i data-lucide="plus" class="h-4 w-4"></i> New Script</button>
               </div>
-              <div class="flex-1 min-w-[200px]">
-                <label class="block text-xs font-medium text-slate-600 mb-1">Script</label>
-                <select id="vaQuickScript" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-yellow-400 outline-none">
-                  <option value="">Default Script</option>
+              <div id="va-scripts-list" class="space-y-3">
+                <div class="p-8 text-center text-slate-400"><i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 opacity-40"></i><p class="text-sm">No scripts yet. Create one to get started.</p></div>
+              </div>
+              <!-- Script Editor (hidden by default) -->
+              <div id="va-script-editor" class="hidden mt-4 border border-slate-200 rounded-xl p-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+                  <div><label class="block text-xs font-medium text-slate-600 mb-1">Script Name</label><input type="text" id="va-script-name" placeholder="e.g. Churn Reactivation" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                  <div><label class="block text-xs font-medium text-slate-600 mb-1">Language</label><select id="va-script-lang" class="w-full px-3 py-2 border rounded-lg text-sm bg-white"><option value="en">English</option><option value="nyanja">Nyanja</option><option value="bemba">Bemba</option></select></div>
+                </div>
+                <div class="mb-3"><label class="block text-xs font-medium text-slate-600 mb-1">System Prompt / Instructions</label><textarea id="va-script-body" rows="6" placeholder="You are a friendly BwanaBet agent. Your goal is to re-engage churned players..." class="w-full px-3 py-2 border rounded-lg text-sm font-mono resize-y"></textarea></div>
+                <div class="mb-3"><label class="block text-xs font-medium text-slate-600 mb-1">Custom Greeting (optional — leave blank to use AI-generated)</label><input type="text" id="va-script-greeting" placeholder="Hi, am I speaking with {name}? This is Chichi from BwanaBet..." class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                <div class="flex gap-3 justify-end">
+                  <button onclick="VoiceAgent.cancelScript()" class="px-4 py-2 text-slate-600 border rounded-lg text-sm hover:bg-slate-50">Cancel</button>
+                  <button onclick="VoiceAgent.saveScript()" class="px-5 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700">Save Script</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Campaigns Panel -->
+            <div id="vaPanel-campaigns" class="p-5 hidden">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-slate-800">Campaigns</h3>
+                <button onclick="VoiceAgent.newCampaign()" class="px-4 py-2 bg-yellow-400 text-black rounded-lg text-sm font-medium hover:bg-yellow-300 flex items-center gap-2"><i data-lucide="plus" class="h-4 w-4"></i> New Campaign</button>
+              </div>
+              <!-- Campaign form -->
+              <div id="va-campaign-form" class="hidden mb-4 border border-slate-200 rounded-xl p-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+                  <div><label class="block text-xs font-medium text-slate-600 mb-1">Campaign Name</label><input type="text" id="va-camp-name" placeholder="May Reactivation" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                  <div><label class="block text-xs font-medium text-slate-600 mb-1">Script</label><select id="va-camp-script" class="w-full px-3 py-2 border rounded-lg text-sm bg-white"><option value="">-- Select Script --</option></select></div>
+                  <div><label class="block text-xs font-medium text-slate-600 mb-1">Caller ID</label><select id="va-camp-callerid" class="w-full px-3 py-2 border rounded-lg text-sm bg-white"><option value="260963065588">260963065588 (Main)</option><option value="260971133129">260971133129 (Secondary)</option></select></div>
+                  <div><label class="block text-xs font-medium text-slate-600 mb-1">Concurrent Calls</label><input type="number" id="va-camp-concurrent" value="1" min="1" max="10" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                </div>
+                <div class="mb-3">
+                  <label class="block text-xs font-medium text-slate-600 mb-1">Upload Contact List (CSV — must have <code class="text-xs">phone_number</code> column)</label>
+                  <input type="file" id="va-camp-csv" accept=".csv" class="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:bg-yellow-400 file:font-medium hover:file:bg-yellow-300">
+                  <p id="va-camp-csv-info" class="text-xs text-slate-400 mt-1"></p>
+                </div>
+                <div class="flex gap-3 justify-end">
+                  <button onclick="VoiceAgent.cancelCampaign()" class="px-4 py-2 text-slate-600 border rounded-lg text-sm hover:bg-slate-50">Cancel</button>
+                  <button onclick="VoiceAgent.saveCampaign()" class="px-5 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700">Save Campaign</button>
+                </div>
+              </div>
+              <!-- Campaign list -->
+              <div id="va-campaigns-list" class="space-y-3">
+                <div class="p-8 text-center text-slate-400"><i data-lucide="megaphone" class="h-8 w-8 mx-auto mb-2 opacity-40"></i><p class="text-sm">No campaigns yet.</p></div>
+              </div>
+            </div>
+
+            <!-- Live Monitor Panel -->
+            <div id="vaPanel-monitor" class="p-5 hidden">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-slate-800">Live Monitor</h3>
+                <div class="flex items-center gap-2">
+                  <div id="va-ws-indicator" class="flex items-center gap-1.5 px-3 py-1 bg-slate-100 rounded-full text-xs text-slate-500"><span class="w-2 h-2 rounded-full bg-slate-400"></span> Disconnected</div>
+                  <button onclick="VoiceAgent.connectWS()" class="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-medium hover:bg-emerald-600">Connect</button>
+                </div>
+              </div>
+              <div id="va-live-calls" class="space-y-3">
+                <div class="p-10 text-center text-slate-400 border-2 border-dashed border-slate-200 rounded-xl"><i data-lucide="radio" class="h-10 w-10 mx-auto mb-2 opacity-30"></i><p class="text-sm font-medium">No active calls</p><p class="text-xs mt-1">Connect to see live transcripts</p></div>
+              </div>
+              <!-- Live transcript feed -->
+              <div id="va-transcript-feed" class="mt-4 bg-slate-900 text-green-400 rounded-xl p-4 font-mono text-xs max-h-60 overflow-y-auto hidden"></div>
+            </div>
+
+            <!-- Call History Panel -->
+            <div id="vaPanel-history" class="p-5 hidden">
+              <div class="flex flex-wrap gap-3 items-center mb-4">
+                <h3 class="font-bold text-slate-800 flex-1">Call History</h3>
+                <input type="text" id="va-history-search" oninput="VoiceAgent.filterHistory()" placeholder="Search number or outcome..." class="px-3 py-2 border rounded-lg text-sm w-48">
+                <select id="va-history-outcome" onchange="VoiceAgent.filterHistory()" class="px-3 py-2 border rounded-lg text-sm bg-white">
+                  <option value="">All Outcomes</option>
+                  <option value="interested">Interested</option>
+                  <option value="not_interested">Not Interested</option>
+                  <option value="no_answer">No Answer</option>
+                  <option value="callback">Callback</option>
                 </select>
+                <button onclick="VoiceAgent.loadHistory()" class="px-3 py-2 border rounded-lg text-sm hover:bg-slate-50 flex items-center gap-1"><i data-lucide="refresh-cw" class="h-3.5 w-3.5"></i> Refresh</button>
               </div>
-              <button onclick="VoiceAgent.quickCall()" class="px-6 py-2 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 flex items-center gap-2 text-sm">
-                <i data-lucide="phone" class="h-4 w-4"></i> Call Now
-              </button>
-            </div>
-          </div>
-
-          <!-- Inner Tabs: Scripts | Campaigns | Live Monitor | History | Settings -->
-          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="flex gap-1 p-2 bg-slate-50 border-b overflow-x-auto">
-              <button onclick="VoiceAgent.switchInnerTab('scripts')" class="va-inner-tab active px-4 py-2 rounded-lg text-xs font-semibold bg-slate-800 text-white whitespace-nowrap">
-                <i data-lucide="file-text" class="h-3.5 w-3.5 inline mr-1"></i>Scripts
-              </button>
-              <button onclick="VoiceAgent.switchInnerTab('campaigns')" class="va-inner-tab px-4 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-200 whitespace-nowrap">
-                <i data-lucide="megaphone" class="h-3.5 w-3.5 inline mr-1"></i>Campaigns
-              </button>
-              <button onclick="VoiceAgent.switchInnerTab('monitor')" class="va-inner-tab px-4 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-200 whitespace-nowrap">
-                <i data-lucide="eye" class="h-3.5 w-3.5 inline mr-1"></i>Live Monitor
-              </button>
-              <button onclick="VoiceAgent.switchInnerTab('history')" class="va-inner-tab px-4 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-200 whitespace-nowrap">
-                <i data-lucide="history" class="h-3.5 w-3.5 inline mr-1"></i>Call History
-              </button>
-              <button onclick="VoiceAgent.switchInnerTab('settings')" class="va-inner-tab px-4 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-200 whitespace-nowrap">
-                <i data-lucide="settings" class="h-3.5 w-3.5 inline mr-1"></i>Settings
-              </button>
-            </div>
-
-            <!-- SCRIPTS PANEL -->
-            <div id="vaPanel-scripts" class="va-panel p-4">
-              <div class="flex items-center justify-between mb-4">
-                <h4 class="font-bold text-slate-800">Call Scripts</h4>
-                <button onclick="VoiceAgent.openScriptModal()" class="px-4 py-2 bg-yellow-400 text-black font-medium rounded-lg hover:bg-yellow-300 text-sm flex items-center gap-2">
-                  <i data-lucide="plus" class="h-4 w-4"></i> New Script
-                </button>
-              </div>
-              <div class="overflow-x-auto">
-                <table class="w-full">
-                  <thead><tr class="bg-slate-50">
-                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Name</th>
-                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Description</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Default</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Actions</th>
-                  </tr></thead>
-                  <tbody id="vaScriptsTable">
-                    <tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">No scripts yet. Create one to get started.</td></tr>
-                  </tbody>
+              <div id="va-history-table" class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead class="bg-slate-50"><tr><th class="px-3 py-2 text-left text-xs text-slate-500 font-semibold">Time</th><th class="px-3 py-2 text-left text-xs text-slate-500 font-semibold">Number</th><th class="px-3 py-2 text-left text-xs text-slate-500 font-semibold">Duration</th><th class="px-3 py-2 text-left text-xs text-slate-500 font-semibold">Outcome</th><th class="px-3 py-2 text-left text-xs text-slate-500 font-semibold">Campaign</th></tr></thead>
+                  <tbody id="va-history-body"><tr><td colspan="5" class="px-4 py-8 text-center text-slate-400 text-sm">No call history yet</td></tr></tbody>
                 </table>
               </div>
             </div>
 
-            <!-- CAMPAIGNS PANEL -->
-            <div id="vaPanel-campaigns" class="va-panel hidden p-4">
-              <div class="flex items-center justify-between mb-4">
-                <h4 class="font-bold text-slate-800">Campaigns</h4>
-                <button onclick="VoiceAgent.openCampaignModal()" class="px-4 py-2 bg-yellow-400 text-black font-medium rounded-lg hover:bg-yellow-300 text-sm flex items-center gap-2">
-                  <i data-lucide="plus" class="h-4 w-4"></i> New Campaign
-                </button>
-              </div>
-              <div class="overflow-x-auto">
-                <table class="w-full">
-                  <thead><tr class="bg-slate-50">
-                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Campaign</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Status</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Progress</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Interested</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Not Interested</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Actions</th>
-                  </tr></thead>
-                  <tbody id="vaCampaignsTable">
-                    <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No campaigns yet</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <!-- Settings Panel -->
+            <div id="vaPanel-settings" class="p-5 hidden">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
-            <!-- LIVE MONITOR PANEL -->
-            <div id="vaPanel-monitor" class="va-panel hidden p-4">
-              <h4 class="font-bold text-slate-800 mb-4">Live Calls</h4>
-              <div id="vaLiveCallsContainer">
-                <div class="text-center py-8 text-slate-400">
-                  <i data-lucide="eye" class="h-10 w-10 mx-auto mb-3 opacity-40"></i>
-                  <p>No active calls. Start a call or campaign to see live transcripts here.</p>
+                <!-- Server URL -->
+                <div class="sm:col-span-2">
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Voice Agent Server URL</label>
+                  <div class="flex gap-2">
+                    <input type="text" id="va-setting-url" placeholder="https://your-domain.com" class="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 outline-none" value="http://13.246.211.152:8080">
+                    <button onclick="VoiceAgent.testConnection()" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm hover:bg-slate-700">Test</button>
+                  </div>
+                  <p class="text-xs text-slate-400 mt-1">⚠️ Must be <strong>HTTPS</strong> when CRM is hosted on HTTPS (GitHub Pages). Set up nginx + Let's Encrypt on EC2:<br>
+                    <code class="text-xs bg-slate-100 px-1 rounded">sudo apt install nginx certbot python3-certbot-nginx</code>
+                  </p>
+                  <div id="va-conn-result" class="mt-2 text-xs"></div>
                 </div>
-              </div>
-            </div>
 
-            <!-- CALL HISTORY PANEL -->
-            <div id="vaPanel-history" class="va-panel hidden p-4">
-              <div class="flex flex-wrap gap-3 items-end mb-4">
-                <div class="flex-1 min-w-[180px]">
-                  <label class="block text-xs font-medium text-slate-600 mb-1">Search Phone</label>
-                  <input type="text" id="vaHistorySearch" placeholder="Search..." class="w-full px-3 py-2 border rounded-lg text-sm">
-                </div>
-                <div class="min-w-[150px]">
-                  <label class="block text-xs font-medium text-slate-600 mb-1">Outcome</label>
-                  <select id="vaHistoryOutcome" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
-                    <option value="">All</option>
-                    <option value="interested">Interested</option>
-                    <option value="not_interested">Not Interested</option>
-                    <option value="no_answer">No Answer</option>
+                <!-- LLM Config -->
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">LLM Provider</label>
+                  <select id="va-setting-llm" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                    <option value="groq" selected>Groq (Llama 3.3 70B) — fastest</option>
+                    <option value="claude">Claude Haiku — fallback</option>
                   </select>
                 </div>
-                <button onclick="VoiceAgent.searchHistory()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-300">Search</button>
-              </div>
-              <div class="overflow-x-auto">
-                <table class="w-full">
-                  <thead><tr class="bg-slate-50">
-                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Phone</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Outcome</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Duration</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Turns</th>
-                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Date</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600">Transcript</th>
-                  </tr></thead>
-                  <tbody id="vaHistoryTable">
-                    <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No call history yet</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
 
-            <!-- SETTINGS PANEL -->
-            <div id="vaPanel-settings" class="va-panel hidden p-4">
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <!-- LLM Config -->
-                <div class="border border-slate-200 rounded-xl p-4">
-                  <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="cpu" class="h-4 w-4 text-purple-500"></i> LLM Configuration</h4>
-                  <div class="grid grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">Provider</label>
-                      <select id="vaSettingProvider" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
-                        <option value="groq">Groq</option>
-                        <option value="anthropic">Anthropic</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">Model</label>
-                      <input type="text" id="vaSettingModel" value="llama-3.3-70b-versatile" class="w-full px-3 py-2 border rounded-lg text-sm">
-                    </div>
-                  </div>
+                <!-- TTS Voice -->
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">TTS Voice ID (ElevenLabs)</label>
+                  <input type="text" id="va-setting-voice" value="21m00Tcm4TlvDq8ikWAM" class="w-full px-3 py-2 border rounded-lg text-sm">
                 </div>
-                <!-- Voice Config -->
-                <div class="border border-slate-200 rounded-xl p-4">
-                  <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="mic" class="h-4 w-4 text-blue-500"></i> Voice & TTS</h4>
-                  <div class="grid grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">ElevenLabs Voice ID</label>
-                      <input type="text" id="vaSettingVoice" value="21m00Tcm4TlvDq8ikWAM" class="w-full px-3 py-2 border rounded-lg text-sm">
-                    </div>
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">TTS Model</label>
-                      <select id="vaSettingTTS" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
-                        <option value="eleven_turbo_v2_5">Turbo v2.5</option>
-                        <option value="eleven_multilingual_v2">Multilingual v2</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                <!-- Call Config -->
-                <div class="border border-slate-200 rounded-xl p-4">
-                  <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="phone" class="h-4 w-4 text-emerald-500"></i> Call Settings</h4>
-                  <div class="grid grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">Max Concurrent</label>
-                      <input type="number" id="vaSettingConcurrent" value="2" min="1" max="10" class="w-full px-3 py-2 border rounded-lg text-sm">
-                    </div>
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">Max Turns</label>
-                      <input type="number" id="vaSettingTurns" value="10" min="3" max="20" class="w-full px-3 py-2 border rounded-lg text-sm">
-                    </div>
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">Initial Delay (s)</label>
-                      <input type="number" id="vaSettingDelay" value="3.5" min="1" max="6" step="0.5" class="w-full px-3 py-2 border rounded-lg text-sm">
-                    </div>
-                    <div>
-                      <label class="block text-xs font-medium text-slate-600 mb-1">Endpointing (ms)</label>
-                      <input type="number" id="vaSettingEndpoint" value="300" min="100" max="1000" step="50" class="w-full px-3 py-2 border rounded-lg text-sm">
-                    </div>
-                  </div>
-                </div>
+
                 <!-- Caller IDs -->
-                <div class="border border-slate-200 rounded-xl p-4">
-                  <div class="flex items-center justify-between mb-3">
-                    <h4 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="hash" class="h-4 w-4 text-amber-500"></i> Caller IDs</h4>
-                    <button onclick="VoiceAgent.openCallerIdModal()" class="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs hover:bg-slate-200">+ Add</button>
-                  </div>
-                  <table class="w-full text-sm">
-                    <thead><tr><th class="text-left text-xs text-slate-500 pb-2">Number</th><th class="text-left text-xs text-slate-500 pb-2">Label</th><th class="text-center text-xs text-slate-500 pb-2">Status</th></tr></thead>
-                    <tbody id="vaCallerIdsTable">
-                      <tr>
-                        <td class="py-1 font-mono text-sm">260963065588</td>
-                        <td class="py-1">Main Line</td>
-                        <td class="py-1 text-center"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">Active</span></td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Primary Caller ID</label>
+                  <input type="text" id="va-setting-callerid1" value="260963065588" class="w-full px-3 py-2 border rounded-lg text-sm">
                 </div>
-                <!-- Server Connection -->
-                <div class="border border-slate-200 rounded-xl p-4 lg:col-span-2">
-                  <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="server" class="h-4 w-4 text-slate-500"></i> Voice Agent Server</h4>
-                  <div class="flex flex-wrap gap-3 items-end">
-                    <div class="flex-1 min-w-[250px]">
-                      <label class="block text-xs font-medium text-slate-600 mb-1">Server URL</label>
-                      <input type="text" id="vaServerUrl" value="http://13.246.211.152:8080" class="w-full px-3 py-2 border rounded-lg text-sm font-mono">
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <div id="vaServerDot" class="w-3 h-3 rounded-full bg-red-400"></div>
-                      <span id="vaServerStatus" class="text-sm text-slate-500">Checking...</span>
-                    </div>
-                    <button onclick="VoiceAgent.checkHealth()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-300">Test Connection</button>
-                    <button onclick="VoiceAgent.saveSettings()" class="px-4 py-2 bg-yellow-400 text-black font-medium rounded-lg hover:bg-yellow-300 text-sm">Save Settings</button>
-                  </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Secondary Caller ID</label>
+                  <input type="text" id="va-setting-callerid2" value="260971133129" class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+
+                <!-- Call Config -->
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Endpointing (ms)</label>
+                  <input type="number" id="va-setting-endpointing" value="300" class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Greeting Delay (ms)</label>
+                  <input type="number" id="va-setting-greetdelay" value="3500" class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+
+                <div class="sm:col-span-2 flex justify-end">
+                  <button onclick="VoiceAgent.saveSettings()" class="px-6 py-2 bg-yellow-400 text-black font-bold rounded-lg text-sm hover:bg-yellow-300 flex items-center gap-2"><i data-lucide="save" class="h-4 w-4"></i> Save Settings</button>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </div><!-- /inner tabs card -->
+        </div><!-- /ccContent-voiceagent -->
 
-      <!-- AGENTS MANAGEMENT -->
+      </div><!-- /content-callcenter -->
       <div id="content-agents" class="tab-content hidden">
         <!-- Sub-tab Navigation -->
         <div id="agentSubTabs" class="bg-white rounded-xl shadow-sm p-1.5 mb-5 flex gap-1 overflow-x-auto" style="border: 1px solid #e2e8f0;">
@@ -3284,6 +3237,20 @@
     // ============================================================
     function processPlayer(raw) {
       const p = { ...raw };
+
+      // ── Bug fix: normalize column name variations so deposit_amount / withdrawal_amount
+      // always exist regardless of what the Supabase schema calls them.
+      if (p.deposit_amount == null) {
+        p.deposit_amount = p.total_deposits ?? p.deposits ?? p.total_deposit ?? p.depositAmount ?? 0;
+      }
+      if (p.withdrawal_amount == null) {
+        p.withdrawal_amount = p.total_withdrawals ?? p.withdrawals ?? p.total_withdrawal ?? p.withdrawalAmount ?? 0;
+      }
+      // Also normalize sport/casino fields in case of naming variants
+      if (p.sport_bet_amount == null) p.sport_bet_amount = p.sport_bets ?? p.sportBetAmount ?? 0;
+      if (p.sport_win_amount == null) p.sport_win_amount = p.sport_wins ?? p.sportWinAmount ?? 0;
+      if (p.casino_bet_amount == null) p.casino_bet_amount = p.casino_bets ?? p.casinoBetAmount ?? 0;
+      if (p.casino_win_amount == null) p.casino_win_amount = p.casino_wins ?? p.casinoWinAmount ?? 0;
       const sportBet = parseFloat(p.sport_bet_amount) || 0, sportWin = parseFloat(p.sport_win_amount) || 0;
       const casinoBet = parseFloat(p.casino_bet_amount) || 0, casinoWin = parseFloat(p.casino_win_amount) || 0;
       const sportBetCount = parseInt(p.sport_bet_count) || 0, sportWinCount = parseInt(p.sport_win_count) || 0;
@@ -3344,98 +3311,81 @@
     // DATA LOADING - FIXED: Using 'customers' table, with persistence
     // ============================================================
     async function loadPlayers(forceReload = false) {
-      // Prevent reloading if data already exists (unless forced)
-      if (!forceReload && App.dataLoaded && App.processedPlayers.length > 0) {
-        // Data already loaded
-        return;
-      }
-      
-      // Prevent concurrent loads
-      if (App.isLoading) {
-        // Load in progress
-        return;
-      }
-      
+      if (!forceReload && App.dataLoaded && App.processedPlayers.length > 0) return;
+      if (App.isLoading) return;
+
       App.isLoading = true;
-      showLoading(true, App.currentLang === 'ru' ? 'Загрузка игроков...' : 'Loading players...');
-      
+      const isRu = App.currentLang === 'ru';
+      showLoading(true, isRu ? 'Подсчёт игроков...' : 'Counting players...', 0, '');
+
       try {
-        // Fetch ALL players using sequential requests with retry
-        const PAGE = 10000;
-        
-        // Step 1: Get total count (fast HEAD-style query)
-        showLoading(true, 'Counting players...');
+        const PAGE = 10000; // Smaller pages for finer progress granularity
+        const MAX_RETRIES = 3;
+
+        // Step 1: Count
         const { count, error: countErr } = await App.db.from('customers').select('id', { count: 'exact', head: true });
         if (countErr) throw countErr;
         const totalRows = count || 0;
-        
+
         if (totalRows === 0) {
           App.players = [];
         } else {
-          // Step 2: Fetch pages SEQUENTIALLY with retry to avoid HTTP/2 errors
           const numPages = Math.ceil(totalRows / PAGE);
           let allData = [];
-          
-          for (let i = 0; i < numPages; i++) {
-            const from = i * PAGE;
-            const to = from + PAGE - 1;
-            let retries = 3;
-            let success = false;
-            
-            while (retries > 0 && !success) {
-              showLoading(true, `Fetching players ${from.toLocaleString()}-${Math.min(to, totalRows).toLocaleString()} of ${totalRows.toLocaleString()}...`);
-              try {
-                const { data, error } = await App.db.from('customers').select('*').range(from, to);
-                if (error) throw error;
-                if (data) allData.push(...data);
-                success = true;
-              } catch (fetchErr) {
-                retries--;
-                console.warn(`Fetch failed at offset ${from}, ${retries} retries left:`, fetchErr.message);
-                if (retries > 0) {
-                  showLoading(true, `Retrying batch ${i+1}/${numPages}...`);
-                  await new Promise(r => setTimeout(r, 1500)); // wait before retry
-                } else {
-                  throw new Error(`Failed to fetch rows ${from}-${to} after 3 attempts: ${fetchErr.message}`);
-                }
-              }
+
+          // Step 2: Sequential fetch with progress
+          for (let page = 0; page < numPages; page++) {
+            const from = page * PAGE;
+            const to = Math.min(from + PAGE - 1, totalRows - 1);
+            const fetchPct = Math.round((page / numPages) * 60); // fetch = 0–60%
+            showLoading(
+              true,
+              isRu ? 'Загрузка игроков...' : 'Fetching players...',
+              fetchPct,
+              `${Math.min(from + PAGE, totalRows).toLocaleString()} / ${totalRows.toLocaleString()}`
+            );
+
+            let result = null;
+            for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+              result = await App.db.from('customers').select('*').range(from, to);
+              if (!result.error) break;
+              if (attempt < MAX_RETRIES) await new Promise(r => setTimeout(r, 1500 * attempt));
+              else throw result.error;
             }
+            if (result.data) allData.push(...result.data);
           }
-          
           App.players = allData;
         }
-        
-        showLoading(true, `Processing ${App.players.length.toLocaleString()} players...`);
-        
-        // Process players in chunks to avoid blocking UI
+
+        // Step 3: Process players in chunks (progress 60–95%)
         const CHUNK = 1000;
         App.processedPlayers = [];
         const total = App.players.length;
         for (let i = 0; i < total; i += CHUNK) {
           const chunk = App.players.slice(i, i + CHUNK).map(processPlayer);
           App.processedPlayers.push(...chunk);
-          if (total > CHUNK) {
-            showLoading(true, `Processing ${Math.min(i + CHUNK, total).toLocaleString()}/${total.toLocaleString()} players...`);
-            await new Promise(r => setTimeout(r, 0)); // yield to UI
-          }
+          const processPct = 60 + Math.round((Math.min(i + CHUNK, total) / total) * 35);
+          showLoading(
+            true,
+            isRu ? 'Обработка игроков...' : 'Processing players...',
+            processPct,
+            `${Math.min(i + CHUNK, total).toLocaleString()} / ${total.toLocaleString()}`
+          );
+          await new Promise(r => setTimeout(r, 0)); // yield to UI
         }
-        
+
+        showLoading(true, isRu ? 'Обновление статистики...' : 'Updating stats...', 97, '');
         App.statsCache = null;
         App.filteredPlayers = [...App.processedPlayers];
-        App.dataLoaded = true; // Mark data as loaded
-        
+        App.dataLoaded = true;
+
         updateAllStats();
         renderTable();
-        
-        // Defer heavy chart + analysis work
-        requestAnimationFrame(() => {
-          updateAllCharts();
-          runProactiveAnalysis();
-        });
-        
-        showNotification(App.currentLang === 'ru' ? `Загружено ${App.processedPlayers.length} игроков` : `Loaded ${App.processedPlayers.length} players`, 'success');
+        requestAnimationFrame(() => { updateAllCharts(); runProactiveAnalysis(); });
+
+        showNotification(isRu ? `Загружено ${App.processedPlayers.length} игроков` : `Loaded ${App.processedPlayers.length.toLocaleString()} players`, 'success');
       } catch (err) {
-        showNotification((App.currentLang === 'ru' ? 'Ошибка загрузки: ' : 'Load failed: ') + err.message, 'error');
+        showNotification((isRu ? 'Ошибка загрузки: ' : 'Load failed: ') + err.message, 'error');
       } finally {
         App.isLoading = false;
         showLoading(false);
@@ -5985,11 +5935,6 @@ Total Players: ${s.total}`;
         document.getElementById('ccContent-admin')?.classList.toggle('hidden', tab !== 'admin');
         document.getElementById('ccContent-voiceagent')?.classList.toggle('hidden', tab !== 'voiceagent');
         
-        // Initialize VoiceAgent when switching to it
-        if (tab === 'voiceagent' && typeof VoiceAgent !== 'undefined') {
-          VoiceAgent.init();
-        }
-        
         // Refresh admin content when switching to admin tab
         if (tab === 'admin') {
           this.renderUserTable();
@@ -6003,17 +5948,11 @@ Total Players: ${s.total}`;
         // Hide admin tab for non-admin users
         const isAdmin = App.role === 'admin' || App.role === 'developer';
         const adminTabBtn = document.getElementById('ccSubTab-admin');
-        const voiceAgentTabBtn = document.getElementById('ccSubTab-voiceagent');
+        const vaTabBtn = document.getElementById('ccSubTab-voiceagent');
         const subTabsContainer = document.getElementById('ccSubTabs');
         
-        if (adminTabBtn) {
-          adminTabBtn.classList.toggle('hidden', !isAdmin);
-        }
-        
-        // Voice Agent tab visible to admin and developer only
-        if (voiceAgentTabBtn) {
-          voiceAgentTabBtn.classList.toggle('hidden', !isAdmin);
-        }
+        if (adminTabBtn) adminTabBtn.classList.toggle('hidden', !isAdmin);
+        if (vaTabBtn) vaTabBtn.classList.toggle('hidden', !isAdmin);
         
         // If call center role, hide the entire sub-tabs bar
         if (App.role === 'callcenter' && subTabsContainer) {
@@ -6898,7 +6837,30 @@ Total Players: ${s.total}`;
     // ============================================================
     // UI HELPERS
     // ============================================================
-    function showLoading(show, text = 'Loading...') { document.getElementById('loadingOverlay').classList.toggle('hidden', !show); document.getElementById('loadingText').textContent = text; }
+    function showLoading(show, text = 'Loading...', progress = null, subtext = '') {
+  const overlay = document.getElementById('loadingOverlay');
+  if (!overlay) return;
+  overlay.classList.toggle('hidden', !show);
+  if (show) {
+    const textEl = document.getElementById('loadingText');
+    if (textEl) textEl.textContent = text;
+    const wrap = document.getElementById('loadingProgressWrap');
+    const bar = document.getElementById('loadingProgressBar');
+    const pct = document.getElementById('loadingPercent');
+    const sub = document.getElementById('loadingSubtext');
+    if (wrap && bar && pct) {
+      if (progress !== null) {
+        wrap.classList.remove('hidden');
+        const p = Math.min(Math.max(Math.round(progress), 0), 100);
+        bar.style.width = p + '%';
+        pct.textContent = p + '%';
+        if (sub) sub.textContent = subtext || '';
+      } else {
+        wrap.classList.add('hidden');
+      }
+    }
+  }
+}
     function showNotification(msg, type = 'success') {
       const el = document.createElement('div');
       el.className = `px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 text-sm text-white notification ${type === 'success' ? 'bg-emerald-500' : 'bg-red-500'}`;
@@ -7131,7 +7093,6 @@ Total Players: ${s.total}`;
       };
 
       let processed = 0, skipped = 0, errors = [];
-      const BATCH_SIZE = 100;
       
       // Build all player records first
       const players = [];
@@ -7170,36 +7131,52 @@ Total Players: ${s.total}`;
         players.push(player);
       }
 
-      // Batch upsert for performance
+      // Batch upsert for performance — 1000 per batch, 10 concurrent
       showLoading(true, 'Importing players...');
+      const BATCH_SIZE = 1000;
+      const CONCURRENCY = 10;
+      
+      // Build all batches upfront
+      const batches = [];
       for (let i = 0; i < players.length; i += BATCH_SIZE) {
-        const batch = players.slice(i, i + BATCH_SIZE);
-        try {
-          const { error } = await App.db.from('customers').upsert(batch, { 
+        batches.push(players.slice(i, i + BATCH_SIZE));
+      }
+      
+      // Process batches in parallel waves
+      let batchIndex = 0;
+      while (batchIndex < batches.length) {
+        const wave = batches.slice(batchIndex, batchIndex + CONCURRENCY);
+        const wavePromises = wave.map(batch => 
+          App.db.from('customers').upsert(batch, { 
             onConflict: 'id', 
             ignoreDuplicates: !updateExisting 
-          });
-          if (error) throw error;
-          processed += batch.length;
-        } catch(e) {
-          // If batch fails, try one by one to isolate bad rows
-          for (const player of batch) {
-            try {
-              const { error } = await App.db.from('customers').upsert(player, { 
-                onConflict: 'id', 
-                ignoreDuplicates: !updateExisting 
-              });
-              if (error) throw error;
-              processed++;
-            } catch(e2) {
-              errors.push(`${player.id}: ${e2.message}`);
+          }).then(({ error }) => {
+            if (error) throw error;
+            processed += batch.length;
+          }).catch(async (e) => {
+            // If batch fails, try one by one to isolate bad rows
+            for (const player of batch) {
+              try {
+                const { error } = await App.db.from('customers').upsert(player, { 
+                  onConflict: 'id', 
+                  ignoreDuplicates: !updateExisting 
+                });
+                if (error) throw error;
+                processed++;
+              } catch(e2) {
+                errors.push(`${player.id}: ${e2.message}`);
+              }
             }
-          }
-        }
-        // Update progress and yield to UI
-        const progress = Math.min(i + BATCH_SIZE, players.length);
-        btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline mr-1" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> ${progress}/${players.length}`;
-        showLoading(true, `Importing players... ${progress}/${players.length}`);
+          })
+        );
+        
+        await Promise.all(wavePromises);
+        batchIndex += CONCURRENCY;
+        
+        // Update progress
+        const progress = Math.min(batchIndex * BATCH_SIZE, players.length);
+        btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline mr-1" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> ${progress.toLocaleString()}/${players.length.toLocaleString()}`;
+        showLoading(true, `Importing players... ${progress.toLocaleString()}/${players.length.toLocaleString()}`);
         await new Promise(r => setTimeout(r, 0)); // Yield to browser
       }
       showLoading(false);
@@ -7269,8 +7246,18 @@ Total Players: ${s.total}`;
           if (rec.id) records.push(rec);
         }
         // FIXED: Changed from 'players' to 'customers'
-        for (let i = 0; i < records.length; i += 100) {
-          await App.db.from('customers').upsert(records.slice(i, i+100), { onConflict: 'id' });
+        // Parallel batch upsert — 1000 per batch, 10 concurrent
+        const BATCH_SIZE = 1000;
+        const CONCURRENCY = 10;
+        const batches = [];
+        for (let i = 0; i < records.length; i += BATCH_SIZE) {
+          batches.push(records.slice(i, i + BATCH_SIZE));
+        }
+        for (let b = 0; b < batches.length; b += CONCURRENCY) {
+          const wave = batches.slice(b, b + CONCURRENCY);
+          await Promise.all(wave.map(batch => 
+            App.db.from('customers').upsert(batch, { onConflict: 'id' })
+          ));
         }
         showNotification(App.currentLang === 'ru' ? `Импортировано ${records.length} игроков` : `Imported ${records.length} players`, 'success');
         await loadPlayers(true); // Force reload after import
@@ -7668,6 +7655,9 @@ Total Players: ${s.total}`;
       // Initialize Agent Manager
       AgentManager.init();
       
+      // Initialize Voice Agent UI
+      VoiceAgent.init();
+      
       document.getElementById('logoutBtn').addEventListener('click', () => App.db.auth.signOut());
       ['dashboard','profitability','behavior','churn','analytics','players','callcenter','agents','settings'].forEach(t => document.getElementById('tab-'+t)?.addEventListener('click', () => switchTab(t)));
       ['searchInput','profitFilter','prefFilter','churnFilter','valueFilter'].forEach(id => document.getElementById(id)?.addEventListener('input', filterTable));
@@ -7831,438 +7821,368 @@ Total Players: ${s.total}`;
       }
     }
 
-    // ============================================================
+    // ═══════════════════════════════════════════════════════════════
     // VOICE AGENT MODULE
-    // ============================================================
+    // ═══════════════════════════════════════════════════════════════
     const VoiceAgent = {
-      initialized: false,
-      scripts: JSON.parse(localStorage.getItem('va_scripts') || '[]'),
-      campaigns: JSON.parse(localStorage.getItem('va_campaigns') || '[]'),
-      callerIds: JSON.parse(localStorage.getItem('va_callerids') || '[{"phone":"260963065588","label":"Main Line","gateway":"smsala","active":true}]'),
-      callHistory: JSON.parse(localStorage.getItem('va_calls') || '[]'),
-      serverUrl: localStorage.getItem('va_server_url') || 'http://13.246.211.152:8080',
-      healthInterval: null,
+      scripts: [],
+      campaigns: [],
+      history: [],
+      ws: null,
+      settings: {
+        url: localStorage.getItem('va_url') || 'http://13.246.211.152:8080',
+        llm: localStorage.getItem('va_llm') || 'groq',
+        voice: localStorage.getItem('va_voice') || '21m00Tcm4TlvDq8ikWAM',
+        callerId1: localStorage.getItem('va_callerid1') || '260963065588',
+        callerId2: localStorage.getItem('va_callerid2') || '260971133129',
+        endpointing: parseInt(localStorage.getItem('va_endpointing') || '300'),
+        greetDelay: parseInt(localStorage.getItem('va_greetdelay') || '3500'),
+      },
 
       init() {
-        if (this.initialized) return;
-        this.initialized = true;
-        document.getElementById('vaServerUrl').value = this.serverUrl;
-        this.renderScripts();
-        this.renderCampaigns();
-        this.renderCallerIds();
-        this.renderHistory();
-        this.updateScriptDropdown();
-        this.checkHealth();
-        if (this.healthInterval) clearInterval(this.healthInterval);
-        this.healthInterval = setInterval(() => this.checkHealth(), 15000);
+        // Load scripts/campaigns from localStorage (until Supabase schema is applied)
+        this.scripts = JSON.parse(localStorage.getItem('va_scripts') || '[]');
+        this.campaigns = JSON.parse(localStorage.getItem('va_campaigns') || '[]');
+        // Populate settings fields
+        const s = this.settings;
+        ['url','llm','voice'].forEach(k => { const el = document.getElementById('va-setting-'+k); if (el) el.value = s[k]; });
+        const el1 = document.getElementById('va-setting-callerid1'); if (el1) el1.value = s.callerId1;
+        const el2 = document.getElementById('va-setting-callerid2'); if (el2) el2.value = s.callerId2;
+        const ep = document.getElementById('va-setting-endpointing'); if (ep) ep.value = s.endpointing;
+        const gd = document.getElementById('va-setting-greetdelay'); if (gd) gd.value = s.greetDelay;
+        // Check for mixed content
+        this.checkMixedContent();
+        // Wire CSV preview
+        const csvEl = document.getElementById('va-camp-csv');
+        if (csvEl) csvEl.addEventListener('change', e => this.previewCSV(e.target.files[0]));
       },
 
-      // ── Server Health ──
-      async checkHealth() {
+      // ── Mixed Content Detection ──────────────────────────────────
+      checkMixedContent() {
+        const url = this.settings.url || '';
+        const onHTTPS = location.protocol === 'https:';
+        const isHTTP = url.startsWith('http://');
+        const warn = document.getElementById('va-mixed-content-warning');
+        if (warn) warn.classList.toggle('hidden', !(onHTTPS && isHTTP));
+      },
+
+      // ── API helper ───────────────────────────────────────────────
+      async api(path, method = 'GET', body = null) {
+        const url = (this.settings.url || '').replace(/\/$/, '') + path;
         try {
-          const url = document.getElementById('vaServerUrl')?.value || this.serverUrl;
-          const res = await fetch(url + '/api/health', { signal: AbortSignal.timeout(5000) });
-          const data = await res.json();
-          document.getElementById('vaServerDot').className = 'w-3 h-3 rounded-full bg-emerald-400 animate-pulse';
-          document.getElementById('vaServerStatus').textContent = 'v' + data.version + ' • ' + (data.llm_provider || '');
-          document.getElementById('va-active-calls').textContent = data.active_calls || 0;
-          document.getElementById('va-llm-provider').textContent = data.llm_model || data.llm_provider || '—';
-          return data;
-        } catch(e) {
-          document.getElementById('vaServerDot').className = 'w-3 h-3 rounded-full bg-red-400';
-          document.getElementById('vaServerStatus').textContent = 'Offline';
-          return null;
-        }
-      },
-
-      // ── Inner Tab Navigation ──
-      switchInnerTab(tab) {
-        document.querySelectorAll('.va-inner-tab').forEach(b => {
-          b.classList.remove('bg-slate-800', 'text-white');
-          b.classList.add('text-slate-500');
-        });
-        document.querySelectorAll('.va-panel').forEach(p => p.classList.add('hidden'));
-        event.currentTarget.classList.remove('text-slate-500');
-        event.currentTarget.classList.add('bg-slate-800', 'text-white');
-        document.getElementById('vaPanel-' + tab)?.classList.remove('hidden');
-        lucide.createIcons();
-      },
-
-      // ── Quick Call ──
-      async quickCall() {
-        const phone = document.getElementById('vaQuickPhone')?.value.trim();
-        if (!phone) { this.notify('Enter a phone number', 'error'); return; }
-        try {
-          const res = await fetch(this.serverUrl + '/api/call/start', {
-            method: 'POST',
+          const res = await fetch(url, {
+            method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone_number: phone })
+            body: body ? JSON.stringify(body) : undefined,
           });
-          const data = await res.json();
-          if (data.call_id) {
-            this.notify('Call started: ' + data.call_id.slice(0, 8), 'success');
-            this.callHistory.unshift({
-              id: data.call_id, phone, status: 'ringing', outcome: null,
-              duration: 0, turns: 0, transcript: [],
-              started_at: new Date().toISOString()
-            });
-            this.save();
-            this.renderHistory();
-            this.updateStats();
-            document.getElementById('vaQuickPhone').value = '';
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return await res.json();
+        } catch (e) {
+          if (location.protocol === 'https:' && (this.settings.url || '').startsWith('http://')) {
+            showNotification('Mixed Content Blocked — use HTTPS for the voice agent URL', 'error');
           } else {
-            this.notify(data.detail || 'Call failed', 'error');
+            showNotification('Voice agent error: ' + e.message, 'error');
           }
-        } catch(e) {
-          this.notify('Cannot connect to server', 'error');
+          throw e;
         }
       },
 
-      // ── Scripts CRUD ──
-      openScriptModal(editId) {
-        const existing = editId ? this.scripts.find(s => s.id === editId) : null;
-        const html = `
-          <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" id="vaScriptModal" onclick="if(event.target===this) this.remove()">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-              <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
-                <h3 class="font-bold">${existing ? 'Edit' : 'New'} Script</h3>
-                <button onclick="document.getElementById('vaScriptModal').remove()" class="text-slate-400 hover:text-white">&times;</button>
-              </div>
-              <div class="p-5 space-y-4">
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Script Name</label><input type="text" id="vaScriptName" value="${existing?.name || ''}" placeholder="e.g. Welcome Back Campaign" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Description</label><input type="text" id="vaScriptDesc" value="${existing?.description || ''}" placeholder="Brief description" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Script Instructions</label><textarea id="vaScriptText" rows="8" placeholder="You are calling on behalf of Bwana Bet..." class="w-full px-3 py-2 border rounded-lg text-sm font-mono">${existing?.script_text || ''}</textarea></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Custom Greeting (optional)</label><textarea id="vaScriptGreeting" rows="2" placeholder="Hi, I'm calling from Bwana Bet..." class="w-full px-3 py-2 border rounded-lg text-sm">${existing?.greeting || ''}</textarea></div>
-              </div>
-              <div class="p-4 border-t flex justify-end gap-2">
-                <button onclick="document.getElementById('vaScriptModal').remove()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm">Cancel</button>
-                <button onclick="VoiceAgent.saveScript('${editId || ''}')" class="px-6 py-2 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 text-sm">Save</button>
-              </div>
-            </div>
-          </div>`;
-        document.body.insertAdjacentHTML('beforeend', html);
-      },
-
-      saveScript(editId) {
-        const name = document.getElementById('vaScriptName')?.value.trim();
-        const text = document.getElementById('vaScriptText')?.value.trim();
-        if (!name || !text) { this.notify('Name and script text required', 'error'); return; }
-        if (editId) this.scripts = this.scripts.filter(s => s.id !== editId);
-        this.scripts.push({
-          id: editId || crypto.randomUUID(),
-          name,
-          description: document.getElementById('vaScriptDesc')?.value.trim() || '',
-          script_text: text,
-          greeting: document.getElementById('vaScriptGreeting')?.value.trim() || '',
-          is_default: this.scripts.length === 0,
-          created_at: new Date().toISOString()
+      // ── Inner tab switching ──────────────────────────────────────
+      switchPanel(panel) {
+        ['scripts','campaigns','monitor','history','settings'].forEach(p => {
+          document.getElementById('vaPanel-'+p)?.classList.toggle('hidden', p !== panel);
+          const btn = document.getElementById('vaTab-'+p);
+          if (btn) {
+            btn.classList.toggle('bg-slate-800', p === panel);
+            btn.classList.toggle('text-white', p === panel);
+            btn.classList.toggle('text-slate-600', p !== panel);
+            btn.classList.toggle('hover:bg-slate-100', p !== panel);
+          }
         });
-        this.save();
-        this.renderScripts();
-        this.updateScriptDropdown();
-        document.getElementById('vaScriptModal')?.remove();
-        this.notify('Script saved', 'success');
+        if (panel === 'history') this.loadHistory();
+        if (panel === 'monitor') this.refreshStats();
       },
 
-      deleteScript(id) {
-        this.scripts = this.scripts.filter(s => s.id !== id);
-        this.save();
-        this.renderScripts();
-        this.updateScriptDropdown();
-      },
-
-      setDefaultScript(id) {
-        this.scripts.forEach(s => s.is_default = (s.id === id));
-        this.save();
-        this.renderScripts();
-      },
-
-      renderScripts() {
-        const tbody = document.getElementById('vaScriptsTable');
-        if (!tbody) return;
-        if (this.scripts.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">No scripts yet. Create one to get started.</td></tr>';
-          return;
+      // ── Quick call ───────────────────────────────────────────────
+      async quickCall() {
+        const num = document.getElementById('va-quick-number')?.value?.trim();
+        if (!num) { showNotification('Enter a phone number first', 'error'); return; }
+        const statusEl = document.getElementById('va-call-status');
+        if (statusEl) statusEl.textContent = 'Calling ' + num + '...';
+        try {
+          const res = await this.api('/api/call/start', 'POST', { phone_number: num, caller_id: this.settings.callerId1 });
+          if (statusEl) statusEl.textContent = '✅ Call started (ID: ' + (res.call_id || '?') + ')';
+          showNotification('Call started to ' + num, 'success');
+          setTimeout(() => this.refreshStats(), 2000);
+        } catch (_) {
+          if (statusEl) statusEl.textContent = '❌ Call failed';
         }
-        tbody.innerHTML = this.scripts.map(s => `
-          <tr class="hover:bg-slate-50">
-            <td class="px-4 py-3 font-medium text-slate-800">${s.name}</td>
-            <td class="px-4 py-3 text-slate-500 text-sm">${s.description || '—'}</td>
-            <td class="px-4 py-3 text-center">${s.is_default ? '<span class="va-badge va-badge-green">Default</span>' : `<button onclick="VoiceAgent.setDefaultScript('${s.id}')" class="text-xs text-blue-600 hover:underline">Set Default</button>`}</td>
-            <td class="px-4 py-3 text-center">
-              <button onclick="VoiceAgent.openScriptModal('${s.id}')" class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs hover:bg-slate-200 mr-1">Edit</button>
-              <button onclick="VoiceAgent.deleteScript('${s.id}')" class="px-2 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100">Delete</button>
-            </td>
-          </tr>`).join('');
-        lucide.createIcons();
       },
 
-      updateScriptDropdown() {
-        const sel = document.getElementById('vaQuickScript');
-        const campSel = document.getElementById('vaCampaignScript');
-        const opts = '<option value="">Default Script</option>' + this.scripts.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-        if (sel) sel.innerHTML = opts;
-        if (campSel) campSel.innerHTML = opts;
+      async hangupAll() {
+        try {
+          await this.api('/api/calls/hangup-all', 'POST');
+          showNotification('All calls hung up', 'success');
+          setTimeout(() => this.refreshStats(), 1000);
+        } catch (_) {}
       },
 
-      // ── Campaigns ──
-      openCampaignModal() {
-        this.updateScriptDropdown();
-        const html = `
-          <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" id="vaCampaignModal" onclick="if(event.target===this) this.remove()">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-              <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
-                <h3 class="font-bold">New Campaign</h3>
-                <button onclick="document.getElementById('vaCampaignModal').remove()" class="text-slate-400 hover:text-white">&times;</button>
-              </div>
-              <div class="p-5 space-y-4">
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Campaign Name</label><input type="text" id="vaCampaignName" placeholder="e.g. Feb 2026 Reactivation" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Script</label><select id="vaCampaignScript" class="w-full px-3 py-2 border rounded-lg text-sm bg-white"><option value="">Default Script</option>${this.scripts.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}</select></div>
-                <div class="grid grid-cols-2 gap-3">
-                  <div><label class="block text-sm font-medium text-slate-700 mb-1">Calls/Min</label><input type="number" id="vaCampaignCPM" value="2" min="1" max="10" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
-                  <div><label class="block text-sm font-medium text-slate-700 mb-1">Caller ID</label><select id="vaCampaignCaller" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">${this.callerIds.map(c => `<option value="${c.phone}">${c.phone} (${c.label})</option>`).join('')}</select></div>
+      // ── Stats ────────────────────────────────────────────────────
+      async refreshStats() {
+        try {
+          const data = await this.api('/api/stats');
+          const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+          set('va-stat-active', data.active_calls ?? 0);
+          set('va-stat-today', data.calls_today ?? 0);
+          set('va-stat-interested', data.interested ?? 0);
+          set('va-stat-notinterested', data.not_interested ?? 0);
+          if (data.llm) set('va-stat-llm', data.llm);
+        } catch (_) {}
+      },
+
+      // ── Scripts CRUD ─────────────────────────────────────────────
+      newScript() {
+        document.getElementById('va-script-editor')?.classList.remove('hidden');
+        ['va-script-name','va-script-body','va-script-greeting'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        document.getElementById('va-script-editor').dataset.editId = '';
+      },
+      cancelScript() { document.getElementById('va-script-editor')?.classList.add('hidden'); },
+      saveScript() {
+        const name = document.getElementById('va-script-name')?.value?.trim();
+        const body = document.getElementById('va-script-body')?.value?.trim();
+        const greeting = document.getElementById('va-script-greeting')?.value?.trim();
+        const lang = document.getElementById('va-script-lang')?.value;
+        if (!name || !body) { showNotification('Script name and instructions required', 'error'); return; }
+        const editId = document.getElementById('va-script-editor')?.dataset?.editId;
+        if (editId) {
+          const idx = this.scripts.findIndex(s => s.id == editId);
+          if (idx >= 0) this.scripts[idx] = { ...this.scripts[idx], name, body, greeting, lang };
+        } else {
+          this.scripts.push({ id: Date.now(), name, body, greeting, lang, isDefault: this.scripts.length === 0 });
+        }
+        localStorage.setItem('va_scripts', JSON.stringify(this.scripts));
+        this.cancelScript();
+        this.renderScripts();
+        this.populateScriptSelect();
+        showNotification('Script saved', 'success');
+      },
+      deleteScript(id) {
+        if (!confirm('Delete this script?')) return;
+        this.scripts = this.scripts.filter(s => s.id != id);
+        localStorage.setItem('va_scripts', JSON.stringify(this.scripts));
+        this.renderScripts();
+        this.populateScriptSelect();
+      },
+      setDefaultScript(id) {
+        this.scripts.forEach(s => s.isDefault = s.id == id);
+        localStorage.setItem('va_scripts', JSON.stringify(this.scripts));
+        this.renderScripts();
+        showNotification('Default script set', 'success');
+      },
+      renderScripts() {
+        const cont = document.getElementById('va-scripts-list');
+        if (!cont) return;
+        if (!this.scripts.length) { cont.innerHTML = '<div class="p-8 text-center text-slate-400"><p class="text-sm">No scripts yet.</p></div>'; return; }
+        cont.innerHTML = this.scripts.map(s => `
+          <div class="border rounded-xl p-4 ${s.isDefault ? 'border-yellow-400 bg-yellow-50' : 'border-slate-200'}">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-semibold text-slate-800 text-sm">${s.name}</span>
+                  ${s.isDefault ? '<span class="px-2 py-0.5 bg-yellow-400 text-black text-xs rounded-full font-bold">DEFAULT</span>' : ''}
+                  <span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs rounded-full">${s.lang || 'en'}</span>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-1">Upload Contacts (CSV: phone_number, customer_name)</label>
-                  <div onclick="document.getElementById('vaCsvFile').click()" class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-yellow-400 cursor-pointer">
-                    <i data-lucide="upload" class="h-8 w-8 text-slate-400 mx-auto mb-2"></i>
-                    <p class="text-sm text-slate-500">Click to upload CSV</p>
-                    <p id="vaCsvInfo" class="text-xs text-emerald-600 mt-1 hidden"></p>
-                  </div>
-                  <input type="file" id="vaCsvFile" accept=".csv" class="hidden" onchange="VoiceAgent.handleCSV(this)">
-                </div>
+                <p class="text-xs text-slate-500 line-clamp-2">${s.body}</p>
               </div>
-              <div class="p-4 border-t flex justify-end gap-2">
-                <button onclick="document.getElementById('vaCampaignModal').remove()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm">Cancel</button>
-                <button onclick="VoiceAgent.createCampaign()" class="px-6 py-2 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 text-sm">Create & Start</button>
+              <div class="flex gap-2 flex-shrink-0">
+                ${!s.isDefault ? `<button onclick="VoiceAgent.setDefaultScript(${s.id})" class="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200">Set Default</button>` : ''}
+                <button onclick="VoiceAgent.editScript(${s.id})" class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200">Edit</button>
+                <button onclick="VoiceAgent.deleteScript(${s.id})" class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200">Delete</button>
               </div>
             </div>
-          </div>`;
-        document.body.insertAdjacentHTML('beforeend', html);
-        lucide.createIcons();
+          </div>`).join('');
+      },
+      editScript(id) {
+        const s = this.scripts.find(x => x.id == id);
+        if (!s) return;
+        document.getElementById('va-script-editor')?.classList.remove('hidden');
+        document.getElementById('va-script-name').value = s.name;
+        document.getElementById('va-script-body').value = s.body;
+        document.getElementById('va-script-greeting').value = s.greeting || '';
+        document.getElementById('va-script-lang').value = s.lang || 'en';
+        document.getElementById('va-script-editor').dataset.editId = s.id;
       },
 
-      uploadedContacts: [],
-
-      handleCSV(input) {
-        const file = input.files[0];
+      // ── Campaigns ────────────────────────────────────────────────
+      newCampaign() {
+        this.populateScriptSelect();
+        document.getElementById('va-campaign-form')?.classList.remove('hidden');
+        ['va-camp-name'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      },
+      cancelCampaign() { document.getElementById('va-campaign-form')?.classList.add('hidden'); },
+      previewCSV(file) {
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
-          const lines = e.target.result.split('\n').filter(l => l.trim());
-          this.uploadedContacts = [];
-          const start = lines[0].toLowerCase().includes('phone') ? 1 : 0;
-          for (let i = start; i < lines.length; i++) {
-            const parts = lines[i].split(',').map(p => p.trim().replace(/"/g, ''));
-            if (parts[0]) this.uploadedContacts.push({ phone_number: parts[0], customer_name: parts[1] || '' });
-          }
-          const info = document.getElementById('vaCsvInfo');
-          if (info) { info.textContent = file.name + ' (' + this.uploadedContacts.length + ' contacts)'; info.classList.remove('hidden'); }
+        reader.onload = e => {
+          const lines = e.target.result.split('\n').filter(Boolean);
+          const info = document.getElementById('va-camp-csv-info');
+          if (info) info.textContent = `${lines.length - 1} contacts detected`;
         };
         reader.readAsText(file);
       },
-
-      async createCampaign() {
-        const name = document.getElementById('vaCampaignName')?.value.trim();
-        if (!name) { this.notify('Campaign name required', 'error'); return; }
-        if (this.uploadedContacts.length === 0) { this.notify('Upload contacts CSV', 'error'); return; }
-        const scriptId = document.getElementById('vaCampaignScript')?.value;
-        const script = this.scripts.find(s => s.id === scriptId);
-        const cpm = parseInt(document.getElementById('vaCampaignCPM')?.value) || 2;
-        const campaignId = crypto.randomUUID().slice(0, 8);
-
-        try {
-          const res = await fetch(this.serverUrl + '/api/campaign/start', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ campaign_id: campaignId, contacts: this.uploadedContacts, script: script?.script_text || '', calls_per_minute: cpm })
-          });
-          const data = await res.json();
-          if (data.status === 'started') {
-            this.campaigns.push({ id: campaignId, name, script_id: scriptId, status: 'running', total: this.uploadedContacts.length, called: 0, interested: 0, not_interested: 0, no_answer: 0, created_at: new Date().toISOString() });
-            this.save();
-            this.renderCampaigns();
-            this.uploadedContacts = [];
-            document.getElementById('vaCampaignModal')?.remove();
-            this.notify('Campaign started!', 'success');
-          }
-        } catch(e) {
-          this.notify('Failed to start campaign', 'error');
-        }
-      },
-
-      async stopCampaign(id) {
-        try {
-          await fetch(this.serverUrl + '/api/campaign/stop', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ campaign_id: id })
-          });
-        } catch(e) {}
-        const c = this.campaigns.find(x => x.id === id);
-        if (c) c.status = 'paused';
-        this.save();
-        this.renderCampaigns();
-        this.notify('Campaign stopped', 'info');
-      },
-
-      deleteCampaign(id) {
-        this.campaigns = this.campaigns.filter(c => c.id !== id);
-        this.save();
-        this.renderCampaigns();
-      },
-
-      renderCampaigns() {
-        const tbody = document.getElementById('vaCampaignsTable');
-        if (!tbody) return;
-        if (this.campaigns.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No campaigns yet</td></tr>';
-          return;
-        }
-        tbody.innerHTML = this.campaigns.map(c => `
-          <tr class="hover:bg-slate-50">
-            <td class="px-4 py-3 font-medium text-slate-800">${c.name}</td>
-            <td class="px-4 py-3 text-center"><span class="va-badge va-badge-${c.status==='running'?'green':c.status==='paused'?'yellow':'gray'}">${c.status}</span></td>
-            <td class="px-4 py-3 text-center font-mono text-sm">${c.called||0}/${c.total}</td>
-            <td class="px-4 py-3 text-center text-emerald-600 font-bold">${c.interested||0}</td>
-            <td class="px-4 py-3 text-center text-red-600 font-bold">${c.not_interested||0}</td>
-            <td class="px-4 py-3 text-center">
-              ${c.status === 'running' ?
-                `<button onclick="VoiceAgent.stopCampaign('${c.id}')" class="px-2 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100">Stop</button>` :
-                `<button onclick="VoiceAgent.deleteCampaign('${c.id}')" class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs hover:bg-slate-200">Delete</button>`}
-            </td>
-          </tr>`).join('');
-      },
-
-      // ── Call History ──
-      renderHistory() {
-        const tbody = document.getElementById('vaHistoryTable');
-        if (!tbody) return;
-        if (this.callHistory.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No call history yet</td></tr>';
-          return;
-        }
-        tbody.innerHTML = this.callHistory.slice(0, 50).map(c => `
-          <tr class="hover:bg-slate-50">
-            <td class="px-4 py-2 font-mono text-sm">${c.phone}</td>
-            <td class="px-4 py-2 text-center"><span class="va-badge va-badge-${c.outcome==='interested'?'green':c.outcome==='not_interested'?'red':'gray'}">${(c.outcome||c.status||'—').replace('_',' ')}</span></td>
-            <td class="px-4 py-2 text-center font-mono text-sm">${c.duration||0}s</td>
-            <td class="px-4 py-2 text-center">${c.turns||0}</td>
-            <td class="px-4 py-2 text-slate-500 text-sm">${this.timeAgo(c.started_at)}</td>
-            <td class="px-4 py-2 text-center">${c.transcript?.length ? `<button onclick="VoiceAgent.showTranscript('${c.id}')" class="text-xs text-blue-600 hover:underline">View</button>` : '—'}</td>
-          </tr>`).join('');
-        this.updateStats();
-      },
-
-      searchHistory() {
-        this.notify('Connect Supabase to enable search', 'info');
-      },
-
-      showTranscript(callId) {
-        const call = this.callHistory.find(c => c.id === callId);
-        if (!call || !call.transcript?.length) return;
-        const html = `
-          <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" id="vaTranscriptModal" onclick="if(event.target===this) this.remove()">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden">
-              <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
-                <h3 class="font-bold">Transcript — ${call.phone}</h3>
-                <button onclick="document.getElementById('vaTranscriptModal').remove()" class="text-slate-400 hover:text-white">&times;</button>
-              </div>
-              <div class="p-4 max-h-[60vh] overflow-y-auto">
-                ${call.transcript.map(t => `<div class="va-transcript-line ${t.role}"><div class="va-transcript-role ${t.role}">${t.role==='user'?'Customer':'Agent'}</div>${t.text}</div>`).join('')}
-              </div>
-            </div>
-          </div>`;
-        document.body.insertAdjacentHTML('beforeend', html);
-      },
-
-      updateStats() {
-        const today = this.callHistory.filter(c => new Date(c.started_at).toDateString() === new Date().toDateString());
-        document.getElementById('va-calls-today').textContent = today.length;
-        document.getElementById('va-interested').textContent = this.callHistory.filter(c => c.outcome === 'interested').length;
-        document.getElementById('va-not-interested').textContent = this.callHistory.filter(c => c.outcome === 'not_interested').length;
-      },
-
-      // ── Caller IDs ──
-      openCallerIdModal() {
-        const html = `
-          <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" id="vaCallerIdModal" onclick="if(event.target===this) this.remove()">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
-              <div class="bg-slate-800 text-white p-4"><h3 class="font-bold">Add Caller ID</h3></div>
-              <div class="p-5 space-y-3">
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Phone Number</label><input type="tel" id="vaNewCallerPhone" placeholder="e.g. 260971133129" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Label</label><input type="text" id="vaNewCallerLabel" placeholder="e.g. Campaign Line" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
-              </div>
-              <div class="p-4 border-t flex justify-end gap-2">
-                <button onclick="document.getElementById('vaCallerIdModal').remove()" class="px-4 py-2 text-slate-600 text-sm">Cancel</button>
-                <button onclick="VoiceAgent.addCallerId()" class="px-6 py-2 bg-yellow-400 text-black font-bold rounded-lg text-sm">Add</button>
-              </div>
-            </div>
-          </div>`;
-        document.body.insertAdjacentHTML('beforeend', html);
-      },
-
-      addCallerId() {
-        const phone = document.getElementById('vaNewCallerPhone')?.value.trim();
-        if (!phone) { this.notify('Phone required', 'error'); return; }
-        const label = document.getElementById('vaNewCallerLabel')?.value.trim() || phone;
-        this.callerIds.push({ phone, label, gateway: 'smsala', active: true });
-        this.save();
-        this.renderCallerIds();
-        document.getElementById('vaCallerIdModal')?.remove();
-        this.notify('Caller ID added', 'success');
-      },
-
-      renderCallerIds() {
-        const tbody = document.getElementById('vaCallerIdsTable');
-        if (!tbody) return;
-        tbody.innerHTML = this.callerIds.map(c => `
-          <tr>
-            <td class="py-1 font-mono text-sm">${c.phone}</td>
-            <td class="py-1">${c.label}</td>
-            <td class="py-1 text-center"><span class="px-2 py-0.5 ${c.active?'bg-emerald-100 text-emerald-700':'bg-slate-100 text-slate-500'} rounded-full text-xs font-medium">${c.active?'Active':'Inactive'}</span></td>
-          </tr>`).join('');
-      },
-
-      // ── Settings ──
-      saveSettings() {
-        this.serverUrl = document.getElementById('vaServerUrl')?.value.trim() || this.serverUrl;
-        localStorage.setItem('va_server_url', this.serverUrl);
-        this.notify('Settings saved', 'success');
-        this.checkHealth();
-      },
-
-      // ── Helpers ──
-      save() {
-        localStorage.setItem('va_scripts', JSON.stringify(this.scripts));
+      saveCampaign() {
+        const name = document.getElementById('va-camp-name')?.value?.trim();
+        const scriptId = document.getElementById('va-camp-script')?.value;
+        if (!name) { showNotification('Campaign name required', 'error'); return; }
+        this.campaigns.push({ id: Date.now(), name, scriptId, status: 'ready', callerId: document.getElementById('va-camp-callerid')?.value, concurrent: document.getElementById('va-camp-concurrent')?.value, created: new Date().toISOString(), contacted: 0, total: 0 });
         localStorage.setItem('va_campaigns', JSON.stringify(this.campaigns));
-        localStorage.setItem('va_callerids', JSON.stringify(this.callerIds));
-        localStorage.setItem('va_calls', JSON.stringify(this.callHistory));
+        this.cancelCampaign();
+        this.renderCampaigns();
+        showNotification('Campaign saved', 'success');
+      },
+      async startCampaign(id) {
+        const c = this.campaigns.find(x => x.id == id);
+        if (!c) return;
+        try {
+          await this.api('/api/campaign/start', 'POST', { campaign_id: id, caller_id: c.callerId, concurrent: c.concurrent, script_id: c.scriptId });
+          c.status = 'running';
+          localStorage.setItem('va_campaigns', JSON.stringify(this.campaigns));
+          this.renderCampaigns();
+          showNotification('Campaign started: ' + c.name, 'success');
+        } catch (_) {}
+      },
+      async stopCampaign(id) {
+        const c = this.campaigns.find(x => x.id == id);
+        if (!c) return;
+        try {
+          await this.api('/api/campaign/stop', 'POST', { campaign_id: id });
+          c.status = 'stopped';
+          localStorage.setItem('va_campaigns', JSON.stringify(this.campaigns));
+          this.renderCampaigns();
+          showNotification('Campaign stopped', 'success');
+        } catch (_) {}
+      },
+      populateScriptSelect() {
+        const sel = document.getElementById('va-camp-script');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">-- Select Script --</option>' + this.scripts.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+      },
+      renderCampaigns() {
+        const cont = document.getElementById('va-campaigns-list');
+        if (!cont) return;
+        if (!this.campaigns.length) { cont.innerHTML = '<div class="p-8 text-center text-slate-400"><p class="text-sm">No campaigns yet.</p></div>'; return; }
+        cont.innerHTML = this.campaigns.map(c => {
+          const statusColor = { running: 'bg-emerald-100 text-emerald-700', stopped: 'bg-red-100 text-red-700', ready: 'bg-blue-100 text-blue-700', done: 'bg-slate-100 text-slate-600' }[c.status] || 'bg-slate-100 text-slate-600';
+          return `<div class="border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-4">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1"><span class="font-semibold text-slate-800 text-sm">${c.name}</span><span class="px-2 py-0.5 ${statusColor} text-xs rounded-full font-medium">${c.status}</span></div>
+              <p class="text-xs text-slate-400">Contacted: ${c.contacted} / ${c.total || '?'} · Caller: ${c.callerId || '—'}</p>
+            </div>
+            <div class="flex gap-2 flex-shrink-0">
+              ${c.status !== 'running' ? `<button onclick="VoiceAgent.startCampaign(${c.id})" class="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-medium hover:bg-emerald-600">▶ Start</button>` : `<button onclick="VoiceAgent.stopCampaign(${c.id})" class="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-medium hover:bg-red-600">■ Stop</button>`}
+            </div>
+          </div>`;
+        }).join('');
       },
 
-      timeAgo(d) {
-        if (!d) return '—';
-        const s = (Date.now() - new Date(d).getTime()) / 1000;
-        if (s < 60) return 'just now';
-        if (s < 3600) return Math.floor(s/60) + 'm ago';
-        if (s < 86400) return Math.floor(s/3600) + 'h ago';
-        return new Date(d).toLocaleDateString();
+      // ── Live WebSocket monitor ───────────────────────────────────
+      connectWS() {
+        if (this.ws && this.ws.readyState < 2) this.ws.close();
+        const wsUrl = (this.settings.url || '').replace(/^http/, 'ws').replace(/\/$/, '') + '/ws/monitor';
+        const ind = document.getElementById('va-ws-indicator');
+        try {
+          this.ws = new WebSocket(wsUrl);
+          this.ws.onopen = () => {
+            if (ind) ind.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Live';
+            showNotification('Live monitor connected', 'success');
+          };
+          this.ws.onmessage = e => {
+            try { const d = JSON.parse(e.data); this.handleWSMessage(d); } catch (_) {}
+          };
+          this.ws.onclose = () => { if (ind) ind.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-400"></span> Disconnected'; };
+          this.ws.onerror = () => showNotification('WebSocket connection failed', 'error');
+        } catch (_) { showNotification('WebSocket not available', 'error'); }
       },
-
-      notify(msg, type) {
-        if (typeof showNotification === 'function') {
-          showNotification(msg, type === 'error' ? 'error' : type === 'success' ? 'success' : 'info');
-        } else {
-          // Fallback notification
-          const colors = { success: 'bg-emerald-500', error: 'bg-red-500', info: 'bg-blue-500' };
-          const el = document.createElement('div');
-          el.className = `fixed top-4 right-4 z-[1001] px-4 py-3 rounded-lg text-white text-sm font-medium shadow-lg ${colors[type]||colors.info}`;
-          el.textContent = msg;
-          el.style.animation = 'slideIn 0.3s ease';
-          document.body.appendChild(el);
-          setTimeout(() => el.remove(), 3500);
+      handleWSMessage(d) {
+        const feed = document.getElementById('va-transcript-feed');
+        if (feed) {
+          feed.classList.remove('hidden');
+          feed.innerHTML += `<div class="mb-1"><span class="text-slate-400">[${new Date().toLocaleTimeString()}]</span> <span class="text-${d.role === 'agent' ? 'yellow' : 'green'}-400">${d.role === 'agent' ? '🤖 Agent' : '👤 User'}:</span> ${d.text || JSON.stringify(d)}</div>`;
+          feed.scrollTop = feed.scrollHeight;
         }
-      }
-    };
+        this.refreshStats();
+      },
+
+      // ── Call history ─────────────────────────────────────────────
+      async loadHistory() {
+        try {
+          const data = await this.api('/api/calls/history?limit=100');
+          this.history = Array.isArray(data) ? data : (data.calls || []);
+          this.renderHistory(this.history);
+        } catch (_) { this.renderHistory([]); }
+      },
+      filterHistory() {
+        const q = (document.getElementById('va-history-search')?.value || '').toLowerCase();
+        const outcome = document.getElementById('va-history-outcome')?.value || '';
+        const filtered = this.history.filter(c => {
+          const matchQ = !q || (c.phone_number || '').toLowerCase().includes(q);
+          const matchO = !outcome || c.outcome === outcome;
+          return matchQ && matchO;
+        });
+        this.renderHistory(filtered);
+      },
+      renderHistory(calls) {
+        const tbody = document.getElementById('va-history-body');
+        if (!tbody) return;
+        if (!calls.length) { tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-slate-400 text-sm">No records</td></tr>'; return; }
+        const outcomeColors = { interested: 'text-emerald-600', not_interested: 'text-red-600', no_answer: 'text-amber-600', callback: 'text-blue-600' };
+        tbody.innerHTML = calls.map(c => {
+          const color = outcomeColors[c.outcome] || 'text-slate-500';
+          const dur = c.duration ? Math.round(c.duration) + 's' : '—';
+          const t = c.created_at ? new Date(c.created_at).toLocaleString() : '—';
+          return `<tr class="border-b border-slate-100 hover:bg-slate-50">
+            <td class="px-3 py-2 text-xs text-slate-500">${t}</td>
+            <td class="px-3 py-2 text-sm font-mono">${c.phone_number || '—'}</td>
+            <td class="px-3 py-2 text-xs text-slate-500">${dur}</td>
+            <td class="px-3 py-2 text-xs font-medium ${color}">${(c.outcome || '—').replace('_', ' ')}</td>
+            <td class="px-3 py-2 text-xs text-slate-400">${c.campaign_name || '—'}</td>
+          </tr>`;
+        }).join('');
+      },
+
+      // ── Settings ─────────────────────────────────────────────────
+      saveSettings() {
+        const get = id => document.getElementById(id)?.value?.trim() || '';
+        this.settings.url = get('va-setting-url');
+        this.settings.llm = get('va-setting-llm');
+        this.settings.voice = get('va-setting-voice');
+        this.settings.callerId1 = get('va-setting-callerid1');
+        this.settings.callerId2 = get('va-setting-callerid2');
+        this.settings.endpointing = parseInt(get('va-setting-endpointing')) || 300;
+        this.settings.greetDelay = parseInt(get('va-setting-greetdelay')) || 3500;
+        Object.entries({ va_url: this.settings.url, va_llm: this.settings.llm, va_voice: this.settings.voice, va_callerid1: this.settings.callerId1, va_callerid2: this.settings.callerId2, va_endpointing: this.settings.endpointing, va_greetdelay: this.settings.greetDelay }).forEach(([k, v]) => localStorage.setItem(k, v));
+        this.checkMixedContent();
+        showNotification('Voice agent settings saved', 'success');
+      },
+
+      async testConnection() {
+        const resultEl = document.getElementById('va-conn-result');
+        if (resultEl) resultEl.innerHTML = '<span class="text-slate-400">Testing...</span>';
+        // Save current URL before testing
+        const url = document.getElementById('va-setting-url')?.value?.trim() || this.settings.url;
+        const prev = this.settings.url;
+        this.settings.url = url;
+        try {
+          const data = await this.api('/api/health');
+          if (resultEl) resultEl.innerHTML = '<span class="text-emerald-600">✅ Connected — ' + (data.status || 'OK') + '</span>';
+          showNotification('Voice agent reachable!', 'success');
+        } catch (e) {
+          if (resultEl) resultEl.innerHTML = '<span class="text-red-500">❌ Cannot reach server. Check URL and SSL.</span>';
+        } finally {
+          this.settings.url = prev;
+        }
+      },
+    }; // end VoiceAgent
   </script>
 </body>
 </html>
