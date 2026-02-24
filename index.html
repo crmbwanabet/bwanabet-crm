@@ -4271,8 +4271,7 @@
 
     function recalcPlayerLists() {
       if (!App.processedPlayers?.length) return;
-
-      // Check if any player has a real last_deposit_date (not estimated)      Object.keys(PLAYER_LIST_DEFS).forEach(type => {
+      Object.keys(PLAYER_LIST_DEFS).forEach(type => {
         const count = getPlayerListData(type).length;
         const el = document.getElementById('plist-count-' + type);
         if (el) el.textContent = count.toLocaleString();
