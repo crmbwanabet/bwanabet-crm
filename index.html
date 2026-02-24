@@ -879,6 +879,162 @@
 
       <!-- PLAYERS -->
       <div id="content-players" class="tab-content hidden">
+
+        <!-- ── PLAYER LISTS ─────────────────────────────────────── -->
+        <div class="mb-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+              <i data-lucide="users" class="h-4 w-4 text-slate-500"></i>
+              Player Lists
+              <span class="text-xs font-normal text-slate-400 ml-1">Real numbers only · based on last deposit date</span>
+            </h3>
+            <button onclick="recalcPlayerLists()" class="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+              <i data-lucide="refresh-cw" class="h-3 w-3"></i>Recalculate
+            </button>
+          </div>
+          <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3" id="playerListTiles">
+            <!-- Active -->
+            <div class="bg-white rounded-xl shadow-sm border-l-4 border-emerald-500 overflow-hidden hover:shadow-md transition-shadow">
+              <div class="p-4 cursor-pointer" onclick="showPlayerList('active')">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wide">🟢 Active</span>
+                  <span class="text-xs text-slate-400">0–30 days</span>
+                </div>
+                <p class="text-3xl font-bold text-slate-800" id="plist-count-active">—</p>
+                <p class="text-xs text-slate-500 mt-1">Deposited in last 30 days</p>
+              </div>
+              <div class="border-t flex">
+                <button onclick="showPlayerList('active')" class="flex-1 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-1">
+                  <i data-lucide="list" class="h-3 w-3"></i>View List
+                </button>
+                <button onclick="runPlayerListCampaign('active')" class="flex-1 py-2 text-xs font-bold text-black bg-yellow-400 hover:bg-yellow-300 transition-all flex items-center justify-center gap-1 border-l">
+                  <i data-lucide="radio" class="h-3 w-3"></i>Campaign
+                </button>
+              </div>
+            </div>
+
+            <!-- Inactive -->
+            <div class="bg-white rounded-xl shadow-sm border-l-4 border-amber-500 overflow-hidden hover:shadow-md transition-shadow">
+              <div class="p-4 cursor-pointer" onclick="showPlayerList('inactive')">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold text-amber-600 uppercase tracking-wide">🟡 Inactive</span>
+                  <span class="text-xs text-slate-400">31–90 days</span>
+                </div>
+                <p class="text-3xl font-bold text-slate-800" id="plist-count-inactive">—</p>
+                <p class="text-xs text-slate-500 mt-1">No deposit in 31–90 days</p>
+              </div>
+              <div class="border-t flex">
+                <button onclick="showPlayerList('inactive')" class="flex-1 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-1">
+                  <i data-lucide="list" class="h-3 w-3"></i>View List
+                </button>
+                <button onclick="runPlayerListCampaign('inactive')" class="flex-1 py-2 text-xs font-bold text-black bg-yellow-400 hover:bg-yellow-300 transition-all flex items-center justify-center gap-1 border-l">
+                  <i data-lucide="radio" class="h-3 w-3"></i>Campaign
+                </button>
+              </div>
+            </div>
+
+            <!-- Dormant -->
+            <div class="bg-white rounded-xl shadow-sm border-l-4 border-orange-500 overflow-hidden hover:shadow-md transition-shadow">
+              <div class="p-4 cursor-pointer" onclick="showPlayerList('dormant')">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold text-orange-600 uppercase tracking-wide">🟠 Dormant</span>
+                  <span class="text-xs text-slate-400">91–180 days</span>
+                </div>
+                <p class="text-3xl font-bold text-slate-800" id="plist-count-dormant">—</p>
+                <p class="text-xs text-slate-500 mt-1">No deposit in 91–180 days</p>
+              </div>
+              <div class="border-t flex">
+                <button onclick="showPlayerList('dormant')" class="flex-1 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-1">
+                  <i data-lucide="list" class="h-3 w-3"></i>View List
+                </button>
+                <button onclick="runPlayerListCampaign('dormant')" class="flex-1 py-2 text-xs font-bold text-black bg-yellow-400 hover:bg-yellow-300 transition-all flex items-center justify-center gap-1 border-l">
+                  <i data-lucide="radio" class="h-3 w-3"></i>Campaign
+                </button>
+              </div>
+            </div>
+
+            <!-- Churned -->
+            <div class="bg-white rounded-xl shadow-sm border-l-4 border-red-500 overflow-hidden hover:shadow-md transition-shadow">
+              <div class="p-4 cursor-pointer" onclick="showPlayerList('churned')">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold text-red-600 uppercase tracking-wide">🔴 Churned</span>
+                  <span class="text-xs text-slate-400">180+ days</span>
+                </div>
+                <p class="text-3xl font-bold text-slate-800" id="plist-count-churned">—</p>
+                <p class="text-xs text-slate-500 mt-1">No deposit in 180+ days</p>
+              </div>
+              <div class="border-t flex">
+                <button onclick="showPlayerList('churned')" class="flex-1 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-1">
+                  <i data-lucide="list" class="h-3 w-3"></i>View List
+                </button>
+                <button onclick="runPlayerListCampaign('churned')" class="flex-1 py-2 text-xs font-bold text-black bg-yellow-400 hover:bg-yellow-300 transition-all flex items-center justify-center gap-1 border-l">
+                  <i data-lucide="radio" class="h-3 w-3"></i>Campaign
+                </button>
+              </div>
+            </div>
+
+            <!-- New Players -->
+            <div class="bg-white rounded-xl shadow-sm border-l-4 border-blue-500 overflow-hidden hover:shadow-md transition-shadow">
+              <div class="p-4 cursor-pointer" onclick="showPlayerList('new')">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold text-blue-600 uppercase tracking-wide">🆕 New</span>
+                  <span class="text-xs text-slate-400">0–30 days</span>
+                </div>
+                <p class="text-3xl font-bold text-slate-800" id="plist-count-new">—</p>
+                <p class="text-xs text-slate-500 mt-1">Registered in last 30 days</p>
+              </div>
+              <div class="border-t flex">
+                <button onclick="showPlayerList('new')" class="flex-1 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-1">
+                  <i data-lucide="list" class="h-3 w-3"></i>View List
+                </button>
+                <button onclick="runPlayerListCampaign('new')" class="flex-1 py-2 text-xs font-bold text-black bg-yellow-400 hover:bg-yellow-300 transition-all flex items-center justify-center gap-1 border-l">
+                  <i data-lucide="radio" class="h-3 w-3"></i>Campaign
+                </button>
+              </div>
+            </div>
+
+            <!-- VIP -->
+            <div class="bg-white rounded-xl shadow-sm border-l-4 border-purple-500 overflow-hidden hover:shadow-md transition-shadow">
+              <div class="p-4 cursor-pointer" onclick="showPlayerList('vip')">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold text-purple-600 uppercase tracking-wide">👑 VIP</span>
+                  <span class="text-xs text-slate-400">K5,000+</span>
+                </div>
+                <p class="text-3xl font-bold text-slate-800" id="plist-count-vip">—</p>
+                <p class="text-xs text-slate-500 mt-1">High value real players</p>
+              </div>
+              <div class="border-t flex">
+                <button onclick="showPlayerList('vip')" class="flex-1 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-1">
+                  <i data-lucide="list" class="h-3 w-3"></i>View List
+                </button>
+                <button onclick="runPlayerListCampaign('vip')" class="flex-1 py-2 text-xs font-bold text-black bg-yellow-400 hover:bg-yellow-300 transition-all flex items-center justify-center gap-1 border-l">
+                  <i data-lucide="radio" class="h-3 w-3"></i>Campaign
+                </button>
+              </div>
+            </div>
+
+          <!-- Active filter indicator -->
+          <div id="plist-active-filter" class="hidden mt-3 p-3 bg-slate-800 text-white rounded-xl flex items-center justify-between">
+            <span class="text-sm flex items-center gap-2">
+              <i data-lucide="filter" class="h-4 w-4 text-yellow-400"></i>
+              Showing: <strong id="plist-active-label" class="text-yellow-400 ml-1">Active Players</strong>
+              <span class="text-slate-400 text-xs" id="plist-active-info"></span>
+            </span>
+            <button onclick="clearPlayerListFilter()" class="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+              <i data-lucide="x" class="h-3 w-3"></i>Clear filter
+            </button>
+          </div>
+
+          <!-- Data quality warning — shown when last_deposit_date is missing -->
+          <div id="plist-no-date-warning" class="hidden mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+            <i data-lucide="alert-triangle" class="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5"></i>
+            <div>
+              <p class="text-sm font-semibold text-amber-800">No <code class="bg-amber-100 px-1 rounded">last_deposit_date</code> column found in your CSV</p>
+              <p class="text-xs text-amber-700 mt-0.5">Active, Inactive, Dormant and Churned counts are estimated from <code class="bg-amber-100 px-1 rounded">last_activity</code>. For accurate lists, add a <code class="bg-amber-100 px-1 rounded">last_deposit_date</code> column to your CSV and re-upload.</p>
+            </div>
+          </div>
+        </div>
+
         <div class="flex flex-col lg:flex-row gap-4">
           <!-- Filters Sidebar -->
           <div class="lg:w-64 flex-shrink-0">
@@ -3555,6 +3711,7 @@
         
         updateAllStats();
         renderTable();
+        recalcPlayerLists();
         
         // Defer heavy chart + analysis work
         requestAnimationFrame(() => {
@@ -4072,6 +4229,97 @@
       if (!selected.length) return alert('No players selected.');
       const name = 'Selected Players — ' + new Date().toLocaleDateString();
       sendToCampaigns(selected, name);
+    }
+
+    // ── Player Lists (Active / Inactive / Dormant / Churned / New / VIP) ────
+    const PLAYER_LIST_DEFS = {
+      active:   { label: 'Active Players',      desc: 'Deposited in last 30 days',    emoji: '🟢', color: 'emerald' },
+      inactive: { label: 'Inactive Players',    desc: 'No deposit in 31–90 days',     emoji: '🟡', color: 'amber'   },
+      dormant:  { label: 'Dormant Players',     desc: 'No deposit in 91–180 days',    emoji: '🟠', color: 'orange'  },
+      churned:  { label: 'Churned Players',     desc: 'No deposit in 180+ days',      emoji: '🔴', color: 'red'     },
+      new:      { label: 'New Players',         desc: 'Registered in last 30 days',   emoji: '🆕', color: 'blue'    },
+      vip:      { label: 'VIP Players',         desc: 'High value real players',      emoji: '👑', color: 'purple'  },
+    };
+
+    function getDepositDays(p) {
+      // Use last_deposit_date if present, fall back to last_activity
+      // Returns days since last deposit, or null if unknown
+      const dateStr = p.last_deposit_date || p.last_activity;
+      if (!dateStr) return null;
+      return Math.floor((Date.now() - new Date(dateStr)) / 86400000);
+    }
+
+    function getPlayerListData(type) {
+      return App.processedPlayers.filter(p => {
+        // All lists: real numbers with phone only
+        if (p.phoneType === 'virtual') return false;
+        if (!p.phone_number) return false;
+
+        if (type === 'new') {
+          // Based on registration date — always available
+          return (p.daysSinceRegistration || 0) <= 30;
+        }
+
+        if (type === 'vip') {
+          // Value segment = vip (deposit_amount >= VIP threshold)
+          return p.valueSegment === 'vip';
+        }
+
+        // Deposit-based lists — need a date
+        const days = getDepositDays(p);
+        if (days === null) return false; // Skip if no date available
+
+        if (type === 'active')   return days <= 30;
+        if (type === 'inactive') return days >= 31  && days <= 90;
+        if (type === 'dormant')  return days >= 91  && days <= 180;
+        if (type === 'churned')  return days > 180;
+        return false;
+      });
+    }
+
+    function recalcPlayerLists() {
+      if (!App.processedPlayers?.length) return;
+
+      // Check if any player has a real last_deposit_date (not estimated)
+      const hasDepositDate = App.processedPlayers.some(p => p.last_deposit_date && p.last_deposit_date !== p.last_activity && p.last_deposit_date !== p.registration_date);
+      const warning = document.getElementById('plist-no-date-warning');
+      if (warning) warning.classList.toggle('hidden', hasDepositDate);
+
+      Object.keys(PLAYER_LIST_DEFS).forEach(type => {
+        const count = getPlayerListData(type).length;
+        const el = document.getElementById('plist-count-' + type);
+        if (el) el.textContent = count.toLocaleString();
+      });
+    }
+
+    function showPlayerList(type) {
+      const def = PLAYER_LIST_DEFS[type];
+      const players = getPlayerListData(type);
+      // Apply to main table
+      App.filteredPlayers = players;
+      App.currentPage = 1;
+      document.getElementById('currentFilterName').textContent = def.emoji + ' ' + def.label;
+      document.getElementById('tableCount').textContent = '(' + players.length.toLocaleString() + ')';
+      // Show active filter bar
+      document.getElementById('plist-active-filter').classList.remove('hidden');
+      document.getElementById('plist-active-label').textContent = def.label;
+      document.getElementById('plist-active-info').textContent = '· ' + players.length.toLocaleString() + ' real players · ' + def.desc;
+      renderTable();
+      // Scroll to table
+      document.getElementById('currentFilterName').closest('.bg-white')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function clearPlayerListFilter() {
+      document.getElementById('plist-active-filter').classList.add('hidden');
+      clearAllFilters();
+    }
+
+    function runPlayerListCampaign(type) {
+      const def = PLAYER_LIST_DEFS[type];
+      const players = getPlayerListData(type);
+      if (!players.length) return alert('No players in this list with phone numbers.');
+      const name = def.emoji + ' ' + def.label + ' — ' + new Date().toLocaleDateString();
+      sendToCampaigns(players, name);
     }
     
     function clearAllFilters() {
