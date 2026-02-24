@@ -1015,7 +1015,7 @@
             </div>
 
           <!-- Active filter indicator -->
-          <div id="plist-active-filter" class="hidden mt-3 p-3 bg-slate-800 text-white rounded-xl flex items-center justify-between">
+          <div id="plist-active-filter" class="hidden mt-3 p-3 bg-slate-800 text-white rounded-xl items-center justify-between">
             <span class="text-sm flex items-center gap-2">
               <i data-lucide="filter" class="h-4 w-4 text-yellow-400"></i>
               Showing: <strong id="plist-active-label" class="text-yellow-400 ml-1">Active Players</strong>
@@ -4290,6 +4290,7 @@
       document.getElementById('tableCount').textContent = '(' + players.length.toLocaleString() + ')';
       // Show active filter bar
       document.getElementById('plist-active-filter').classList.remove('hidden');
+      document.getElementById('plist-active-filter').classList.add('flex');
       document.getElementById('plist-active-label').textContent = def.label;
       document.getElementById('plist-active-info').textContent = '· ' + players.length.toLocaleString() + ' real players · ' + def.desc;
       renderTable();
@@ -4299,6 +4300,7 @@
 
     function clearPlayerListFilter() {
       document.getElementById('plist-active-filter').classList.add('hidden');
+      document.getElementById('plist-active-filter').classList.remove('flex');
       clearAllFilters();
     }
 
