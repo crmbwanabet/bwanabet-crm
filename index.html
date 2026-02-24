@@ -1014,17 +1014,6 @@
               </div>
             </div>
 
-          <!-- Active filter indicator -->
-          <div id="plist-active-filter" class="hidden mt-3 p-3 bg-slate-800 text-white rounded-xl items-center justify-between">
-            <span class="text-sm flex items-center gap-2">
-              <i data-lucide="filter" class="h-4 w-4 text-yellow-400"></i>
-              Showing: <strong id="plist-active-label" class="text-yellow-400 ml-1">Active Players</strong>
-              <span class="text-slate-400 text-xs" id="plist-active-info"></span>
-            </span>
-            <button onclick="clearPlayerListFilter()" class="text-xs text-slate-400 hover:text-white flex items-center gap-1">
-              <i data-lucide="x" class="h-3 w-3"></i>Clear filter
-            </button>
-          </div>
 
         </div>
 
@@ -4289,18 +4278,14 @@
       document.getElementById('currentFilterName').textContent = def.emoji + ' ' + def.label;
       document.getElementById('tableCount').textContent = '(' + players.length.toLocaleString() + ')';
       // Show active filter bar
-      document.getElementById('plist-active-filter').classList.remove('hidden');
-      document.getElementById('plist-active-filter').classList.add('flex');
-      document.getElementById('plist-active-label').textContent = def.label;
-      document.getElementById('plist-active-info').textContent = '· ' + players.length.toLocaleString() + ' real players · ' + def.desc;
+
       renderTable();
       // Scroll to table
       document.getElementById('currentFilterName').closest('.bg-white')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function clearPlayerListFilter() {
-      document.getElementById('plist-active-filter').classList.add('hidden');
-      document.getElementById('plist-active-filter').classList.remove('flex');
+
       clearAllFilters();
     }
 
