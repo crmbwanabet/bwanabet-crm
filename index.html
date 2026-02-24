@@ -374,15 +374,15 @@
           </div>
         </div>
         <nav id="mainNav" class="flex gap-1 mt-3 overflow-x-auto pb-1">
-          <button id="tab-dashboard" class="tab-btn active px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="layout-dashboard" class="h-4 w-4"></i><span data-translate="dashboard">Dashboard</span></button>
-          <button id="tab-profitability" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="trending-up" class="h-4 w-4"></i><span data-translate="profitability">Profitability</span></button>
-          <button id="tab-behavior" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="activity" class="h-4 w-4"></i><span data-translate="behavior">Behavior</span></button>
-          <button id="tab-churn" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="user-minus" class="h-4 w-4"></i><span data-translate="churn">Churn</span></button>
-          <button id="tab-analytics" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="bar-chart-3" class="h-4 w-4"></i><span data-translate="analytics">Analytics</span></button>
-          <button id="tab-players" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="users" class="h-4 w-4"></i><span data-translate="players">Players</span></button>
-          <button id="tab-callcenter" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="phone" class="h-4 w-4"></i><span>Call Center</span></button>
-          <button id="tab-agents" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="megaphone" class="h-4 w-4"></i><span>Agents</span></button>
-          <button id="tab-settings" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="settings" class="h-4 w-4"></i><span data-translate="settings">Settings</span></button>
+          <button id="tab-dashboard" onclick="switchTab('dashboard')" class="tab-btn active px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="layout-dashboard" class="h-4 w-4"></i><span data-translate="dashboard">Dashboard</span></button>
+          <button id="tab-profitability" onclick="switchTab('profitability')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="trending-up" class="h-4 w-4"></i><span data-translate="profitability">Profitability</span></button>
+          <button id="tab-behavior" onclick="switchTab('behavior')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="activity" class="h-4 w-4"></i><span data-translate="behavior">Behavior</span></button>
+          <button id="tab-churn" onclick="switchTab('churn')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="user-minus" class="h-4 w-4"></i><span data-translate="churn">Churn</span></button>
+          <button id="tab-analytics" onclick="switchTab('analytics')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="bar-chart-3" class="h-4 w-4"></i><span data-translate="analytics">Analytics</span></button>
+          <button id="tab-players" onclick="switchTab('players')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="users" class="h-4 w-4"></i><span data-translate="players">Players</span></button>
+          <button id="tab-callcenter" onclick="switchTab('callcenter')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="phone" class="h-4 w-4"></i><span>Call Center</span></button>
+          <button id="tab-agents" onclick="switchTab('agents')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="megaphone" class="h-4 w-4"></i><span>Agents</span></button>
+          <button id="tab-settings" onclick="switchTab('settings')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="settings" class="h-4 w-4"></i><span data-translate="settings">Settings</span></button>
         </nav>
       </div>
     </header>
@@ -1208,6 +1208,7 @@
           </div>
         </div>
       </div>
+    </div><!-- end content-players -->
 
       <!-- SETTINGS -->
 
