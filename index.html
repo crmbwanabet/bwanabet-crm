@@ -2639,8 +2639,16 @@
     // ============================================================
     // CONFIGURATION & STATE
     // ============================================================
-    const SUPABASE_URL = 'https://blrrcnrhixckfudiojwe.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJscnJjbnJoaXhja2Z1ZGlvandlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3Nzg0MzMsImV4cCI6MjA4MzM1NDQzM30.2DGACAZz-f_r0ieYz3hvtsOG1y-3fqTD_ENH2ZR2g1k';
+    let SUPABASE_URL = '';
+    let SUPABASE_ANON_KEY = '';
+    async function loadConfig() {
+      try {
+        const r = await fetch('/api/config');
+        const cfg = await r.json();
+        SUPABASE_URL = cfg.supabaseUrl || '';
+        SUPABASE_ANON_KEY = cfg.supabaseAnonKey || '';
+      } catch(e) { console.error('Failed to load config:', e); }
+    }
     
     // Default parameters - used for reset functionality
     const DEFAULT_PARAMS = {
@@ -8582,7 +8590,8 @@ Total Players: ${s.total}`;
         document.getElementById('languageSelect').value = App.currentLang;
       } catch(e){ console.error('Error loading settings:', e); }
       
-      // Initialize Supabase (must be before anything that queries DB)
+      // Initialize Supabase — fetch credentials from Vercel env first
+      await loadConfig();
       App.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       
       // Load Telegram settings
