@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BwanaBet CRM System v1</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FACC15'/><text y='.9em' font-size='70' x='50%' text-anchor='middle' dominant-baseline='auto' dy='10'>🎰</text></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -9147,6 +9148,8 @@ Total Players: ${s.total}`;
         // Restore last active tab (default to dashboard)
         const savedTab = localStorage.getItem('crmActiveTab') || 'dashboard';
         const validTabs = ['dashboard','profitability','behavior','churn','analytics','players','callcenter','agents','settings'];
+        // Clear stale tab keys (e.g. old 'voiceagent' tab that no longer exists)
+        if (!validTabs.includes(savedTab)) localStorage.removeItem('crmActiveTab');
         switchTab(validTabs.includes(savedTab) ? savedTab : 'dashboard');
       }
     }
