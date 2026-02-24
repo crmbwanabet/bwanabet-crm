@@ -964,6 +964,9 @@
                 <button onclick="bulkExport()" class="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-400">
                   <i data-lucide="download" class="h-4 w-4"></i> <span data-translate="export">Export</span>
                 </button>
+                <button onclick="runCampaignFromSelection()" class="flex items-center gap-1 px-3 py-1.5 bg-white text-black rounded-lg text-sm font-bold hover:bg-yellow-100">
+                  <i data-lucide="radio" class="h-4 w-4"></i> Run Campaign
+                </button>
                 <button onclick="clearSelection()" class="p-1.5 hover:bg-white/20 rounded-lg">
                   <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
@@ -1010,6 +1013,7 @@
                 
                 <button onclick="loadPlayers(true)" class="p-2 hover:bg-slate-100 rounded-lg" title="Refresh"><i data-lucide="refresh-cw" class="h-4 w-4"></i></button>
                 <button onclick="exportFiltered('current','export')" class="flex items-center gap-2 px-3 py-2 bg-emerald-500 text-white rounded-lg text-sm" title="Export filtered players"><i data-lucide="download" class="h-4 w-4"></i><span class="hidden sm:inline" data-translate="export">Export</span></button>
+                <button onclick="runCampaignFromPlayers()" class="flex items-center gap-2 px-3 py-2 bg-yellow-400 text-black rounded-lg text-sm font-bold hover:bg-yellow-300" title="Send this list to AI Call Agent as a campaign"><i data-lucide="radio" class="h-4 w-4"></i><span class="hidden sm:inline">Run Campaign</span></button>
                 <button class="tutorial-btn" onclick="showTutorial('export')">?</button>
               </div>
             </div>
@@ -1674,19 +1678,19 @@
                   <!-- Voice Settings with Picker -->
                   <div class="mb-5 p-4 bg-blue-50 rounded-xl border border-blue-200">
                     <h4 class="font-semibold text-blue-700 mb-3 flex items-center gap-2"><i data-lucide="mic" class="h-4 w-4 text-blue-500"></i>Voice Settings</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-4">
                       <div>
                         <label class="block text-xs font-medium text-blue-700 mb-1">Voice</label>
                         <div class="flex gap-2">
-                          <select id="va-sb-voicepick" class="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="VA.onVoicePickerChange('sb')">
+                          <select id="va-sb-voicepick" class="flex-1 min-w-0 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="VA.onVoicePickerChange('sb')">
                             <option value="">-- Select or enter ID below --</option>
                           </select>
-                          <button onclick="VA.loadVoices('sb')" class="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 whitespace-nowrap">Load Voices</button>
+                          <button onclick="VA.loadVoices('sb')" class="flex-shrink-0 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700">Load Voices</button>
                         </div>
                         <input id="va-sb-voiceid" type="text" placeholder="Voice ID (auto-filled from picker)" class="w-full mt-2 px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
                         <p class="text-xs text-blue-500 mt-1">Changing voice regenerates all filler phrases (~15s)</p>
                       </div>
-                      <div class="space-y-3">
+                      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div><label class="block text-xs font-medium text-blue-700 mb-1">Stability: <span id="va-stability-val">0.5</span></label><input id="va-sb-stability" type="range" min="0" max="1" step="0.05" value="0.5" oninput="document.getElementById('va-stability-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
                         <div><label class="block text-xs font-medium text-blue-700 mb-1">Similarity: <span id="va-similarity-val">0.8</span></label><input id="va-sb-similarity" type="range" min="0" max="1" step="0.05" value="0.8" oninput="document.getElementById('va-similarity-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
                         <div><label class="block text-xs font-medium text-blue-700 mb-1">Style: <span id="va-style-val">0.0</span></label><input id="va-sb-style" type="range" min="0" max="1" step="0.05" value="0.0" oninput="document.getElementById('va-style-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
@@ -1771,19 +1775,19 @@
                   <i data-lucide="check-circle" class="h-5 w-5 text-emerald-500 flex-shrink-0"></i>
                   <div><p class="font-medium text-emerald-800">Voice Ready</p><p class="text-sm text-emerald-600">Current: <span id="va-current-voice-id">loading...</span></p></div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="space-y-4">
                   <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Voice</label>
                     <div class="flex gap-2 mb-2">
-                      <select id="va-settings-voicepick" class="flex-1 px-3 py-2 border rounded-lg text-sm" onchange="VA.onVoicePickerChange('settings')">
+                      <select id="va-settings-voicepick" class="flex-1 min-w-0 px-3 py-2 border rounded-lg text-sm" onchange="VA.onVoicePickerChange('settings')">
                         <option value="">-- Select or enter ID below --</option>
                       </select>
-                      <button onclick="VA.loadVoices('settings')" class="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 whitespace-nowrap">Load Voices</button>
+                      <button onclick="VA.loadVoices('settings')" class="flex-shrink-0 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700">Load Voices</button>
                     </div>
                     <input id="va-settings-voiceid" type="text" placeholder="Voice ID" class="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
                     <p class="text-xs text-slate-500 mt-1">Find more voices in your ElevenLabs dashboard</p>
                   </div>
-                  <div class="space-y-3">
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div><label class="block text-xs font-medium text-slate-700 mb-1">Stability: <span id="va-set-stability-val">0.50</span></label><input id="va-settings-stability" type="range" min="0" max="1" step="0.05" value="0.5" oninput="document.getElementById('va-set-stability-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
                     <div><label class="block text-xs font-medium text-slate-700 mb-1">Similarity: <span id="va-set-similarity-val">0.80</span></label><input id="va-settings-similarity" type="range" min="0" max="1" step="0.05" value="0.8" oninput="document.getElementById('va-set-similarity-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
                     <div><label class="block text-xs font-medium text-slate-700 mb-1">Style: <span id="va-set-style-val">0.00</span></label><input id="va-settings-style" type="range" min="0" max="1" step="0.05" value="0.0" oninput="document.getElementById('va-set-style-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
@@ -4002,6 +4006,65 @@
 
     function sortTable(field) { App.sortField === field ? App.sortDirection = App.sortDirection === 'asc' ? 'desc' : 'asc' : (App.sortField = field, App.sortDirection = 'desc'); renderTable(); }
     function changePage(d) { const max = Math.ceil(App.filteredPlayers.length / App.pageSize); App.currentPage = Math.max(1, Math.min(max, App.currentPage + d)); renderTable(); }
+
+    function buildCampaignNameFromFilters() {
+      const parts = [];
+      const search = document.getElementById('searchInput')?.value.trim();
+      const profit = document.getElementById('profitFilter')?.value;
+      const pref   = document.getElementById('prefFilter')?.value;
+      const churn  = document.getElementById('churnFilter')?.value;
+      const value  = document.getElementById('valueFilter')?.value;
+      const filterName = document.getElementById('currentFilterName')?.textContent?.trim();
+      if (filterName && filterName !== 'All Players' && filterName !== 'Все игроки') parts.push(filterName);
+      else {
+        if (churn)  parts.push(churn.charAt(0).toUpperCase() + churn.slice(1) + ' Churn');
+        if (value)  parts.push(value.toUpperCase() + ' Value');
+        if (pref)   parts.push(pref.charAt(0).toUpperCase() + pref.slice(1));
+        if (profit) parts.push(profit === 'profitable' ? 'Profitable' : 'Negative GGR');
+        if (search) parts.push('Search: ' + search);
+      }
+      if (!parts.length) parts.push('All Players');
+      return parts.join(' · ') + ' — ' + new Date().toLocaleDateString();
+    }
+
+    function sendToCampaigns(players, campaignName) {
+      if (!players.length) return alert('No players with phone numbers in this list.');
+      const phones = players
+        .filter(p => p.phone_number)
+        .map(p => p.phone_number + (p.name ? ',' + p.name : ''))
+        .join('\n');
+      if (!phones) return alert('None of these players have phone numbers on record.');
+      // Switch to Call Center → AI Call Agent → Campaigns
+      switchTab('callcenter');
+      CallCenter.switchSubTab('aiagent');
+      VA.switchSubTab('campaigns');
+      // Pre-fill
+      setTimeout(() => {
+        const nameEl   = document.getElementById('va-camp-name');
+        const contacts = document.getElementById('va-camp-contacts');
+        const countEl  = document.getElementById('va-camp-contact-count');
+        if (nameEl)   nameEl.value = campaignName;
+        if (contacts) contacts.value = phones;
+        const count = phones.split('\n').filter(l => l.trim()).length;
+        if (countEl)  countEl.textContent = '(' + count + ' contacts)';
+        VA.loadScriptsDropdowns();
+        nameEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+    }
+
+    function runCampaignFromPlayers() {
+      const players = App.filteredPlayers;
+      if (!players?.length) return alert('No players in the current filtered list.');
+      const name = buildCampaignNameFromFilters();
+      sendToCampaigns(players, name);
+    }
+
+    function runCampaignFromSelection() {
+      const selected = App.processedPlayers.filter(p => App.selectedPlayers.has(String(p.id)));
+      if (!selected.length) return alert('No players selected.');
+      const name = 'Selected Players — ' + new Date().toLocaleDateString();
+      sendToCampaigns(selected, name);
+    }
     
     function clearAllFilters() {
       ['searchInput', 'profitFilter', 'prefFilter', 'churnFilter', 'valueFilter'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
