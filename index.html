@@ -1025,14 +1025,6 @@
             </button>
           </div>
 
-          <!-- Data quality warning — shown when last_deposit_date is missing -->
-          <div id="plist-no-date-warning" class="hidden mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-            <i data-lucide="alert-triangle" class="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5"></i>
-            <div>
-              <p class="text-sm font-semibold text-amber-800">No <code class="bg-amber-100 px-1 rounded">last_deposit_date</code> column found in your CSV</p>
-              <p class="text-xs text-amber-700 mt-0.5">Active, Inactive, Dormant and Churned counts are estimated from <code class="bg-amber-100 px-1 rounded">last_activity</code>. For accurate lists, add a <code class="bg-amber-100 px-1 rounded">last_deposit_date</code> column to your CSV and re-upload.</p>
-            </div>
-          </div>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-4">
@@ -4280,12 +4272,7 @@
     function recalcPlayerLists() {
       if (!App.processedPlayers?.length) return;
 
-      // Check if any player has a real last_deposit_date (not estimated)
-      const hasDepositDate = App.processedPlayers.some(p => p.last_deposit_date && p.last_deposit_date !== p.last_activity && p.last_deposit_date !== p.registration_date);
-      const warning = document.getElementById('plist-no-date-warning');
-      if (warning) warning.classList.toggle('hidden', hasDepositDate);
-
-      Object.keys(PLAYER_LIST_DEFS).forEach(type => {
+      // Check if any player has a real last_deposit_date (not estimated)      Object.keys(PLAYER_LIST_DEFS).forEach(type => {
         const count = getPlayerListData(type).length;
         const el = document.getElementById('plist-count-' + type);
         if (el) el.textContent = count.toLocaleString();
