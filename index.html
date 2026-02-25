@@ -7357,6 +7357,8 @@ Total Players: ${s.total}`;
       testWs: null,
 
       get apiBase() { return document.getElementById('va-server-url')?.value || this.serverUrl; },
+      // Direct URL bypasses Vercel proxy for non-WebSocket API calls
+      get directUrl() { return 'http://13.246.211.152:8080'; },
 
       // ── Init ──────────────────────────────────────────────────
       async init() {
@@ -7399,7 +7401,7 @@ Total Players: ${s.total}`;
       // ── Health ─────────────────────────────────────────────────
       async refreshHealth() {
         try {
-          const r = await fetch(this.apiBase + '/voice/status');
+          const r = await fetch(this.directUrl + '/api' + '/voice/status');
           const d = await r.json();
           const bar = document.getElementById('va-status-bar');
           const dot = document.getElementById('va-status-dot');
@@ -7476,7 +7478,7 @@ Total Players: ${s.total}`;
         let script = '';
         if (scriptId) {
           try {
-            const sr = await fetch(this.apiBase + '/scripts/' + scriptId);
+            const sr = await fetch(this.directUrl + '/api' + '/scripts/' + scriptId);
             const sd = await sr.json();
             script = sd.compiled_script || '';
           } catch(e) {}
@@ -7499,7 +7501,7 @@ Total Players: ${s.total}`;
         const container = document.getElementById('va-campaigns-list');
         if (!container) return;
         try {
-          const r = await fetch(this.apiBase + '/voice/status');
+          const r = await fetch(this.directUrl + '/api' + '/voice/status');
           const d = await r.json();
           if ((d.active_campaigns || 0) === 0) {
             container.innerHTML = '<div class="text-center text-slate-400 py-8"><i data-lucide="inbox" class="h-8 w-8 mx-auto mb-2 opacity-40"></i><p>No active campaigns</p></div>';
@@ -7525,7 +7527,7 @@ Total Players: ${s.total}`;
 
       async loadScripts() {
         try {
-          const r = await fetch(this.apiBase + '/scripts');
+          const r = await fetch(this.directUrl + '/api' + '/scripts');
           const scripts = await r.json();
           const grid = document.getElementById('va-scripts-grid');
           if (!grid) return;
@@ -7561,7 +7563,7 @@ Total Players: ${s.total}`;
 
       async loadScriptsDropdowns() {
         try {
-          const r = await fetch(this.apiBase + '/scripts');
+          const r = await fetch(this.directUrl + '/api' + '/scripts');
           const scripts = await r.json();
           ['va-camp-script','va-test-script'].forEach(id => {
             const el = document.getElementById(id);
@@ -7608,7 +7610,7 @@ Total Players: ${s.total}`;
 
       async editScript(id) {
         try {
-          const r = await fetch(this.apiBase + '/scripts/' + id);
+          const r = await fetch(this.directUrl + '/api' + '/scripts/' + id);
           const s = await r.json();
           this.currentScriptId = id;
           document.getElementById('va-builder-title').textContent = 'Edit: ' + s.name;
@@ -7672,7 +7674,7 @@ Total Players: ${s.total}`;
       async previewScript() {
         const payload = this.getBuilderPayload();
         try {
-          const r = await fetch(this.apiBase + '/scripts/compile', {
+          const r = await fetch(this.directUrl + '/api' + '/scripts/compile', {
             method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
           });
           const d = await r.json();
@@ -7688,7 +7690,7 @@ Total Players: ${s.total}`;
         if (this.currentBuilderMode === 'freewrite' && !payload.freewrite_content) return alert('Please write your script content');
         if (this.currentBuilderMode === 'guided' && !payload.company_name) return alert('Please enter a company name');
         try {
-          const url = this.currentScriptId ? `${this.apiBase}/scripts/${this.currentScriptId}` : `${this.apiBase}/scripts`;
+          const url = this.currentScriptId ? `${this.directUrl + '/api'}/scripts/${this.currentScriptId}` : `${this.directUrl + '/api'}/scripts`;
           const method = this.currentScriptId ? 'PATCH' : 'POST';
           const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
           if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Save failed'); }
@@ -7702,12 +7704,12 @@ Total Players: ${s.total}`;
 
       async duplicateScript(id) {
         try {
-          const r = await fetch(this.apiBase + '/scripts/' + id);
+          const r = await fetch(this.directUrl + '/api' + '/scripts/' + id);
           const s = await r.json();
           delete s.id; delete s.created_at; delete s.updated_at;
           s.name = 'Copy of ' + s.name;
           s.is_default = false;
-          const cr = await fetch(this.apiBase + '/scripts', {
+          const cr = await fetch(this.directUrl + '/api' + '/scripts', {
             method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(s)
           });
           if (cr.ok) { this.loadScripts(); this.loadScriptsDropdowns(); }
@@ -7717,7 +7719,7 @@ Total Players: ${s.total}`;
       async deleteScript(id) {
         if (!confirm('Delete this script? This cannot be undone.')) return;
         try {
-          await fetch(this.apiBase + '/scripts/' + id, { method:'DELETE' });
+          await fetch(this.directUrl + '/api' + '/scripts/' + id, { method:'DELETE' });
           this.loadScripts(); this.loadScriptsDropdowns();
         } catch(e) { alert('Error: ' + e.message); }
       },
@@ -7744,7 +7746,7 @@ Total Players: ${s.total}`;
 
       async checkVoiceRegenWarning() {
         try {
-          const r = await fetch(this.apiBase + '/voice/status');
+          const r = await fetch(this.directUrl + '/api' + '/voice/status');
           const d = await r.json();
           const warn = document.getElementById('va-voice-regen-warning');
           const btn = document.getElementById('va-test-start-btn');
@@ -7895,8 +7897,8 @@ Total Players: ${s.total}`;
         this.loadOutcomeList();
         // Update badge
         try {
-          const rCb = await fetch(this.apiBase + '/outcomes/callback?actioned=false&limit=500');
-          const rTa = await fetch(this.apiBase + '/outcomes/take_action?actioned=false&limit=500');
+          const rCb = await fetch(this.directUrl + '/api' + '/outcomes/callback?actioned=false&limit=500');
+          const rTa = await fetch(this.directUrl + '/api' + '/outcomes/take_action?actioned=false&limit=500');
           const cb = await rCb.json(); const ta = await rTa.json();
           const total = (cb.length||0) + (ta.length||0);
           const badge = document.getElementById('va-outcome-badge');
@@ -7924,8 +7926,8 @@ Total Players: ${s.total}`;
         container.innerHTML = '<div class="bg-white rounded-xl p-8 text-center text-slate-400"><div class="animate-spin h-8 w-8 border-2 border-slate-300 border-t-slate-700 rounded-full mx-auto mb-3"></div><p>Loading...</p></div>';
         try {
           let url;
-          if (list === 'blacklist') url = `${this.apiBase}/outcomes/blacklist_list?limit=100`;
-          else url = `${this.apiBase}/outcomes/${list}?limit=100${actioned !== '' ? '&actioned='+actioned : ''}`;
+          if (list === 'blacklist') url = `${this.directUrl + '/api'}/outcomes/blacklist_list?limit=100`;
+          else url = `${this.directUrl + '/api'}/outcomes/${list}?limit=100${actioned !== '' ? '&actioned='+actioned : ''}`;
           const r = await fetch(url);
           const records = await r.json();
           document.getElementById('va-ol-showing').textContent = records.length;
@@ -7966,11 +7968,11 @@ Total Players: ${s.total}`;
 
       async viewOutcomeDetail(id) {
         try {
-          const r = await fetch(this.apiBase + '/outcomes/callback?limit=500');
+          const r = await fetch(this.directUrl + '/api' + '/outcomes/callback?limit=500');
           const all = await r.json();
           // Fetch from all lists
-          const allR1 = await fetch(this.apiBase + '/outcomes/take_action?limit=500');
-          const allR2 = await fetch(this.apiBase + '/outcomes/blacklist_list?limit=500');
+          const allR1 = await fetch(this.directUrl + '/api' + '/outcomes/take_action?limit=500');
+          const allR2 = await fetch(this.directUrl + '/api' + '/outcomes/blacklist_list?limit=500');
           const all2 = await allR1.json(); const all3 = await allR2.json();
           const record = [...all,...all2,...all3].find(x => x.id === id);
           if (!record) return;
@@ -8012,7 +8014,7 @@ Total Players: ${s.total}`;
 
       async reclassifyOutcome(id, newOutcome) {
         try {
-          await fetch(`${this.apiBase}/outcomes/${id}`, {
+          await fetch(`${this.directUrl + '/api'}/outcomes/${id}`, {
             method:'PATCH', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ outcome: newOutcome, reclassified_by: App.currentUser?.email || 'admin' })
           });
@@ -8023,7 +8025,7 @@ Total Players: ${s.total}`;
 
       async markOneDone(id) {
         try {
-          await fetch(`${this.apiBase}/outcomes/${id}`, {
+          await fetch(`${this.directUrl + '/api'}/outcomes/${id}`, {
             method:'PATCH', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ actioned: true, actioned_by: App.currentUser?.email || 'admin' })
           });
@@ -8036,7 +8038,7 @@ Total Players: ${s.total}`;
         const lists = this.currentOutcomeList === 'blacklist' ? ['blacklist_soft','blacklist_hard'] : [this.currentOutcomeList];
         for (const l of lists) {
           try {
-            await fetch(`${this.apiBase}/outcomes/action_all?outcome_type=${l}&actioned_by=${App.currentUser?.email||'admin'}`, { method:'POST' });
+            await fetch(`${this.directUrl + '/api'}/outcomes/action_all?outcome_type=${l}&actioned_by=${App.currentUser?.email||'admin'}`, { method:'POST' });
           } catch(e) {}
         }
         this.loadOutcomeList(); this.loadOutcomeCounts();
@@ -8045,7 +8047,7 @@ Total Players: ${s.total}`;
       // ── Voice Settings ──────────────────────────────────────────
       async refreshVoiceStatus() {
         try {
-          const r = await fetch(this.apiBase + '/voice/status');
+          const r = await fetch(this.directUrl + '/api' + '/voice/status');
           const d = await r.json();
           document.getElementById('va-current-voice-id').textContent = d.voice_id || '-';
           document.getElementById('va-settings-voiceid').value = d.voice_id || '';
@@ -8089,7 +8091,7 @@ Total Players: ${s.total}`;
 
       async loadCallSettings() {
         try {
-          const r = await fetch(this.apiBase + '/settings');
+          const r = await fetch(this.directUrl + '/api' + '/settings');
           const d = await r.json();
           document.getElementById('va-set-maxcalls').value = d.max_concurrent_calls || 10;
           document.getElementById('va-set-timeout').value = d.call_timeout || 45;
@@ -8110,7 +8112,7 @@ Total Players: ${s.total}`;
           max_silence_count: parseInt(document.getElementById('va-set-silence').value),
         };
         try {
-          await fetch(this.apiBase + '/settings', {
+          await fetch(this.directUrl + '/api' + '/settings', {
             method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)
           });
           alert('✅ Settings saved');
@@ -8147,7 +8149,7 @@ Total Players: ${s.total}`;
         picker.innerHTML = '<option value="">Loading voices...</option>';
         try {
           // Use server proxy — keeps ElevenLabs API key off the browser
-          const r = await fetch(this.apiBase + '/voices');
+          const r = await fetch(this.directUrl + '/api' + '/voices');
           if (!r.ok) throw new Error('Server error ' + r.status);
           const d = await r.json();
           const voices = d.voices || [];
@@ -8182,8 +8184,8 @@ Total Players: ${s.total}`;
 
         // Get phone numbers from current list
         let url;
-        if (list === 'blacklist') url = `${this.apiBase}/outcomes/blacklist_list?limit=1000`;
-        else url = `${this.apiBase}/outcomes/${list}?actioned=false&limit=1000`;
+        if (list === 'blacklist') url = `${this.directUrl + '/api'}/outcomes/blacklist_list?limit=1000`;
+        else url = `${this.directUrl + '/api'}/outcomes/${list}?actioned=false&limit=1000`;
 
         let phones = '';
         try {
