@@ -7791,7 +7791,7 @@ Total Players: ${s.total}`;
           statusTxt.textContent = '📞 Ringing ' + phone + '...';
 
           // Connect WebSocket for live transcript
-          const wsUrl = this.apiBase.replace('http','ws') + '/ws/live/' + d.call_id;
+          const wsUrl = 'ws://13.246.211.152:8080/ws/live/' + d.call_id;
           this.testWs = new WebSocket(wsUrl);
           this.testWs.onmessage = (e) => {
             const msg = JSON.parse(e.data);
