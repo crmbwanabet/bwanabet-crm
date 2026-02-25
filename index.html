@@ -7399,7 +7399,7 @@ Total Players: ${s.total}`;
       // ── Health ─────────────────────────────────────────────────
       async refreshHealth() {
         try {
-          const r = await fetch(this.apiBase + '/api/health');
+          const r = await fetch(this.apiBase + '/api/voice/status');
           const d = await r.json();
           const bar = document.getElementById('va-status-bar');
           const dot = document.getElementById('va-status-dot');
@@ -7499,7 +7499,7 @@ Total Players: ${s.total}`;
         const container = document.getElementById('va-campaigns-list');
         if (!container) return;
         try {
-          const r = await fetch(this.apiBase + '/api/health');
+          const r = await fetch(this.apiBase + '/api/voice/status');
           const d = await r.json();
           if ((d.active_campaigns || 0) === 0) {
             container.innerHTML = '<div class="text-center text-slate-400 py-8"><i data-lucide="inbox" class="h-8 w-8 mx-auto mb-2 opacity-40"></i><p>No active campaigns</p></div>';
@@ -8126,7 +8126,7 @@ Total Players: ${s.total}`;
         result.className = 'mt-3 p-3 rounded-lg text-sm bg-slate-100 text-slate-600';
         result.textContent = 'Testing connection...';
         try {
-          const r = await fetch(url + '/api/health');
+          const r = await fetch(url + '/api/voice/status');
           const d = await r.json();
           result.className = 'mt-3 p-3 rounded-lg text-sm bg-emerald-50 text-emerald-800 border border-emerald-200';
           result.innerHTML = `✅ Connected — Voice Agent v${d.version} | ${d.active_calls} active calls | Fillers: ${d.fillers_loaded} | FreeSWITCH: ${d.freeswitch_connected?'✅':'❌'}`;
