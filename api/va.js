@@ -1,17 +1,17 @@
 const VA_SERVER = 'http://13.246.211.152:8080';
 
 module.exports = async function handler(req, res) {
-  const path = req.url.replace('/api/va', '/api');
+  // Get path from query param (set by vercel.json rewrite)
+  const path = req.query.path ? '/api/' + req.query.path : '/api';
   const target = `${VA_SERVER}${path}`;
 
   const headers = { ...req.headers };
   delete headers['host'];
-  delete headers['content-length']; // Let fetch recalculate
+  delete headers['content-length'];
 
   try {
     const fetchOptions = { method: req.method, headers };
 
-    // Read body as string for POST/PATCH/PUT
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       const body = await new Promise((resolve, reject) => {
         let data = '';
