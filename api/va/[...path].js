@@ -1,7 +1,7 @@
 const VA_SERVER = 'http://13.246.211.152:8080';
 
-export default async function handler(req, res) {
-  const path = req.url.replace('/api/va', '') || '/';
+module.exports = async function handler(req, res) {
+  const path = req.url.replace('/api/va', '/api') || '/api';
   const target = `${VA_SERVER}${path}`;
 
   const headers = { ...req.headers };
@@ -27,3 +27,9 @@ export default async function handler(req, res) {
     res.status(502).json({ error: 'Voice agent server unreachable', detail: e.message });
   }
 }
+```
+
+Commit both files, wait for Vercel to redeploy, then test:
+```
+https://bwanabet-crm-ten.vercel.app/api/config
+https://bwanabet-crm-ten.vercel.app/api/va/scripts
