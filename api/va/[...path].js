@@ -1,34 +1,29 @@
-export const config = { runtime: 'edge' };
-
 const VA_SERVER = 'http://13.246.211.152:8080';
 
-export default async function handler(req) {
-  // Strip /api/va prefix, forward the rest to the voice agent server
-  const url = new URL(req.url);
-  const path = url.pathname.replace('/api/va', '');
-  const target = `${VA_SERVER}${path}${url.search}`;
+export default async function handler(req, res) {
+  const path = req.url.replace('/api/va', '') || '/';
+  const target = `${VA_SERVER}${path}`;
 
-  const headers = new Headers(req.headers);
-  headers.delete('host');
+  const headers = { ...req.headers };
+  delete headers['host'];
 
   try {
-    const response = await fetch(target, {
-      method: req.method,
-      headers,
-      body: req.method !== 'GET' && req.method !== 'HEAD' ? req.body : undefined,
-    });
+    const fetchOptions = { method: req.method, headers };
 
-    const resHeaders = new Headers(response.headers);
-    resHeaders.set('Access-Control-Allow-Origin', '*');
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      fetchOptions.body = Buffer.concat(chunks);
+    }
 
-    return new Response(response.body, {
-      status: response.status,
-      headers: resHeaders,
-    });
+    const response = await fetch(target, fetchOptions);
+    const data = await response.text();
+
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json');
+    res.status(response.status).send(data);
+
   } catch (e) {
-    return new Response(JSON.stringify({ error: 'Voice agent server unreachable', detail: e.message }), {
-      status: 502,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    res.status(502).json({ error: 'Voice agent server unreachable', detail: e.message });
   }
 }
