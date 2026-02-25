@@ -6,14 +6,23 @@ module.exports = async function handler(req, res) {
 
   const headers = { ...req.headers };
   delete headers['host'];
+  delete headers['content-length']; // Let fetch recalculate
 
   try {
     const fetchOptions = { method: req.method, headers };
 
+    // Read body as string for POST/PATCH/PUT
     if (req.method !== 'GET' && req.method !== 'HEAD') {
-      const chunks = [];
-      for await (const chunk of req) chunks.push(chunk);
-      fetchOptions.body = Buffer.concat(chunks);
+      const body = await new Promise((resolve, reject) => {
+        let data = '';
+        req.on('data', chunk => data += chunk);
+        req.on('end', () => resolve(data));
+        req.on('error', reject);
+      });
+      if (body) {
+        fetchOptions.body = body;
+        fetchOptions.headers['content-type'] = 'application/json';
+      }
     }
 
     const response = await fetch(target, fetchOptions);
