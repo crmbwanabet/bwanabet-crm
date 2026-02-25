@@ -1,1 +1,5 @@
-{}
+{
+  "rewrites": [
+    { "source": "/api/va/(.*)", "destination": "/api/va" }
+  ]
+}
