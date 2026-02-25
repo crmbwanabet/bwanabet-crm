@@ -1,21 +1,4 @@
-const VA_SERVER = 'http://13.246.211.152:8080';
-
-module.exports = async function handler(req, res) {
-  // /api/va/scripts → /api/scripts
-  // /api/va/voice/status → /api/voice/status
-  const path = req.url.replace('/api/va', '/api');
-  const target = `${VA_SERVER}${path}`;
-
-  const headers = { ...req.headers };
-  delete headers['host'];
-
-  try {
-    const fetchOptions = { method: req.method, headers };
-
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      const chunks = [];
-      for await (const chunk of req) chunks.push(chunk);
-      fetchOptions.<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -153,7 +136,7 @@ module.exports = async function handler(req, res) {
     <div id="notificationStack" class="notification-stack"></div>
 
     <!-- Tutorial Modal -->
-    <div id="tutorialModal" class="tutorial-modal hidden" onclick="if(event.target===this) closeTutorial()">
+    <div id="tutorialModal" style="display:none" class="tutorial-modal" onclick="if(event.target===this) closeTutorial()">
       <div class="tutorial-content">
         <div class="flex justify-between items-start mb-4">
           <h3 id="tutorialTitle" class="text-lg font-bold text-slate-800"></h3>
@@ -164,7 +147,7 @@ module.exports = async function handler(req, res) {
     </div>
 
     <!-- Parameters Modal -->
-    <div id="paramsModal" class="fixed inset-0 bg-black/50 backdrop-filter backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeParamsModal()">
+    <div id="paramsModal" style="display:none" class="fixed inset-0 bg-black/50 backdrop-filter backdrop-blur-sm z-50  flex items-center justify-center p-4" onclick="if(event.target===this) closeParamsModal()">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
         <div class="bg-gradient-to-r from-slate-800 to-slate-900 p-5 flex items-center justify-between">
           <div class="flex items-center gap-3">
@@ -1219,7 +1202,7 @@ module.exports = async function handler(req, res) {
       <!-- SETTINGS -->
 
       <!-- Test Call Modal -->
-      <div id="va-test-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+      <div id="va-test-modal" style="display:none" class="fixed inset-0 bg-black bg-opacity-50 z-50  flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
           <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white p-5 rounded-t-2xl flex items-center justify-between">
             <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="phone-call" class="h-5 w-5"></i>Test Call</h3>
@@ -1264,11 +1247,11 @@ module.exports = async function handler(req, res) {
       </div>
 
       <!-- Outcome Detail Modal -->
-      <div id="va-outcome-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+      <div id="va-outcome-modal" style="display:none" class="fixed inset-0 bg-black bg-opacity-50 z-50  flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <div class="bg-slate-800 text-white p-5 rounded-t-2xl flex items-center justify-between sticky top-0">
             <h3 class="font-bold flex items-center gap-2"><i data-lucide="file-text" class="h-5 w-5"></i>Call Details</h3>
-            <button onclick="document.getElementById('va-outcome-modal').classList.add('hidden')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
+            <button onclick="document.getElementById('va-outcome-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
           </div>
           <div id="va-outcome-modal-content" class="p-5"></div>
         </div>
@@ -2622,11 +2605,11 @@ module.exports = async function handler(req, res) {
           </div>
         </div>
       </div> 
-      <div id="editAgentModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onclick="if(event.target===this)this.classList.add('hidden')">
+      <div id="editAgentModal" style="display:none" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onclick="if(event.target===this)this.style.display='none'">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
           <div class="bg-slate-800 text-white p-4 rounded-t-2xl flex items-center justify-between sticky top-0">
             <h3 class="font-bold">Edit Agent</h3>
-            <button onclick="document.getElementById('editAgentModal').classList.add('hidden')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
+            <button onclick="document.getElementById('editAgentModal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
           </div>
           <div class="p-5">
             <input type="hidden" id="editAgentId">
@@ -2687,7 +2670,7 @@ module.exports = async function handler(req, res) {
               </div>
             </div>
             <div class="flex gap-3 mt-5">
-              <button onclick="document.getElementById('editAgentModal').classList.add('hidden')" class="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm">Cancel</button>
+              <button onclick="document.getElementById('editAgentModal').style.display='none'" class="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm">Cancel</button>
               <button onclick="AgentManager.saveAgentEdit()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">Save</button>
             </div>
           </div>
@@ -2695,11 +2678,11 @@ module.exports = async function handler(req, res) {
       </div>
 
       <!-- Edit User Modal -->
-      <div id="ccEditUserModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onclick="if(event.target===this)this.classList.add('hidden')">
+      <div id="ccEditUserModal" style="display:none" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onclick="if(event.target===this)this.style.display='none'">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
           <div class="bg-slate-800 text-white p-4 rounded-t-2xl flex items-center justify-between">
             <h3 class="font-bold">Edit User</h3>
-            <button onclick="document.getElementById('ccEditUserModal').classList.add('hidden')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
+            <button onclick="document.getElementById('ccEditUserModal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
           </div>
           <div class="p-5">
             <input type="hidden" id="ccEditUserId">
@@ -2729,7 +2712,7 @@ module.exports = async function handler(req, res) {
               </div>
             </div>
             <div class="flex gap-3 mt-6">
-              <button onclick="document.getElementById('ccEditUserModal').classList.add('hidden')" class="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg">Cancel</button>
+              <button onclick="document.getElementById('ccEditUserModal').style.display='none'" class="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg">Cancel</button>
               <button onclick="CallCenter.saveUserEdit()" class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">Save Changes</button>
             </div>
           </div>
@@ -2737,11 +2720,11 @@ module.exports = async function handler(req, res) {
       </div>
 
       <!-- Employee History Modal -->
-      <div id="ccHistoryModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onclick="if(event.target===this)this.classList.add('hidden')">
+      <div id="ccHistoryModal" style="display:none" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onclick="if(event.target===this)this.style.display='none'">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
           <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
             <h3 class="font-bold" id="ccHistoryModalTitle">Call History</h3>
-            <button onclick="document.getElementById('ccHistoryModal').classList.add('hidden')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
+            <button onclick="document.getElementById('ccHistoryModal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
           </div>
           <div id="ccHistoryModalContent" class="p-5 overflow-y-auto max-h-[calc(90vh-80px)]">
           </div>
@@ -2750,11 +2733,11 @@ module.exports = async function handler(req, res) {
     </main>
 
     <!-- Player Modal -->
-    <div id="playerModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div id="playerModal" style="display:none" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onclick="if(event.target===this)this.style.display='none'">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
         <div class="bg-gradient-to-r from-slate-800 to-slate-900 p-5 flex items-center justify-between">
           <div><h2 class="text-xl font-bold text-white" data-translate="playerDetails">Player Details</h2><p class="text-slate-400 text-sm" id="modalPlayerId"></p></div>
-          <button onclick="document.getElementById('playerModal').classList.add('hidden')" class="text-slate-400 hover:text-white p-2"><i data-lucide="x" class="h-6 w-6"></i></button>
+          <button onclick="document.getElementById('playerModal').style.display='none'" class="text-slate-400 hover:text-white p-2"><i data-lucide="x" class="h-6 w-6"></i></button>
         </div>
         <div class="p-5 overflow-y-auto max-h-[calc(90vh-80px)]" id="modalContent"></div>
       </div>
@@ -3196,12 +3179,12 @@ module.exports = async function handler(req, res) {
       
       document.getElementById('tutorialTitle').textContent = tutorial.title;
       document.getElementById('tutorialBody').innerHTML = tutorial.body;
-      document.getElementById('tutorialModal').classList.remove('hidden');
+      document.getElementById('tutorialModal').style.display='block';
       refreshIcons();
     }
 
     function closeTutorial() {
-      document.getElementById('tutorialModal').classList.add('hidden');
+      document.getElementById('tutorialModal').style.display='none';
     }
 
     // ============================================================
@@ -3236,12 +3219,12 @@ module.exports = async function handler(req, res) {
         input.addEventListener('input', updateParamPreviews);
       });
       
-      document.getElementById('paramsModal').classList.remove('hidden');
+      document.getElementById('paramsModal').style.display='flex';
       refreshIcons();
     }
 
     function closeParamsModal() {
-      document.getElementById('paramsModal').classList.add('hidden');
+      document.getElementById('paramsModal').style.display='none';
     }
 
     function updateParamPreviews() {
@@ -4784,7 +4767,7 @@ module.exports = async function handler(req, res) {
           ${similar.map(s => `<div class="flex justify-between p-2 bg-white rounded mb-2 cursor-pointer hover:bg-slate-100" onclick="viewPlayer('${s.player.id}')"><span>${s.player.id}</span><span>${formatK(s.player.netRevenue)} (${Math.round(s.similarity*100)}%)</span></div>`).join('')}
         </div>` : ''}`;
       
-      document.getElementById('playerModal').classList.remove('hidden');
+      document.getElementById('playerModal').style.display='flex';
       refreshIcons();
     };
 
@@ -5460,7 +5443,7 @@ Total Players: ${s.total}`;
         document.getElementById('editAgentCurrentPw').value = a.password_hash || '';
         document.getElementById('editAgentCurrentPw').type = 'password';
         document.getElementById('editAgentStatus').value = a.status || 'active';
-        document.getElementById('editAgentModal').classList.remove('hidden');
+        document.getElementById('editAgentModal').style.display='flex';
         refreshIcons();
       },
 
@@ -5491,7 +5474,7 @@ Total Players: ${s.total}`;
         if (error) { alert('Error: ' + error.message); return; }
         const idx = this.agents.findIndex(a => a.id === agentId);
         if (idx !== -1) this.agents[idx] = { ...this.agents[idx], ...update };
-        document.getElementById('editAgentModal').classList.add('hidden');
+        document.getElementById('editAgentModal').style.display='none';
         this.renderAgentsTable(); this.renderOverview(); this.updateApprovalsBadge();
         alert('Agent updated!');
       },
@@ -6598,7 +6581,7 @@ Total Players: ${s.total}`;
         document.getElementById('ccEditUserRole').value = user.role || 'callcenter';
         document.getElementById('ccEditUserNewPassword').value = '';
         
-        document.getElementById('ccEditUserModal').classList.remove('hidden');
+        document.getElementById('ccEditUserModal').style.display='flex';
         refreshIcons();
       },
       
@@ -6638,7 +6621,7 @@ Total Players: ${s.total}`;
           }
           this.save();
           
-          document.getElementById('ccEditUserModal').classList.add('hidden');
+          document.getElementById('ccEditUserModal').style.display='none';
           
           this.renderEmployeeSelect();
           this.renderUserTable();
@@ -7244,7 +7227,7 @@ Total Players: ${s.total}`;
           `;
         }
         
-        document.getElementById('ccHistoryModal').classList.remove('hidden');
+        document.getElementById('ccHistoryModal').style.display='flex';
       },
       
       showMyFullHistory() {
@@ -7357,7 +7340,7 @@ Total Players: ${s.total}`;
       if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); toggleDarkMode(); }
       const tabs = { '1': 'dashboard', '2': 'profitability', '3': 'behavior', '4': 'churn', '5': 'analytics', '6': 'players', '7': 'callcenter', '8': 'settings' };
       if (tabs[e.key] && !e.ctrlKey && !e.metaKey) switchTab(tabs[e.key]);
-      if (e.key === 'Escape') { document.getElementById('playerModal').classList.add('hidden'); document.getElementById('paramsModal').classList.add('hidden'); toggleCommandPalette(false); closeTutorial(); }
+      if (e.key === 'Escape') { document.getElementById('playerModal').style.display='none'; document.getElementById('paramsModal').style.display='none'; toggleCommandPalette(false); closeTutorial(); }
     });
 
     // ============================================================
@@ -7750,7 +7733,7 @@ Total Players: ${s.total}`;
         document.getElementById('va-test-analysis').classList.add('hidden');
         document.getElementById('va-test-start-btn').disabled = false;
         document.getElementById('va-test-start-btn').textContent = 'Start Test Call';
-        document.getElementById('va-test-modal').classList.remove('hidden');
+        document.getElementById('va-test-modal').style.display='flex';
         this.checkVoiceRegenWarning();
       },
 
@@ -7778,7 +7761,7 @@ Total Players: ${s.total}`;
       },
 
       closeTestModal() {
-        document.getElementById('va-test-modal').classList.add('hidden');
+        document.getElementById('va-test-modal').style.display='none';
         if (this.testWs) { this.testWs.close(); this.testWs = null; }
         this.testCallId = null;
       },
@@ -8008,7 +7991,7 @@ Total Players: ${s.total}`;
             ${record.summary?`<div class="mb-4 p-3 bg-slate-50 rounded-lg"><p class="text-xs text-slate-500 mb-1">Summary</p><p class="text-sm">${record.summary}</p></div>`:''}
             ${transcript?`<div class="mb-4"><p class="text-xs text-slate-500 mb-2 font-semibold">Full Transcript</p><div class="max-h-80 overflow-y-auto border rounded-lg p-3">${transcript}</div></div>`:''}
             <div class="flex gap-2">
-              ${!record.actioned?`<button onclick="VA.markOneDone('${record.id}'); document.getElementById('va-outcome-modal').classList.add('hidden');" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">✅ Mark Done</button>`:''}
+              ${!record.actioned?`<button onclick="VA.markOneDone('${record.id}'); document.getElementById('va-outcome-modal').style.display='none';" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">✅ Mark Done</button>`:''}
               <button onclick="VA.showReclassifyMenu('${record.id}', null, true)" class="flex-1 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700">↗️ Move to...</button>
             </div>
           `;
@@ -8023,7 +8006,7 @@ Total Players: ${s.total}`;
         const idx = parseInt(choice) - 1;
         if (idx >= 0 && idx < options.length) {
           this.reclassifyOutcome(id, options[idx]);
-          if (inModal) document.getElementById('va-outcome-modal').classList.add('hidden');
+          if (inModal) document.getElementById('va-outcome-modal').style.display='none';
         }
       },
 
@@ -9160,17 +9143,4 @@ Total Players: ${s.total}`;
     }
   </script>
 </body>
-</html>body = Buffer.concat(chunks);
-    }
-
-    const response = await fetch(target, fetchOptions);
-    const data = await response.text();
-
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json');
-    res.status(response.status).send(data);
-
-  } catch (e) {
-    res.status(502).json({ error: 'Voice agent server unreachable', detail: e.message });
-  }
-}
+</html>
