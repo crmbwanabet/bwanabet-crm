@@ -1855,7 +1855,37 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Fillers Section (only shown when editing existing script) -->
+              <div id="va-fillers-section" class="hidden bg-white rounded-xl shadow-sm overflow-hidden mt-4">
+                <div class="bg-gradient-to-r from-purple-700 to-purple-600 text-white p-4 flex items-center justify-between">
+                  <h3 class="font-bold flex items-center gap-2"><i data-lucide="music" class="h-4 w-4"></i>Filler Phrases</h3>
+                  <div id="va-fillers-ready-badge" class="text-xs px-2 py-1 rounded-full bg-purple-500">Loading...</div>
+                </div>
+                <div class="p-4">
+                  <!-- Add new filler -->
+                  <div class="flex gap-2 mb-4">
+                    <input id="va-new-filler-phrase" type="text" placeholder="Type a filler phrase e.g. Uhmmm," class="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
+                    <select id="va-new-filler-cat" class="px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-400">
+                      <option value="neutral">Neutral</option>
+                      <option value="question">Question</option>
+                      <option value="positive">Positive</option>
+                      <option value="negative">Negative</option>
+                      <option value="repeat">Repeat</option>
+                      <option value="greeting">Greeting</option>
+                    </select>
+                    <button onclick="VA.addFiller()" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center gap-1">
+                      <i data-lucide="plus" class="h-4 w-4"></i>Add
+                    </button>
+                  </div>
+                  <!-- Filler list -->
+                  <div id="va-fillers-list" class="space-y-2 max-h-64 overflow-y-auto">
+                    <div class="text-slate-400 text-sm text-center py-4">Save script first to manage fillers</div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
           </div>
 
           <div id="vaContent-monitor" class="hidden">
@@ -7533,6 +7563,91 @@ Total Players: ${s.total}`;
         if (view === 'builder') { this.currentScriptId = null; document.getElementById('va-builder-title').textContent = 'New Script'; this.resetBuilderForm(); }
       },
 
+
+      // ── Filler Management ─────────────────────────────────────────────────────
+      async loadFillers(scriptId) {
+        if (!scriptId) return;
+        const list = document.getElementById('va-fillers-list');
+        const badge = document.getElementById('va-fillers-ready-badge');
+        const section = document.getElementById('va-fillers-section');
+        section.classList.remove('hidden');
+        list.innerHTML = '<div class="text-slate-400 text-sm text-center py-4">Loading...</div>';
+        try {
+          const r = await fetch(`http://13.246.211.152:8080/api/fillers/${scriptId}`);
+          const fillers = await r.json();
+          if (!fillers.length) {
+            list.innerHTML = '<div class="text-slate-400 text-sm text-center py-4">No fillers yet. Add one above.</div>';
+            return;
+          }
+          // Check readiness
+          const voiceId = document.getElementById('va-sb-voiceid')?.value;
+          if (voiceId) {
+            const vr = await fetch(`http://13.246.211.152:8080/api/voice/prepare/${voiceId}`);
+            const vs = await vr.json();
+            const pct = Math.round((vs.progress/vs.total)*100);
+            if (vs.status === 'ready') {
+              badge.className = 'text-xs px-2 py-1 rounded-full bg-emerald-500';
+              badge.textContent = '✅ Voice Ready';
+            } else if (vs.status === 'generating') {
+              badge.className = 'text-xs px-2 py-1 rounded-full bg-amber-500';
+              badge.textContent = `⏳ Generating ${pct}%`;
+            } else {
+              badge.className = 'text-xs px-2 py-1 rounded-full bg-slate-500';
+              badge.textContent = 'Not Generated';
+            }
+          }
+          const cats = { neutral:'🔘', question:'❓', positive:'✅', negative:'❌', repeat:'🔁', greeting:'👋' };
+          list.innerHTML = fillers.map(f => `
+            <div class="flex items-center gap-2 p-2 rounded-lg border ${f.is_active ? 'bg-white' : 'bg-slate-50 opacity-60'}">
+              <span class="text-xs">${f.categories.map(c => cats[c]||'🔘').join('')}</span>
+              <span class="flex-1 text-sm ${f.is_active ? 'text-slate-800' : 'text-slate-400 line-through'}">${f.phrase}</span>
+              <span class="text-xs text-slate-400 px-2 py-0.5 bg-slate-100 rounded">${f.categories.join(', ')}</span>
+              ${f.is_default ? '<span class="text-xs text-purple-500 font-medium">default</span>' : ''}
+              <button onclick="VA.toggleFiller('${f.id}')" class="p-1 rounded ${f.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'}">
+                <i data-lucide="${f.is_active ? 'toggle-right' : 'toggle-left'}" class="h-4 w-4"></i>
+              </button>
+              ${!f.is_default ? `<button onclick="VA.deleteFiller('${f.id}')" class="p-1 text-red-400 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="h-4 w-4"></i></button>` : ''}
+            </div>
+          `).join('');
+          lucide.createIcons();
+        } catch(e) { list.innerHTML = '<div class="text-red-400 text-sm text-center py-4">Failed to load fillers</div>'; }
+      },
+
+      async addFiller() {
+        const phrase = document.getElementById('va-new-filler-phrase').value.trim();
+        const cat = document.getElementById('va-new-filler-cat').value;
+        if (!phrase) return alert('Enter a filler phrase');
+        if (!this.currentScriptId) return alert('Save the script first');
+        const btn = event.target.closest('button');
+        btn.disabled = true; btn.innerHTML = '<i data-lucide="loader" class="h-4 w-4 animate-spin inline"></i>';
+        try {
+          const r = await fetch(`http://13.246.211.152:8080/api/fillers/${this.currentScriptId}`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ phrase, categories: [cat] })
+          });
+          if (r.ok) {
+            document.getElementById('va-new-filler-phrase').value = '';
+            await this.loadFillers(this.currentScriptId);
+          } else { alert('Failed to add filler'); }
+        } catch(e) { alert('Error adding filler'); }
+        btn.disabled = false; btn.innerHTML = '<i data-lucide="plus" class="h-4 w-4"></i>Add'; lucide.createIcons();
+      },
+
+      async toggleFiller(fillerId) {
+        try {
+          await fetch(`http://13.246.211.152:8080/api/fillers/${fillerId}/toggle`, { method: 'PATCH' });
+          await this.loadFillers(this.currentScriptId);
+        } catch(e) { console.error('Toggle filler error', e); }
+      },
+
+      async deleteFiller(fillerId) {
+        if (!confirm('Delete this filler?')) return;
+        try {
+          await fetch(`http://13.246.211.152:8080/api/fillers/${fillerId}`, { method: 'DELETE' });
+          await this.loadFillers(this.currentScriptId);
+        } catch(e) { console.error('Delete filler error', e); }
+      },
+
       async loadScripts() {
         try {
           const r = await fetch('http://13.246.211.152:8080/api/scripts');
@@ -7641,6 +7756,7 @@ Total Players: ${s.total}`;
           document.getElementById('va-sb-canthelp').value = s.cannot_help_goodbye || '';
           document.getElementById('va-sb-freewrite').value = s.freewrite_content || '';
           document.getElementById('va-sb-voiceid').value = s.voice_id || '';
+          this.loadFillers(s.id);
           document.getElementById('va-sb-stability').value = s.voice_stability || 0.5;
           document.getElementById('va-sb-similarity').value = s.voice_similarity || 0.8;
           document.getElementById('va-sb-style').value = s.voice_style || 0.0;
@@ -7720,7 +7836,7 @@ Total Players: ${s.total}`;
           const cr = await fetch('http://13.246.211.152:8080/api/scripts', {
             method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(s)
           });
-          if (cr.ok) { this.loadScripts(); this.loadScriptsDropdowns(); }
+          if (cr.ok) { this.loadScripts(); this.loadScriptsDropdowns(); if(this.currentScriptId) this.loadFillers(this.currentScriptId); }
         } catch(e) { alert('Error: ' + e.message); }
       },
 
