@@ -1227,7 +1227,7 @@
             </div>
             <div class="mb-4">
               <label class="block text-sm font-medium text-slate-700 mb-1">Script</label>
-              <select id="va-test-script" class="w-full px-3 py-2 border rounded-lg text-sm">
+              <select id="va-test-script" class="w-full px-3 py-2 border rounded-lg text-sm" onchange="VA.onScriptSelect(this.value)">
                 <option value="">-- Select Script --</option>
               </select>
             </div>
@@ -7776,21 +7776,108 @@ Total Players: ${s.total}`;
         this.testCallId = null;
       },
 
+      async onScriptSelect(scriptId) {
+        if (!scriptId) return;
+        const statusDiv = document.getElementById('va-voice-status');
+        const dot = document.getElementById('va-voice-dot');
+        const txt = document.getElementById('va-voice-status-text');
+        const bar = document.getElementById('va-voice-progress-bar');
+        const fill = document.getElementById('va-voice-progress-fill');
+        statusDiv.classList.remove('hidden');
+        dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
+        txt.textContent = 'Checking voice...';
+        try {
+          const voiceId = await this.getScriptVoiceId(scriptId);
+          if (!voiceId) { txt.textContent = 'No voice selected'; return; }
+          // Trigger preparation
+          const r = await fetch(`http://13.246.211.152:8080/api/voice/prepare/${voiceId}`, { method: 'POST' });
+          const s = await r.json();
+          if (s.status === 'ready') {
+            dot.className = 'w-2 h-2 rounded-full bg-emerald-500';
+            txt.textContent = '✅ Voice ready';
+            bar.classList.add('hidden');
+          } else {
+            bar.classList.remove('hidden');
+            txt.textContent = `Preparing voice... ${s.progress}/${s.total}`;
+            fill.style.width = `${(s.progress/s.total)*100}%`;
+            // Poll for completion
+            const poll = setInterval(async () => {
+              const pr = await fetch(`http://13.246.211.152:8080/api/voice/prepare/${voiceId}`);
+              const ps = await pr.json();
+              fill.style.width = `${(ps.progress/ps.total)*100}%`;
+              txt.textContent = `Preparing voice... ${ps.progress}/${ps.total}`;
+              if (ps.status === 'ready') {
+                clearInterval(poll);
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-500';
+                txt.textContent = '✅ Voice ready';
+                bar.classList.add('hidden');
+              } else if (ps.status === 'failed') {
+                clearInterval(poll);
+                dot.className = 'w-2 h-2 rounded-full bg-red-500';
+                txt.textContent = '❌ Voice preparation failed';
+              }
+            }, 2000);
+          }
+        } catch(e) { txt.textContent = 'Could not check voice status'; }
+      },
+
+      async checkVoiceReady(voiceId) {
+        if (!voiceId) return true;
+        // Trigger preparation if not started
+        const prepR = await fetch(`http://13.246.211.152:8080/api/voice/prepare/${voiceId}`, { method: 'POST' });
+        const prep = await prepR.json();
+        if (prep.status === 'ready') return true;
+        // Poll until ready or failed
+        const statusTxt = document.getElementById('va-test-status-text');
+        const statusDot = document.getElementById('va-test-status-dot');
+        for (let i = 0; i < 60; i++) {
+          await new Promise(r => setTimeout(r, 2000));
+          const r = await fetch(`http://13.246.211.152:8080/api/voice/prepare/${voiceId}`);
+          const s = await r.json();
+          if (statusTxt) statusTxt.textContent = `🎙️ Preparing voice... ${s.progress}/${s.total} phrases`;
+          if (statusDot) statusDot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
+          if (s.status === 'ready') return true;
+          if (s.status === 'failed') return false;
+        }
+        return false;
+      },
+
+      async getScriptVoiceId(scriptId) {
+        if (!scriptId) return null;
+        try {
+          const r = await fetch(`http://13.246.211.152:8080/api/scripts/${scriptId}`);
+          const s = await r.json();
+          return s.voice_id || null;
+        } catch(e) { return null; }
+      },
+
       async startTestCall() {
         const phone = document.getElementById('va-test-phone').value.trim();
         const scriptId = document.getElementById('va-test-script').value;
         if (!phone) return alert('Enter your phone number');
         const btn = document.getElementById('va-test-start-btn');
         btn.disabled = true;
-        btn.innerHTML = '<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent inline-block mr-2"></div>Calling...';
+        btn.innerHTML = '<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent inline-block mr-2"></div>Preparing...';
         const statusDiv = document.getElementById('va-test-status');
         const statusDot = document.getElementById('va-test-status-dot');
         const statusTxt = document.getElementById('va-test-status-text');
         const transcriptDiv = document.getElementById('va-test-transcript');
         statusDiv.classList.remove('hidden');
         statusDot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
-        statusTxt.textContent = 'Initiating call to ' + phone + '...';
+        statusTxt.textContent = 'Checking voice readiness...';
         transcriptDiv.innerHTML = '';
+        // Check voice readiness before calling
+        const voiceId = await this.getScriptVoiceId(scriptId);
+        const voiceReady = await this.checkVoiceReady(voiceId);
+        if (!voiceReady) {
+          btn.disabled = false;
+          btn.innerHTML = '📞 Start Test Call';
+          statusTxt.textContent = '❌ Voice preparation failed. Please retry.';
+          statusDot.className = 'w-2 h-2 rounded-full bg-red-500';
+          return;
+        }
+        statusTxt.textContent = 'Initiating call to ' + phone + '...';
+        btn.innerHTML = '<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent inline-block mr-2"></div>Calling...';
         try {
           const r = await fetch('http://13.246.211.152:8080/api/call/start', {
             method:'POST', headers:{'Content-Type':'application/json'},
