@@ -7940,6 +7940,7 @@ Total Players: ${s.total}`;
         const txt = document.getElementById('va-voice-status-text');
         const bar = document.getElementById('va-voice-progress-bar');
         const fill = document.getElementById('va-voice-progress-fill');
+        if (!statusDiv) return;
         statusDiv.classList.remove('hidden');
         dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
         txt.textContent = 'Checking voice...';
