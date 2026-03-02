@@ -7570,126 +7570,116 @@ Total Players: ${s.total}`;
         document.getElementById('va-script-library')?.classList.toggle('hidden', view !== 'library');
         document.getElementById('va-script-builder')?.classList.toggle('hidden', view !== 'builder');
         if (view === 'library') this.loadScripts();
-        if (view === 'builder') { this.currentScriptId = null; document.getElementById('va-builder-title').textContent = 'New Script'; this.resetBuilderForm(); }
+        if (view === 'builder') { this.currentScriptId = null; this.pendingFillers = []; document.getElementById('va-builder-title').textContent = 'New Script'; this.resetBuilderForm(); }
       },
 
 
       // ── Filler Management ─────────────────────────────────────────────────────
-      async loadFillers(scriptId) {
-        if (!scriptId) return;
+      // In-memory filler list for current script being edited
+      pendingFillers: [],
+
+      renderFillerList() {
         const list = document.getElementById('va-fillers-list');
+        const emptyDiv = document.getElementById('va-fillers-empty');
         const badge = document.getElementById('va-fillers-ready-badge');
-        const section = document.getElementById('va-fillers-section');
-        section.classList.remove('hidden');
-        list.innerHTML = '<div class="text-slate-400 text-sm text-center py-4">Loading...</div>';
-        try {
-          const r = await fetch(`http://13.246.211.152:8080/api/fillers/${scriptId}`);
-          const fillers = await r.json();
-          const emptyDiv = document.getElementById('va-fillers-empty');
-          if (!fillers.length) {
-            list.innerHTML = '';
-            if (emptyDiv) emptyDiv.classList.remove('hidden');
-            return;
-          }
-          if (emptyDiv) emptyDiv.classList.add('hidden');
-          // Check readiness
-          const voiceId = document.getElementById('va-sb-voiceid')?.value;
-          if (voiceId) {
-            const vr = await fetch(`http://13.246.211.152:8080/api/voice/prepare/${voiceId}`);
-            const vs = await vr.json();
-            const pct = Math.round((vs.progress/vs.total)*100);
-            if (vs.status === 'ready') {
-              badge.className = 'text-xs px-2 py-1 rounded-full bg-emerald-500';
-              badge.textContent = '✅ Voice Ready';
-            } else if (vs.status === 'generating') {
-              badge.className = 'text-xs px-2 py-1 rounded-full bg-amber-500';
-              badge.textContent = `⏳ Generating ${pct}%`;
-            } else {
-              badge.className = 'text-xs px-2 py-1 rounded-full bg-slate-500';
-              badge.textContent = 'Not Generated';
-            }
-          }
-          const cats = { neutral:'🔘', question:'❓', positive:'✅', negative:'❌', repeat:'🔁', greeting:'👋' };
-          list.innerHTML = fillers.map(f => `
-            <div class="flex items-center gap-2 p-2 rounded-lg border ${f.is_active ? 'bg-white' : 'bg-slate-50 opacity-60'}">
-              <span class="text-xs">${f.categories.map(c => cats[c]||'🔘').join('')}</span>
-              <span class="flex-1 text-sm ${f.is_active ? 'text-slate-800' : 'text-slate-400 line-through'}">${f.phrase}</span>
-              <span class="text-xs text-slate-400 px-2 py-0.5 bg-slate-100 rounded">${f.categories.join(', ')}</span>
-              ${f.is_default ? '<span class="text-xs text-purple-500 font-medium">default</span>' : ''}
-              <button onclick="VA.toggleFiller('${f.id}')" class="p-1 rounded ${f.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'}">
-                <i data-lucide="${f.is_active ? 'toggle-right' : 'toggle-left'}" class="h-4 w-4"></i>
-              </button>
-              ${!f.is_default ? `<button onclick="VA.deleteFiller('${f.id}')" class="p-1 text-red-400 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="h-4 w-4"></i></button>` : ''}
-            </div>
-          `).join('');
-          lucide.createIcons();
-        } catch(e) { list.innerHTML = '<div class="text-red-400 text-sm text-center py-4">Failed to load fillers</div>'; }
-      },
-
-      async loadDefaultFillers() {
-        if (!this.currentScriptId) return alert('Save the script first');
-        const btn = event.target.closest('button');
-        btn.disabled = true;
-        btn.innerHTML = '<i data-lucide="loader" class="h-4 w-4 animate-spin inline mr-1"></i>Loading...';
-        lucide.createIcons();
-        const defaults = [
-          { phrase: "Uhmmm,",                    categories: ["neutral"] },
-          { phrase: "Okay so,",                  categories: ["neutral"] },
-          { phrase: "Soooo,",                    categories: ["neutral", "question"] },
-          { phrase: "Mmm,",                      categories: ["neutral"] },
-          { phrase: "Uhmmm let me see,",         categories: ["question"] },
-          { phrase: "That's great to hear,",     categories: ["positive"] },
-          { phrase: "Wonderful,",                categories: ["positive"] },
-          { phrase: "Okay good,",                categories: ["positive"] },
-          { phrase: "I understand,",             categories: ["negative"] },
-          { phrase: "No problem,",               categories: ["negative"] },
-          { phrase: "Sorry about that,",         categories: ["repeat"] },
-          { phrase: "Let me repeat,",            categories: ["repeat"] },
-          { phrase: "Sorry,",                    categories: ["repeat"] },
-          { phrase: "Hi, thanks for answering,", categories: ["greeting"] },
-        ];
-        for (const f of defaults) {
-          await fetch(`http://13.246.211.152:8080/api/fillers/${this.currentScriptId}`, {
-            method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ phrase: f.phrase, categories: f.categories, is_default: true })
-          });
+        if (!this.pendingFillers.length) {
+          list.innerHTML = '';
+          if (emptyDiv) emptyDiv.classList.remove('hidden');
+          badge.className = 'text-xs px-2 py-1 rounded-full bg-slate-400';
+          badge.textContent = 'No fillers';
+          return;
         }
-        await this.loadFillers(this.currentScriptId);
+        if (emptyDiv) emptyDiv.classList.add('hidden');
+        badge.className = 'text-xs px-2 py-1 rounded-full bg-purple-500';
+        badge.textContent = this.pendingFillers.filter(f => f.is_active).length + ' active';
+        const cats = { neutral:'🔘', question:'❓', positive:'✅', negative:'❌', repeat:'🔁', greeting:'👋' };
+        list.innerHTML = this.pendingFillers.map((f, idx) => `
+          <div class="flex items-center gap-2 p-2 rounded-lg border ${f.is_active ? 'bg-white' : 'bg-slate-50 opacity-60'}">
+            <span class="text-xs">${f.categories.map(c => cats[c]||'🔘').join('')}</span>
+            <span class="flex-1 text-sm ${f.is_active ? 'text-slate-800' : 'text-slate-400 line-through'}">${f.phrase}</span>
+            <span class="text-xs text-slate-400 px-2 py-0.5 bg-slate-100 rounded">${f.categories.join(', ')}</span>
+            ${f.is_default ? '<span class="text-xs text-purple-500 font-medium">default</span>' : ''}
+            <button onclick="VA.toggleFillerIdx(${idx})" class="p-1 rounded ${f.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'}">
+              <i data-lucide="${f.is_active ? 'toggle-right' : 'toggle-left'}" class="h-4 w-4"></i>
+            </button>
+            ${!f.is_default ? `<button onclick="VA.deleteFillerIdx(${idx})" class="p-1 text-red-400 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="h-4 w-4"></i></button>` : ''}
+          </div>
+        `).join('');
+        lucide.createIcons();
       },
 
-      async addFiller() {
+      loadDefaultFillers() {
+        const defaults = [
+          { phrase: "Uhmmm,",                    categories: ["neutral"],            is_default: true, is_active: true },
+          { phrase: "Okay so,",                  categories: ["neutral"],            is_default: true, is_active: true },
+          { phrase: "Soooo,",                    categories: ["neutral","question"],  is_default: true, is_active: true },
+          { phrase: "Mmm,",                      categories: ["neutral"],            is_default: true, is_active: true },
+          { phrase: "Uhmmm let me see,",         categories: ["question"],           is_default: true, is_active: true },
+          { phrase: "That's great to hear,",     categories: ["positive"],           is_default: true, is_active: true },
+          { phrase: "Wonderful,",                categories: ["positive"],           is_default: true, is_active: true },
+          { phrase: "Okay good,",                categories: ["positive"],           is_default: true, is_active: true },
+          { phrase: "I understand,",             categories: ["negative"],           is_default: true, is_active: true },
+          { phrase: "No problem,",               categories: ["negative"],           is_default: true, is_active: true },
+          { phrase: "Sorry about that,",         categories: ["repeat"],             is_default: true, is_active: true },
+          { phrase: "Let me repeat,",            categories: ["repeat"],             is_default: true, is_active: true },
+          { phrase: "Sorry,",                    categories: ["repeat"],             is_default: true, is_active: true },
+          { phrase: "Hi, thanks for answering,", categories: ["greeting"],           is_default: true, is_active: true },
+        ];
+        // Only add defaults not already present
+        defaults.forEach(d => {
+          if (!this.pendingFillers.find(f => f.phrase === d.phrase)) {
+            this.pendingFillers.push(d);
+          }
+        });
+        this.renderFillerList();
+      },
+
+      addFiller() {
         const phrase = document.getElementById('va-new-filler-phrase').value.trim();
         const cat = document.getElementById('va-new-filler-cat').value;
         if (!phrase) return alert('Enter a filler phrase');
-        if (!this.currentScriptId) return alert('Save the script first');
-        const btn = event.target.closest('button');
-        btn.disabled = true; btn.innerHTML = '<i data-lucide="loader" class="h-4 w-4 animate-spin inline"></i>';
+        if (this.pendingFillers.find(f => f.phrase === phrase)) return alert('Filler already exists');
+        this.pendingFillers.push({ phrase, categories: [cat], is_default: false, is_active: true });
+        document.getElementById('va-new-filler-phrase').value = '';
+        this.renderFillerList();
+      },
+
+      toggleFillerIdx(idx) {
+        this.pendingFillers[idx].is_active = !this.pendingFillers[idx].is_active;
+        this.renderFillerList();
+      },
+
+      deleteFillerIdx(idx) {
+        if (!confirm('Remove this filler?')) return;
+        this.pendingFillers.splice(idx, 1);
+        this.renderFillerList();
+      },
+
+      async loadFillers(scriptId) {
+        if (!scriptId) { this.pendingFillers = []; this.renderFillerList(); return; }
         try {
-          const r = await fetch(`http://13.246.211.152:8080/api/fillers/${this.currentScriptId}`, {
+          const r = await fetch(`http://13.246.211.152:8080/api/fillers/${scriptId}`);
+          const fillers = await r.json();
+          this.pendingFillers = fillers.length ? fillers : [];
+          this.renderFillerList();
+        } catch(e) { this.pendingFillers = []; this.renderFillerList(); }
+      },
+
+      async saveFillers(scriptId) {
+        // Delete existing fillers and re-save all pending ones
+        try {
+          const existing = await fetch(`http://13.246.211.152:8080/api/fillers/${scriptId}`);
+          const rows = await existing.json();
+          for (const row of rows) {
+            await fetch(`http://13.246.211.152:8080/api/fillers/${row.id}`, { method: 'DELETE' });
+          }
+        } catch(e) {}
+        for (const f of this.pendingFillers) {
+          await fetch(`http://13.246.211.152:8080/api/fillers/${scriptId}`, {
             method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ phrase, categories: [cat] })
+            body: JSON.stringify({ phrase: f.phrase, categories: f.categories, is_default: f.is_default })
           });
-          if (r.ok) {
-            document.getElementById('va-new-filler-phrase').value = '';
-            await this.loadFillers(this.currentScriptId);
-          } else { alert('Failed to add filler'); }
-        } catch(e) { alert('Error adding filler'); }
-        btn.disabled = false; btn.innerHTML = '<i data-lucide="plus" class="h-4 w-4"></i>Add'; lucide.createIcons();
-      },
-
-      async toggleFiller(fillerId) {
-        try {
-          await fetch(`http://13.246.211.152:8080/api/fillers/${fillerId}/toggle`, { method: 'PATCH' });
-          await this.loadFillers(this.currentScriptId);
-        } catch(e) { console.error('Toggle filler error', e); }
-      },
-
-      async deleteFiller(fillerId) {
-        if (!confirm('Delete this filler?')) return;
-        try {
-          await fetch(`http://13.246.211.152:8080/api/fillers/${fillerId}`, { method: 'DELETE' });
-          await this.loadFillers(this.currentScriptId);
-        } catch(e) { console.error('Delete filler error', e); }
+        }
       },
 
       async loadScripts() {
@@ -7772,6 +7762,8 @@ Total Players: ${s.total}`;
         document.getElementById('va-sb-style').value = 0.0;
         document.getElementById('va-sb-isdefault').checked = false;
         document.getElementById('va-script-preview').classList.add('hidden');
+        this.pendingFillers = [];
+        this.renderFillerList();
         this.setBuilderMode('guided');
       },
 
@@ -7868,6 +7860,8 @@ Total Players: ${s.total}`;
           const d = await r.json();
           this.currentScriptId = d.id || this.currentScriptId;
           document.getElementById('va-builder-title').textContent = 'Edit: ' + payload.name;
+          // Save fillers together with script
+          await this.saveFillers(this.currentScriptId);
           await this.loadScriptsDropdowns();
           alert('✅ Script saved: ' + payload.name);
         } catch(e) { alert('Save error: ' + e.message); }
