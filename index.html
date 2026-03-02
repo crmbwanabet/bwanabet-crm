@@ -7651,7 +7651,7 @@ Total Players: ${s.total}`;
         for (const f of defaults) {
           await fetch(`http://13.246.211.152:8080/api/fillers/${this.currentScriptId}`, {
             method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ ...f, is_default: true })
+            body: JSON.stringify({ phrase: f.phrase, categories: f.categories, is_default: true })
           });
         }
         await this.loadFillers(this.currentScriptId);
