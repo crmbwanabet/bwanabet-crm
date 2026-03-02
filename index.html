@@ -1842,6 +1842,11 @@
                         <div><label class="block text-xs font-medium text-blue-700 mb-1">Similarity: <span id="va-similarity-val">0.8</span></label><input id="va-sb-similarity" type="range" min="0" max="1" step="0.05" value="0.8" oninput="document.getElementById('va-similarity-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
                         <div><label class="block text-xs font-medium text-blue-700 mb-1">Style: <span id="va-style-val">0.0</span></label><input id="va-sb-style" type="range" min="0" max="1" step="0.05" value="0.0" oninput="document.getElementById('va-style-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
                       </div>
+                      <div class="mt-3">
+                        <label class="block text-xs font-medium text-blue-700 mb-1">🎚️ Speech Speed: <span id="va-speed-val">1.0</span>x <span class="text-blue-400 font-normal">(0.7 = slower, 1.2 = faster)</span></label>
+                        <input id="va-sb-speed" type="range" min="0.7" max="1.2" step="0.05" value="1.0" oninput="document.getElementById('va-speed-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600">
+                        <div class="flex justify-between text-xs text-blue-400 mt-1"><span>0.7 Slow</span><span>1.0 Normal</span><span>1.2 Fast</span></div>
+                      </div>
                     </div>
                   </div>
                   <div class="mb-4 flex items-center gap-3">
@@ -1857,7 +1862,7 @@
               </div>
 
               <!-- Fillers Section (only shown when editing existing script) -->
-              <div id="va-fillers-section" class="hidden bg-white rounded-xl shadow-sm overflow-hidden mt-4">
+              <div id="va-fillers-section" class="bg-white rounded-xl shadow-sm overflow-hidden mt-4">
                 <div class="bg-gradient-to-r from-purple-700 to-purple-600 text-white p-4 flex items-center justify-between">
                   <h3 class="font-bold flex items-center gap-2"><i data-lucide="music" class="h-4 w-4"></i>Filler Phrases</h3>
                   <div id="va-fillers-ready-badge" class="text-xs px-2 py-1 rounded-full bg-purple-500">Loading...</div>
@@ -1878,10 +1883,15 @@
                       <i data-lucide="plus" class="h-4 w-4"></i>Add
                     </button>
                   </div>
-                  <!-- Filler list -->
-                  <div id="va-fillers-list" class="space-y-2 max-h-64 overflow-y-auto">
-                    <div class="text-slate-400 text-sm text-center py-4">Save script first to manage fillers</div>
+                  <!-- Empty state -->
+                  <div id="va-fillers-empty" class="hidden text-center py-4">
+                    <p class="text-slate-400 text-sm mb-3">No fillers yet for this script.</p>
+                    <button onclick="VA.loadDefaultFillers()" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 inline-flex items-center gap-2">
+                      <i data-lucide="download" class="h-4 w-4"></i>Load Default Fillers
+                    </button>
                   </div>
+                  <!-- Filler list -->
+                  <div id="va-fillers-list" class="space-y-2 max-h-64 overflow-y-auto"></div>
                 </div>
               </div>
             </div>
@@ -7575,10 +7585,13 @@ Total Players: ${s.total}`;
         try {
           const r = await fetch(`http://13.246.211.152:8080/api/fillers/${scriptId}`);
           const fillers = await r.json();
+          const emptyDiv = document.getElementById('va-fillers-empty');
           if (!fillers.length) {
-            list.innerHTML = '<div class="text-slate-400 text-sm text-center py-4">No fillers yet. Add one above.</div>';
+            list.innerHTML = '';
+            if (emptyDiv) emptyDiv.classList.remove('hidden');
             return;
           }
+          if (emptyDiv) emptyDiv.classList.add('hidden');
           // Check readiness
           const voiceId = document.getElementById('va-sb-voiceid')?.value;
           if (voiceId) {
@@ -7613,7 +7626,38 @@ Total Players: ${s.total}`;
         } catch(e) { list.innerHTML = '<div class="text-red-400 text-sm text-center py-4">Failed to load fillers</div>'; }
       },
 
-      async addFiller() {
+      async loadDefaultFillers() {
+        if (!this.currentScriptId) return alert('Save the script first');
+        const btn = event.target.closest('button');
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader" class="h-4 w-4 animate-spin inline mr-1"></i>Loading...';
+        lucide.createIcons();
+        const defaults = [
+          { phrase: "Uhmmm,",                    categories: ["neutral"] },
+          { phrase: "Okay so,",                  categories: ["neutral"] },
+          { phrase: "Soooo,",                    categories: ["neutral", "question"] },
+          { phrase: "Mmm,",                      categories: ["neutral"] },
+          { phrase: "Uhmmm let me see,",         categories: ["question"] },
+          { phrase: "That's great to hear,",     categories: ["positive"] },
+          { phrase: "Wonderful,",                categories: ["positive"] },
+          { phrase: "Okay good,",                categories: ["positive"] },
+          { phrase: "I understand,",             categories: ["negative"] },
+          { phrase: "No problem,",               categories: ["negative"] },
+          { phrase: "Sorry about that,",         categories: ["repeat"] },
+          { phrase: "Let me repeat,",            categories: ["repeat"] },
+          { phrase: "Sorry,",                    categories: ["repeat"] },
+          { phrase: "Hi, thanks for answering,", categories: ["greeting"] },
+        ];
+        for (const f of defaults) {
+          await fetch(`http://13.246.211.152:8080/api/fillers/${this.currentScriptId}`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ ...f, is_default: true })
+          });
+        }
+        await this.loadFillers(this.currentScriptId);
+      },
+
+
         const phrase = document.getElementById('va-new-filler-phrase').value.trim();
         const cat = document.getElementById('va-new-filler-cat').value;
         if (!phrase) return alert('Enter a filler phrase');
@@ -7758,6 +7802,8 @@ Total Players: ${s.total}`;
           document.getElementById('va-sb-voiceid').value = s.voice_id || '';
           this.loadFillers(s.id);
           document.getElementById('va-sb-stability').value = s.voice_stability || 0.5;
+          document.getElementById('va-sb-speed').value = s.voice_speed || 1.0;
+          document.getElementById('va-speed-val').textContent = (s.voice_speed || 1.0).toFixed(2);
           document.getElementById('va-sb-similarity').value = s.voice_similarity || 0.8;
           document.getElementById('va-sb-style').value = s.voice_style || 0.0;
           document.getElementById('va-sb-isdefault').checked = s.is_default || false;
@@ -7788,6 +7834,7 @@ Total Players: ${s.total}`;
           cannot_help_goodbye: document.getElementById('va-sb-canthelp').value.trim(),
           freewrite_content: document.getElementById('va-sb-freewrite').value.trim(),
           voice_id: document.getElementById('va-sb-voiceid').value.trim(),
+          voice_speed: parseFloat(document.getElementById('va-sb-speed').value) || 1.0,
           voice_stability: parseFloat(document.getElementById('va-sb-stability').value),
           voice_similarity: parseFloat(document.getElementById('va-sb-similarity').value),
           voice_style: parseFloat(document.getElementById('va-sb-style').value),
