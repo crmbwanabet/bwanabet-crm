@@ -8368,11 +8368,11 @@ Total Players: ${s.total}`;
 
       async loadCallSettings() {
         try {
-          const r = await fetch('http://13.246.211.152:8080/api/settings');
+          const r = await fetch(`${this.apiBase}/settings`);
           const d = await r.json();
           document.getElementById('va-set-maxcalls').value = d.max_concurrent_calls || 10;
-          document.getElementById('va-set-timeout').value = d.call_timeout || 45;
-          document.getElementById('va-set-maxturns').value = d.max_turns || 10;
+          document.getElementById('va-set-timeout').value = d.call_timeout || 180;
+          document.getElementById('va-set-maxturns').value = d.max_turns || 20;
           document.getElementById('va-set-greetdelay').value = d.greeting_delay_ms || 4500;
           document.getElementById('va-set-endpointing').value = d.endpointing_ms || 300;
           document.getElementById('va-set-silence').value = d.max_silence_count || 2;
@@ -8389,7 +8389,7 @@ Total Players: ${s.total}`;
           max_silence_count: parseInt(document.getElementById('va-set-silence').value),
         };
         try {
-          await fetch('http://13.246.211.152:8080/api/settings', {
+          await fetch(`${this.apiBase}/settings`, {
             method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)
           });
           alert('✅ Settings saved');
