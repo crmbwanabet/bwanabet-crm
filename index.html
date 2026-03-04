@@ -7690,11 +7690,6 @@ Total Players: ${s.total}`;
         this.pendingFillers.splice(idx, 1);
         this.renderFillerList();
       },
-              body: JSON.stringify({ question: e.question, answer: e.answer })
-            });
-          }
-        }
-      },
 
       editFillerPhrase(idx, value) {
         this.pendingFillers[idx].phrase = value.trim();
