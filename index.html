@@ -7606,9 +7606,15 @@ Total Players: ${s.total}`;
         list.innerHTML = this.pendingFillers.map((f, idx) => `
           <div class="flex items-center gap-2 p-2 rounded-lg border ${f.is_active ? 'bg-white' : 'bg-slate-50 opacity-60'}">
             <span class="text-xs">${f.categories.map(c => cats[c]||'🔘').join('')}</span>
-            <span class="flex-1 text-sm ${f.is_active ? 'text-slate-800' : 'text-slate-400 line-through'}">${f.phrase}</span>
-            <span class="text-xs text-slate-400 px-2 py-0.5 bg-slate-100 rounded">${f.categories.join(', ')}</span>
-            ${f.is_default ? '<span class="text-xs text-purple-500 font-medium">default</span>' : ''}
+            <input type="text" value="${f.phrase.replace(/"/g, '&quot;')}"
+              onchange="VA.editFillerPhrase(${idx}, this.value)"
+              class="flex-1 text-sm px-1 py-0.5 border border-transparent rounded hover:border-slate-300 focus:border-purple-400 focus:outline-none ${f.is_active ? 'text-slate-800' : 'text-slate-400'} bg-transparent cursor-text">
+            <select onchange="VA.editFillerCat(${idx}, this.value)"
+              class="text-xs px-1 py-0.5 border border-slate-200 rounded bg-white focus:border-purple-400 focus:outline-none">
+              ${['neutral','question','positive','negative','repeat','greeting'].map(cat =>
+                `<option value="${cat}" ${f.categories.includes(cat) ? 'selected' : ''}>${cat}</option>`
+              ).join('')}
+            </select>
             <button onclick="VA.toggleFillerIdx(${idx})" class="p-1 rounded ${f.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'}">
               <i data-lucide="${f.is_active ? 'toggle-right' : 'toggle-left'}" class="h-4 w-4"></i>
             </button>
