@@ -1904,6 +1904,27 @@ BEHAVIOUR RULES:
                   <div id="va-fillers-list" class="space-y-2 max-h-64 overflow-y-auto"></div>
                 </div>
               </div>
+
+              <!-- Knowledge Base Section -->
+              <div id="va-kb-section" class="bg-white rounded-xl shadow-sm overflow-hidden mt-4">
+                <div class="bg-gradient-to-r from-emerald-700 to-emerald-600 text-white p-4 flex items-center justify-between">
+                  <h3 class="font-bold flex items-center gap-2"><i data-lucide="book-open" class="h-4 w-4"></i>Knowledge Base</h3>
+                  <span id="va-kb-badge" class="text-xs px-2 py-1 rounded-full bg-emerald-500">0 entries</span>
+                </div>
+                <div class="p-4">
+                  <p class="text-xs text-slate-500 mb-3">Natasha uses these to answer clarifying questions. If no match is found, she says "I am not able to help with that" and continues the script.</p>
+                  <!-- Add new KB entry -->
+                  <div class="flex flex-col gap-2 mb-4 p-3 bg-slate-50 rounded-lg border">
+                    <input id="va-kb-new-q" type="text" placeholder="Question e.g. How much is the bonus?" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                    <textarea id="va-kb-new-a" rows="2" placeholder="Answer e.g. One hundred Kwacha, completely free..." class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"></textarea>
+                    <button onclick="VA.addKbEntry()" class="self-end px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 flex items-center gap-2">
+                      <i data-lucide="plus" class="h-4 w-4"></i>Add Entry
+                    </button>
+                  </div>
+                  <!-- KB list -->
+                  <div id="va-kb-list" class="space-y-2 max-h-80 overflow-y-auto"></div>
+                </div>
+              </div>
             </div>
           </div>
           </div>
@@ -7580,7 +7601,7 @@ Total Players: ${s.total}`;
         document.getElementById('va-script-library')?.classList.toggle('hidden', view !== 'library');
         document.getElementById('va-script-builder')?.classList.toggle('hidden', view !== 'builder');
         if (view === 'library') this.loadScripts();
-        if (view === 'builder') { this.currentScriptId = null; this.pendingFillers = []; document.getElementById('va-builder-title').textContent = 'New Script'; this.resetBuilderForm(); this.setBuilderMode('freewrite'); }
+        if (view === 'builder') { this.currentScriptId = null; this.pendingFillers = []; this.pendingKb = []; document.getElementById('va-builder-title').textContent = 'New Script'; this.resetBuilderForm(); this.setBuilderMode('freewrite'); }
       },
 
 
@@ -7670,6 +7691,86 @@ Total Players: ${s.total}`;
         this.pendingFillers.splice(idx, 1);
         this.renderFillerList();
       },
+      // ── Knowledge Base ──────────────────────────────────────────────────────
+      async loadKb(scriptId) {
+        if (!scriptId) { this.pendingKb = []; this.renderKbList(); return; }
+        try {
+          const r = await fetch(`${this.apiBase}/kb/${scriptId}`);
+          this.pendingKb = await r.json();
+          this.renderKbList();
+        } catch(e) { this.pendingKb = []; this.renderKbList(); }
+      },
+      renderKbList() {
+        const list = document.getElementById('va-kb-list');
+        const badge = document.getElementById('va-kb-badge');
+        if (!list) return;
+        if (badge) badge.textContent = (this.pendingKb?.length || 0) + ' entries';
+        if (!this.pendingKb?.length) {
+          list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No entries yet. Add your first Q&A above.</p>';
+          return;
+        }
+        list.innerHTML = this.pendingKb.map((e, idx) => `
+          <div class="p-3 border rounded-lg bg-slate-50 space-y-1">
+            <div class="flex items-start gap-2">
+              <span class="text-xs font-bold text-emerald-600 mt-1 shrink-0">Q</span>
+              <input type="text" value="${e.question.replace(/"/g, '&quot;')}"
+                onchange="VA.editKbEntry(${idx}, 'question', this.value)"
+                class="flex-1 text-sm px-1 py-0.5 border border-transparent rounded hover:border-slate-300 focus:border-emerald-400 focus:outline-none bg-transparent">
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-xs font-bold text-slate-400 mt-1 shrink-0">A</span>
+              <textarea rows="2" onchange="VA.editKbEntry(${idx}, 'answer', this.value)"
+                class="flex-1 text-sm px-1 py-0.5 border border-transparent rounded hover:border-slate-300 focus:border-emerald-400 focus:outline-none bg-transparent resize-none">${e.answer}</textarea>
+            </div>
+            <div class="flex justify-end">
+              <button onclick="VA.deleteKbEntry(${idx})" class="p-1 text-red-400 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+            </div>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      },
+      editKbEntry(idx, field, value) {
+        if (this.pendingKb[idx]) this.pendingKb[idx][field] = value.trim();
+      },
+      async addKbEntry() {
+        const q = document.getElementById('va-kb-new-q').value.trim();
+        const a = document.getElementById('va-kb-new-a').value.trim();
+        if (!q || !a) return alert('Please enter both a question and an answer.');
+        if (!this.currentScriptId) return alert('Please save the script first.');
+        try {
+          const r = await fetch(`${this.apiBase}/kb/${this.currentScriptId}`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ question: q, answer: a })
+          });
+          if (!r.ok) throw new Error('Failed to add entry');
+          document.getElementById('va-kb-new-q').value = '';
+          document.getElementById('va-kb-new-a').value = '';
+          await this.loadKb(this.currentScriptId);
+        } catch(e) { alert('Error: ' + e.message); }
+      },
+      async deleteKbEntry(idx) {
+        if (!confirm('Delete this KB entry?')) return;
+        const entry = this.pendingKb[idx];
+        if (entry?.id) {
+          try {
+            await fetch(`${this.apiBase}/kb/${entry.id}`, { method: 'DELETE' });
+          } catch(e) { alert('Error: ' + e.message); return; }
+        }
+        this.pendingKb.splice(idx, 1);
+        this.renderKbList();
+      },
+      async saveKb() {
+        if (!this.currentScriptId || !this.pendingKb) return;
+        for (const e of this.pendingKb) {
+          if (e.id) {
+            await fetch(`${this.apiBase}/kb/${e.id}`, {
+              method: 'PATCH', headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ question: e.question, answer: e.answer })
+            });
+          }
+        }
+      },
+
       editFillerPhrase(idx, value) {
         this.pendingFillers[idx].phrase = value.trim();
       },
@@ -7793,6 +7894,7 @@ Total Players: ${s.total}`;
           this.showScriptView('builder');
           this.currentScriptId = id;
           document.getElementById('va-builder-title').textContent = 'Edit: ' + s.name;
+          await this.loadKb(id);
           document.getElementById('va-sb-name').value = s.name || '';
           this.setBuilderMode(s.mode || 'guided');
           document.getElementById('va-sb-company').value = s.company_name || '';
@@ -7882,6 +7984,7 @@ Total Players: ${s.total}`;
           document.getElementById('va-builder-title').textContent = 'Edit: ' + payload.name;
           // Save fillers together with script
           await this.saveFillers(this.currentScriptId);
+          await this.saveKb();
           await this.loadScriptsDropdowns();
           alert('✅ Script saved: ' + payload.name);
         } catch(e) { alert('Save error: ' + e.message); }
