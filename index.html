@@ -7612,7 +7612,7 @@ Total Players: ${s.total}`;
             <button onclick="VA.toggleFillerIdx(${idx})" class="p-1 rounded ${f.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'}">
               <i data-lucide="${f.is_active ? 'toggle-right' : 'toggle-left'}" class="h-4 w-4"></i>
             </button>
-            ${!f.is_default ? `<button onclick="VA.deleteFillerIdx(${idx})" class="p-1 text-red-400 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="h-4 w-4"></i></button>` : ''}
+            <button onclick="VA.deleteFillerIdx(${idx})" class="p-1 text-red-400 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
           </div>
         `).join('');
         lucide.createIcons();
@@ -7668,7 +7668,7 @@ Total Players: ${s.total}`;
       async loadFillers(scriptId) {
         if (!scriptId) { this.pendingFillers = []; this.renderFillerList(); return; }
         try {
-          const r = await fetch(`http://13.246.211.152:8080/api/fillers/${scriptId}`);
+          const r = await fetch(`${this.apiBase}/fillers/${scriptId}`);
           const fillers = await r.json();
           this.pendingFillers = fillers.length ? fillers : [];
           this.renderFillerList();
@@ -7678,14 +7678,14 @@ Total Players: ${s.total}`;
       async saveFillers(scriptId) {
         // Delete existing fillers and re-save all pending ones
         try {
-          const existing = await fetch(`http://13.246.211.152:8080/api/fillers/${scriptId}`);
+          const existing = await fetch(`${this.apiBase}/fillers/${scriptId}`);
           const rows = await existing.json();
           for (const row of rows) {
-            await fetch(`http://13.246.211.152:8080/api/fillers/${row.id}`, { method: 'DELETE' });
+            await fetch(`${this.apiBase}/fillers/${row.id}`, { method: 'DELETE' });
           }
         } catch(e) {}
         for (const f of this.pendingFillers) {
-          await fetch(`http://13.246.211.152:8080/api/fillers/${scriptId}`, {
+          await fetch(`${this.apiBase}/fillers/${scriptId}`, {
             method: 'POST', headers: {'Content-Type':'application/json'},
             body: JSON.stringify({ phrase: f.phrase, categories: f.categories, is_default: f.is_default })
           });
