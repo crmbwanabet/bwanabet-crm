@@ -1832,42 +1832,22 @@ BEHAVIOUR RULES:
 ..." class="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
                     </div>
                   </div>
-                  <!-- Voice Settings with Picker -->
-                  <div class="mb-5 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                    <h4 class="font-semibold text-blue-700 mb-3 flex items-center gap-2"><i data-lucide="mic" class="h-4 w-4 text-blue-500"></i>Voice Settings</h4>
-                    <div class="space-y-4">
-                      <div>
-                        <label class="block text-xs font-medium text-blue-700 mb-1">Voice</label>
-                        <div class="flex gap-2">
-                          <select id="va-sb-voicepick" class="flex-1 min-w-0 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="VA.onVoicePickerChange('sb')">
-                            <option value="">-- Select or enter ID below --</option>
-                          </select>
-                          <button onclick="VA.loadVoices('sb')" class="flex-shrink-0 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700">Load Voices</button>
-                        </div>
-                        <input id="va-sb-voiceid" type="text" placeholder="Voice ID (auto-filled from picker)" class="w-full mt-2 px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
-                        <p class="text-xs text-blue-500 mt-1">Changing voice regenerates all filler phrases (~15s)</p>
-                      </div>
-                      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div><label class="block text-xs font-medium text-blue-700 mb-1">Stability: <span id="va-stability-val">0.5</span></label><input id="va-sb-stability" type="range" min="0" max="1" step="0.05" value="0.5" oninput="document.getElementById('va-stability-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
-                        <div><label class="block text-xs font-medium text-blue-700 mb-1">Similarity: <span id="va-similarity-val">0.8</span></label><input id="va-sb-similarity" type="range" min="0" max="1" step="0.05" value="0.8" oninput="document.getElementById('va-similarity-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
-                        <div><label class="block text-xs font-medium text-blue-700 mb-1">Style: <span id="va-style-val">0.0</span></label><input id="va-sb-style" type="range" min="0" max="1" step="0.05" value="0.0" oninput="document.getElementById('va-style-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
-                      </div>
-                      <div class="mt-3">
-                        <label class="block text-xs font-medium text-blue-700 mb-1">🎚️ Speech Speed: <span id="va-speed-val">1.0</span>x <span class="text-blue-400 font-normal">(0.7 = slower, 1.2 = faster)</span></label>
-                        <input id="va-sb-speed" type="range" min="0.7" max="1.2" step="0.05" value="1.0" oninput="document.getElementById('va-speed-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600">
-                        <div class="flex justify-between text-xs text-blue-400 mt-1"><span>0.7 Slow</span><span>1.0 Normal</span><span>1.2 Fast</span></div>
-                      </div>
-                    </div>
-                  </div>
                   <div class="mb-4 flex items-center gap-3">
                     <label class="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer"><input id="va-sb-isdefault" type="checkbox" class="rounded"> Set as default script</label>
                   </div>
                   <button onclick="VA.previewScript()" class="w-full py-2 mb-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 flex items-center justify-center gap-2"><i data-lucide="eye" class="h-4 w-4"></i>Preview Compiled Script</button>
                   <div id="va-script-preview" class="hidden p-3 bg-slate-900 text-green-400 rounded-lg text-xs font-mono whitespace-pre-wrap max-h-48 overflow-y-auto mb-3"></div>
-                  <div class="flex gap-3">
-                    <button onclick="VA.saveScript()" class="flex-1 py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 flex items-center justify-center gap-2"><i data-lucide="save" class="h-4 w-4"></i>Save Script</button>
-                    <button onclick="VA.showTestCallModal()" id="va-test-call-btn" class="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2"><i data-lucide="phone-call" class="h-4 w-4"></i>Test Call</button>
-                  </div>
+                </div>
+              </div>
+
+              <!-- Knowledge Base Section -->
+              <div id="va-kb-section" class="bg-white rounded-xl shadow-sm overflow-hidden mt-4">
+                <div class="bg-gradient-to-r from-emerald-700 to-emerald-600 text-white p-4">
+                  <h3 class="font-bold flex items-center gap-2"><i data-lucide="book-open" class="h-4 w-4"></i>Knowledge Base</h3>
+                  <p class="text-emerald-200 text-xs mt-1">Used to answer clarifying questions. If no match, Natasha says "I am not able to help with that" and continues.</p>
+                </div>
+                <div class="p-4">
+                  <textarea id="va-sb-kb" rows="10" placeholder="Q: How much is the bonus?&#10;A: One hundred Kwacha, completely free, no strings attached.&#10;&#10;Q: Is this Bola Bet?&#10;A: No, this is Bwana Bet, a Zambian sports betting company at bwanabet.com." class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 font-mono resize-y"></textarea>
                 </div>
               </div>
 
@@ -1905,25 +1885,44 @@ BEHAVIOUR RULES:
                 </div>
               </div>
 
-              <!-- Knowledge Base Section -->
-              <div id="va-kb-section" class="bg-white rounded-xl shadow-sm overflow-hidden mt-4">
-                <div class="bg-gradient-to-r from-emerald-700 to-emerald-600 text-white p-4 flex items-center justify-between">
-                  <h3 class="font-bold flex items-center gap-2"><i data-lucide="book-open" class="h-4 w-4"></i>Knowledge Base</h3>
-                  <span id="va-kb-badge" class="text-xs px-2 py-1 rounded-full bg-emerald-500">0 entries</span>
+              <!-- Voice Settings -->
+              <div class="bg-white rounded-xl shadow-sm overflow-hidden mt-4" id="va-voice-settings-section">
+                <div class="bg-gradient-to-r from-blue-700 to-blue-600 text-white p-4">
+                  <h3 class="font-bold flex items-center gap-2"><i data-lucide="mic" class="h-4 w-4"></i>Voice Settings</h3>
+                  <p class="text-blue-200 text-xs mt-1">Changing voice regenerates all filler phrases (~15 seconds). Test calls disabled during regeneration.</p>
                 </div>
                 <div class="p-4">
-                  <p class="text-xs text-slate-500 mb-3">Natasha uses these to answer clarifying questions. If no match is found, she says "I am not able to help with that" and continues the script.</p>
-                  <!-- Add new KB entry -->
-                  <div class="flex flex-col gap-2 mb-4 p-3 bg-slate-50 rounded-lg border">
-                    <input id="va-kb-new-q" type="text" placeholder="Question e.g. How much is the bonus?" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                    <textarea id="va-kb-new-a" rows="2" placeholder="Answer e.g. One hundred Kwacha, completely free..." class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"></textarea>
-                    <button onclick="VA.addKbEntry()" class="self-end px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 flex items-center gap-2">
-                      <i data-lucide="plus" class="h-4 w-4"></i>Add Entry
-                    </button>
+                  <div id="va-voice-regen-status" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-center gap-3"><div class="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div><div><p class="font-medium text-blue-800">Regenerating Filler Phrases...</p><p id="va-voice-regen-msg" class="text-sm text-blue-600">Please wait...</p></div></div>
                   </div>
-                  <!-- KB list -->
-                  <div id="va-kb-list" class="space-y-2 max-h-80 overflow-y-auto"></div>
+                  <div>
+                    <label class="block text-xs font-medium text-blue-700 mb-1">Voice</label>
+                    <div class="flex gap-2">
+                      <select id="va-sb-voicepick" class="flex-1 min-w-0 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="VA.onVoicePickerChange('sb')">
+                        <option value="">-- Select or enter ID below --</option>
+                      </select>
+                      <button onclick="VA.loadVoices('sb')" class="flex-shrink-0 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700">Load Voices</button>
+                    </div>
+                    <input id="va-sb-voiceid" type="text" placeholder="Voice ID (auto-filled from picker)" class="w-full mt-2 px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                    <div><label class="block text-xs font-medium text-blue-700 mb-1">Stability: <span id="va-stability-val">0.5</span></label><input id="va-sb-stability" type="range" min="0" max="1" step="0.05" value="0.5" oninput="document.getElementById('va-stability-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
+                    <div><label class="block text-xs font-medium text-blue-700 mb-1">Similarity: <span id="va-similarity-val">0.8</span></label><input id="va-sb-similarity" type="range" min="0" max="1" step="0.05" value="0.8" oninput="document.getElementById('va-similarity-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
+                    <div><label class="block text-xs font-medium text-blue-700 mb-1">Style: <span id="va-style-val">0.0</span></label><input id="va-sb-style" type="range" min="0" max="1" step="0.05" value="0.0" oninput="document.getElementById('va-style-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
+                  </div>
+                  <div class="mt-4">
+                    <label class="block text-xs font-medium text-blue-700 mb-1">🎚️ Speech Speed: <span id="va-speed-val">1.0</span>x <span class="text-blue-400 font-normal">(0.7 = slower, 1.2 = faster)</span></label>
+                    <input id="va-sb-speed" type="range" min="0.7" max="1.2" step="0.05" value="1.0" oninput="document.getElementById('va-speed-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600">
+                    <div class="flex justify-between text-xs text-blue-400 mt-1"><span>0.7 Slow</span><span>1.0 Normal</span><span>1.2 Fast</span></div>
+                  </div>
+                  <button onclick="VA.updateVoice()" class="mt-4 w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Update Voice & Regenerate Fillers</button>
                 </div>
+              </div>
+
+              <!-- Save & Test -->
+              <div class="bg-white rounded-xl shadow-sm p-4 mt-4 flex gap-3">
+                <button onclick="VA.saveScript()" class="flex-1 py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 flex items-center justify-center gap-2"><i data-lucide="save" class="h-4 w-4"></i>Save Script</button>
+                <button onclick="VA.showTestCallModal()" id="va-test-call-btn" class="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"><i data-lucide="phone-call" class="h-4 w-4"></i>Test Call</button>
               </div>
             </div>
           </div>
@@ -7601,7 +7600,7 @@ Total Players: ${s.total}`;
         document.getElementById('va-script-library')?.classList.toggle('hidden', view !== 'library');
         document.getElementById('va-script-builder')?.classList.toggle('hidden', view !== 'builder');
         if (view === 'library') this.loadScripts();
-        if (view === 'builder') { this.currentScriptId = null; this.pendingFillers = []; this.pendingKb = []; document.getElementById('va-builder-title').textContent = 'New Script'; this.resetBuilderForm(); this.setBuilderMode('freewrite'); }
+        if (view === 'builder') { this.currentScriptId = null; this.pendingFillers = []; this.pendingKb = []; document.getElementById('va-builder-title').textContent = 'New Script'; this.resetBuilderForm(); this.setBuilderMode('freewrite'); const tb = document.getElementById('va-test-call-btn'); if(tb) tb.disabled = true; }
       },
 
 
@@ -7870,7 +7869,7 @@ Total Players: ${s.total}`;
       resetBuilderForm() {
         ['va-sb-name','va-sb-company','va-sb-agent','va-sb-purpose',
          'va-sb-offer1-name','va-sb-offer1-details','va-sb-offer2-name','va-sb-offer2-details',
-         'va-sb-claim','va-sb-silence','va-sb-notinterested','va-sb-canthelp','va-sb-freewrite'].forEach(id => {
+         'va-sb-claim','va-sb-silence','va-sb-notinterested','va-sb-canthelp','va-sb-freewrite','va-sb-kb'].forEach(id => {
           const el = document.getElementById(id);
           if (el) el.value = '';
         });
@@ -7911,6 +7910,7 @@ Total Players: ${s.total}`;
           document.getElementById('va-sb-silence').value = s.silence_nudge || '';
           document.getElementById('va-sb-notinterested').value = s.not_interested_goodbye || '';
           document.getElementById('va-sb-canthelp').value = s.cannot_help_goodbye || '';
+          document.getElementById('va-sb-kb').value = s.knowledge_base || '';
           document.getElementById('va-sb-freewrite').value = s.freewrite_content || '';
           document.getElementById('va-sb-voiceid').value = s.voice_id || '';
           this.loadFillers(s.id);
@@ -7945,6 +7945,7 @@ Total Players: ${s.total}`;
           silence_nudge: document.getElementById('va-sb-silence').value.trim(),
           not_interested_goodbye: document.getElementById('va-sb-notinterested').value.trim(),
           cannot_help_goodbye: document.getElementById('va-sb-canthelp').value.trim(),
+          knowledge_base: document.getElementById('va-sb-kb').value.trim(),
           freewrite_content: document.getElementById('va-sb-freewrite').value.trim(),
           voice_id: document.getElementById('va-sb-voiceid').value.trim(),
           voice_speed: parseFloat(document.getElementById('va-sb-speed').value) || 1.0,
@@ -7982,6 +7983,7 @@ Total Players: ${s.total}`;
           const scriptId = Array.isArray(d) ? d[0]?.id : (d.id || this.currentScriptId);
           this.currentScriptId = scriptId || this.currentScriptId;
           document.getElementById('va-builder-title').textContent = 'Edit: ' + payload.name;
+          const tb = document.getElementById('va-test-call-btn'); if(tb) tb.disabled = false;
           // Save fillers together with script
           await this.saveFillers(this.currentScriptId);
           await this.saveKb();
