@@ -7689,18 +7689,14 @@ Total Players: ${s.total}`;
       },
 
       async saveFillers(scriptId) {
-        // Delete existing fillers and re-save all pending ones
+        // Bulk delete all existing fillers then re-save pending ones
         try {
-          const existing = await fetch(`${this.apiBase}/fillers/${scriptId}`);
-          const rows = await existing.json();
-          for (const row of rows) {
-            await fetch(`${this.apiBase}/fillers/${row.id}`, { method: 'DELETE' });
-          }
-        } catch(e) {}
+          await fetch(`${this.apiBase}/fillers/script/${scriptId}`, { method: 'DELETE' });
+        } catch(e) { console.error('Filler bulk delete failed:', e); }
         for (const f of this.pendingFillers) {
           await fetch(`${this.apiBase}/fillers/${scriptId}`, {
             method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ phrase: f.phrase, categories: f.categories, is_default: f.is_default })
+            body: JSON.stringify({ phrase: f.phrase, categories: f.categories, is_default: f.is_default, is_active: f.is_active })
           });
         }
       },
@@ -7794,9 +7790,9 @@ Total Players: ${s.total}`;
         try {
           const r = await fetch('http://13.246.211.152:8080/api/scripts/' + id);
           const s = await r.json();
+          this.showScriptView('builder');
           this.currentScriptId = id;
           document.getElementById('va-builder-title').textContent = 'Edit: ' + s.name;
-          this.showScriptView('builder');
           document.getElementById('va-sb-name').value = s.name || '';
           this.setBuilderMode(s.mode || 'guided');
           document.getElementById('va-sb-company').value = s.company_name || '';
