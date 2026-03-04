@@ -7664,6 +7664,13 @@ Total Players: ${s.total}`;
         this.pendingFillers.splice(idx, 1);
         this.renderFillerList();
       },
+      editFillerPhrase(idx, value) {
+        this.pendingFillers[idx].phrase = value.trim();
+      },
+      editFillerCat(idx, value) {
+        this.pendingFillers[idx].categories = [value];
+        this.renderFillerList();
+      },
 
       async loadFillers(scriptId) {
         if (!scriptId) { this.pendingFillers = []; this.renderFillerList(); return; }
