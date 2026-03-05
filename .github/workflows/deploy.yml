@@ -1,0 +1,53 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'server.py'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy server.py to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 13.246.211.152
+          username: ubuntu
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cp ~/voice-agent/server.py ~/voice-agent/server.py.bak
+            echo "Backup created"
+
+      - name: Copy server.py to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 13.246.211.152
+          username: ubuntu
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "server.py"
+          target: "/home/ubuntu/voice-agent/"
+
+      - name: Restart voice agent service
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 13.246.211.152
+          username: ubuntu
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            python3 -m py_compile ~/voice-agent/server.py
+            if [ $? -eq 0 ]; then
+              sudo systemctl restart voiceagent
+              sleep 3
+              sudo systemctl is-active voiceagent
+              echo "Deployed successfully"
+            else
+              echo "Syntax error in server.py — restoring backup"
+              cp ~/voice-agent/server.py.bak ~/voice-agent/server.py
+              exit 1
+            fi
