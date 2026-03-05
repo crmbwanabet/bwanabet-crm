@@ -1851,45 +1851,13 @@ BEHAVIOUR RULES:
                 </div>
               </div>
 
-              <!-- Fillers Section (only shown when editing existing script) -->
-              <div id="va-fillers-section" class="bg-white rounded-xl shadow-sm overflow-hidden mt-4">
-                <div class="bg-gradient-to-r from-purple-700 to-purple-600 text-white p-4 flex items-center justify-between">
-                  <h3 class="font-bold flex items-center gap-2"><i data-lucide="music" class="h-4 w-4"></i>Filler Phrases</h3>
-                  <div id="va-fillers-ready-badge" class="text-xs px-2 py-1 rounded-full bg-purple-500">Loading...</div>
-                </div>
-                <div class="p-4">
-                  <!-- Add new filler -->
-                  <div class="flex gap-2 mb-4">
-                    <input id="va-new-filler-phrase" type="text" placeholder="Type a filler phrase e.g. Uhmmm," class="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
-                    <select id="va-new-filler-cat" class="px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-400">
-                      <option value="neutral">Neutral</option>
-                      <option value="question">Question</option>
-                      <option value="positive">Positive</option>
-                      <option value="negative">Negative</option>
-                      <option value="repeat">Repeat</option>
-                      <option value="greeting">Greeting</option>
-                    </select>
-                    <button onclick="VA.addFiller()" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center gap-1">
-                      <i data-lucide="plus" class="h-4 w-4"></i>Add
-                    </button>
-                  </div>
-                  <!-- Empty state -->
-                  <div id="va-fillers-empty" class="hidden text-center py-4">
-                    <p class="text-slate-400 text-sm mb-3">No fillers yet for this script.</p>
-                    <button onclick="VA.loadDefaultFillers()" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 inline-flex items-center gap-2">
-                      <i data-lucide="download" class="h-4 w-4"></i>Load Default Fillers
-                    </button>
-                  </div>
-                  <!-- Filler list -->
-                  <div id="va-fillers-list" class="space-y-2 max-h-64 overflow-y-auto"></div>
-                </div>
-              </div>
+
 
               <!-- Voice Settings -->
               <div class="bg-white rounded-xl shadow-sm overflow-hidden mt-4" id="va-voice-settings-section">
                 <div class="bg-gradient-to-r from-blue-700 to-blue-600 text-white p-4">
                   <h3 class="font-bold flex items-center gap-2"><i data-lucide="mic" class="h-4 w-4"></i>Voice Settings</h3>
-                  <p class="text-blue-200 text-xs mt-1">Changing voice regenerates all filler phrases (~15 seconds). Test calls disabled during regeneration.</p>
+                  <p class="text-blue-200 text-xs mt-1">Voice settings apply to all calls.</p>
                 </div>
                 <div class="p-4">
                   <div id="va-voice-regen-status" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -1982,7 +1950,7 @@ BEHAVIOUR RULES:
             <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-5">
               <div class="bg-gradient-to-r from-blue-700 to-blue-600 text-white p-4">
                 <h3 class="font-bold flex items-center gap-2"><i data-lucide="mic" class="h-4 w-4"></i>Global Voice Settings</h3>
-                <p class="text-blue-200 text-xs mt-1">Changing voice regenerates all filler phrases (~15 seconds). Test calls disabled during regeneration.</p>
+                <p class="text-blue-200 text-xs mt-1">Voice settings apply to all calls.</p>
               </div>
               <div class="p-5">
                 <div id="va-voice-regen-status" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
