@@ -1245,7 +1245,7 @@
             </div>
             <div id="va-voice-regen-warning" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
               <i data-lucide="alert-circle" class="h-4 w-4 inline mr-1"></i>
-              Voice fillers are still regenerating. Please wait before testing.
+              Voice is still being updated. Please wait before testing.
             </div>
             <button id="va-test-start-btn" onclick="VA.startTestCall()" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2">
               <i data-lucide="phone-call" class="h-4 w-4"></i>Start Test Call
@@ -1665,7 +1665,7 @@
               </div>
               <div class="flex items-center gap-4 text-sm text-emerald-700">
                 <span>Active Calls: <strong id="va-active-count">0</strong></span>
-                <span>Fillers: <strong id="va-filler-count">0</strong></span>
+                
                 <button onclick="VA.refreshHealth()" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs hover:bg-emerald-700"><i data-lucide="refresh-cw" class="h-3 w-3 inline mr-1"></i>Refresh</button>
               </div>
             </div>
@@ -1860,9 +1860,7 @@ BEHAVIOUR RULES:
                   <p class="text-blue-200 text-xs mt-1">Voice settings apply to all calls.</p>
                 </div>
                 <div class="p-4">
-                  <div id="va-voice-regen-status" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div class="flex items-center gap-3"><div class="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div><div><p class="font-medium text-blue-800">Regenerating Filler Phrases...</p><p id="va-voice-regen-msg" class="text-sm text-blue-600">Please wait...</p></div></div>
-                  </div>
+
                   <div>
                     <label class="block text-xs font-medium text-blue-700 mb-1">Voice</label>
                     <div class="flex gap-2">
@@ -1883,7 +1881,7 @@ BEHAVIOUR RULES:
                     <input id="va-sb-speed" type="range" min="0.7" max="1.2" step="0.05" value="1.0" oninput="document.getElementById('va-speed-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600">
                     <div class="flex justify-between text-xs text-blue-400 mt-1"><span>0.7 Slow</span><span>1.0 Normal</span><span>1.2 Fast</span></div>
                   </div>
-                  <button onclick="VA.updateVoice()" class="mt-4 w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Update Voice & Regenerate Fillers</button>
+                  <button onclick="VA.updateVoice()" class="mt-4 w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Update Voice</button>
                 </div>
               </div>
 
@@ -1954,7 +1952,6 @@ BEHAVIOUR RULES:
               </div>
               <div class="p-5">
                 <div id="va-voice-regen-status" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div class="flex items-center gap-3"><div class="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div><div><p class="font-medium text-blue-800">Regenerating Filler Phrases...</p><p id="va-voice-regen-msg" class="text-sm text-blue-600">Please wait...</p></div></div>
                 </div>
                 <div id="va-voice-ready-status" class="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-3">
                   <i data-lucide="check-circle" class="h-5 w-5 text-emerald-500 flex-shrink-0"></i>
@@ -1978,7 +1975,7 @@ BEHAVIOUR RULES:
                     <div><label class="block text-xs font-medium text-slate-700 mb-1">Style: <span id="va-set-style-val">0.00</span></label><input id="va-settings-style" type="range" min="0" max="1" step="0.05" value="0.0" oninput="document.getElementById('va-set-style-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
                   </div>
                 </div>
-                <button onclick="VA.updateVoice()" class="mt-4 w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Update Voice & Regenerate Fillers</button>
+                <button onclick="VA.updateVoice()" class="mt-4 w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Update Voice</button>
               </div>
             </div>
             <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-5">
@@ -7458,7 +7455,7 @@ Total Players: ${s.total}`;
           if (txt) { txt.textContent = 'Voice Agent Online'; txt.className = 'font-semibold text-emerald-800'; }
           if (ver) ver.textContent = 'v' + (d.version || '6.0');
           if (document.getElementById('va-active-count')) document.getElementById('va-active-count').textContent = d.active_calls || 0;
-          if (document.getElementById('va-filler-count')) document.getElementById('va-filler-count').textContent = d.fillers_loaded || 0;
+          
           // Update live badge
           const liveBadge = document.getElementById('va-live-badge');
           if (liveBadge) {
@@ -7568,127 +7565,9 @@ Total Players: ${s.total}`;
         document.getElementById('va-script-library')?.classList.toggle('hidden', view !== 'library');
         document.getElementById('va-script-builder')?.classList.toggle('hidden', view !== 'builder');
         if (view === 'library') this.loadScripts();
-        if (view === 'builder') { this.currentScriptId = null; this.pendingFillers = []; document.getElementById('va-builder-title').textContent = 'New Script'; this.resetBuilderForm(); this.setBuilderMode('freewrite'); const tb = document.getElementById('va-test-call-btn'); if(tb) tb.disabled = true; }
+        if (view === 'builder') { this.currentScriptId = null; document.getElementById('va-builder-title').textContent = 'New Script'; this.resetBuilderForm(); this.setBuilderMode('freewrite'); const tb = document.getElementById('va-test-call-btn'); if(tb) tb.disabled = true; }
       },
 
-
-      // ── Filler Management ─────────────────────────────────────────────────────
-      // In-memory filler list for current script being edited
-      pendingFillers: [],
-
-      renderFillerList() {
-        const list = document.getElementById('va-fillers-list');
-        const emptyDiv = document.getElementById('va-fillers-empty');
-        const badge = document.getElementById('va-fillers-ready-badge');
-        if (!this.pendingFillers.length) {
-          list.innerHTML = '';
-          if (emptyDiv) emptyDiv.classList.remove('hidden');
-          badge.className = 'text-xs px-2 py-1 rounded-full bg-slate-400';
-          badge.textContent = 'No fillers';
-          return;
-        }
-        if (emptyDiv) emptyDiv.classList.add('hidden');
-        badge.className = 'text-xs px-2 py-1 rounded-full bg-purple-500';
-        badge.textContent = this.pendingFillers.filter(f => f.is_active).length + ' active';
-        const cats = { neutral:'🔘', question:'❓', positive:'✅', negative:'❌', repeat:'🔁', greeting:'👋' };
-        list.innerHTML = this.pendingFillers.map((f, idx) => `
-          <div class="flex items-center gap-2 p-2 rounded-lg border ${f.is_active ? 'bg-white' : 'bg-slate-50 opacity-60'}">
-            <span class="text-xs">${f.categories.map(c => cats[c]||'🔘').join('')}</span>
-            <input type="text" value="${f.phrase.replace(/"/g, '&quot;')}"
-              onchange="VA.editFillerPhrase(${idx}, this.value)"
-              class="flex-1 text-sm px-1 py-0.5 border border-transparent rounded hover:border-slate-300 focus:border-purple-400 focus:outline-none ${f.is_active ? 'text-slate-800' : 'text-slate-400'} bg-transparent cursor-text">
-            <select onchange="VA.editFillerCat(${idx}, this.value)"
-              class="text-xs px-1 py-0.5 border border-slate-200 rounded bg-white focus:border-purple-400 focus:outline-none">
-              ${['neutral','question','positive','negative','repeat','greeting'].map(cat =>
-                `<option value="${cat}" ${f.categories.includes(cat) ? 'selected' : ''}>${cat}</option>`
-              ).join('')}
-            </select>
-            <button onclick="VA.toggleFillerIdx(${idx})" class="p-1 rounded ${f.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'}">
-              <i data-lucide="${f.is_active ? 'toggle-right' : 'toggle-left'}" class="h-4 w-4"></i>
-            </button>
-            <button onclick="VA.deleteFillerIdx(${idx})" class="p-1 text-red-400 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
-          </div>
-        `).join('');
-        lucide.createIcons();
-      },
-
-      loadDefaultFillers() {
-        const defaults = [
-          { phrase: "Uhmmm,",                    categories: ["neutral"],            is_default: true, is_active: true },
-          { phrase: "Okay so,",                  categories: ["neutral"],            is_default: true, is_active: true },
-          { phrase: "Soooo,",                    categories: ["neutral","question"],  is_default: true, is_active: true },
-          { phrase: "Mmm,",                      categories: ["neutral"],            is_default: true, is_active: true },
-          { phrase: "Uhmmm let me see,",         categories: ["question"],           is_default: true, is_active: true },
-          { phrase: "That's great to hear,",     categories: ["positive"],           is_default: true, is_active: true },
-          { phrase: "Wonderful,",                categories: ["positive"],           is_default: true, is_active: true },
-          { phrase: "Okay good,",                categories: ["positive"],           is_default: true, is_active: true },
-          { phrase: "I understand,",             categories: ["negative"],           is_default: true, is_active: true },
-          { phrase: "No problem,",               categories: ["negative"],           is_default: true, is_active: true },
-          { phrase: "Sorry about that,",         categories: ["repeat"],             is_default: true, is_active: true },
-          { phrase: "Let me repeat,",            categories: ["repeat"],             is_default: true, is_active: true },
-          { phrase: "Sorry,",                    categories: ["repeat"],             is_default: true, is_active: true },
-          { phrase: "Hi, thanks for answering,", categories: ["greeting"],           is_default: true, is_active: true },
-        ];
-        // Only add defaults not already present
-        defaults.forEach(d => {
-          if (!this.pendingFillers.find(f => f.phrase === d.phrase)) {
-            this.pendingFillers.push(d);
-          }
-        });
-        this.renderFillerList();
-      },
-
-      addFiller() {
-        const phrase = document.getElementById('va-new-filler-phrase').value.trim();
-        const cat = document.getElementById('va-new-filler-cat').value;
-        if (!phrase) return alert('Enter a filler phrase');
-        if (this.pendingFillers.find(f => f.phrase === phrase)) return alert('Filler already exists');
-        this.pendingFillers.push({ phrase, categories: [cat], is_default: false, is_active: true });
-        document.getElementById('va-new-filler-phrase').value = '';
-        this.renderFillerList();
-      },
-
-      toggleFillerIdx(idx) {
-        this.pendingFillers[idx].is_active = !this.pendingFillers[idx].is_active;
-        this.renderFillerList();
-      },
-
-      deleteFillerIdx(idx) {
-        if (!confirm('Remove this filler?')) return;
-        this.pendingFillers.splice(idx, 1);
-        this.renderFillerList();
-      },
-
-      editFillerPhrase(idx, value) {
-        this.pendingFillers[idx].phrase = value.trim();
-      },
-      editFillerCat(idx, value) {
-        this.pendingFillers[idx].categories = [value];
-        this.renderFillerList();
-      },
-
-      async loadFillers(scriptId) {
-        if (!scriptId) { this.pendingFillers = []; this.renderFillerList(); return; }
-        try {
-          const r = await fetch(`${this.apiBase}/fillers/${scriptId}`);
-          const fillers = await r.json();
-          this.pendingFillers = fillers.length ? fillers : [];
-          this.renderFillerList();
-        } catch(e) { this.pendingFillers = []; this.renderFillerList(); }
-      },
-
-      async saveFillers(scriptId) {
-        // Bulk delete all existing fillers then re-save pending ones
-        try {
-          await fetch(`${this.apiBase}/fillers/script/${scriptId}`, { method: 'DELETE' });
-        } catch(e) { console.error('Filler bulk delete failed:', e); }
-        for (const f of this.pendingFillers) {
-          await fetch(`${this.apiBase}/fillers/${scriptId}`, {
-            method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ phrase: f.phrase, categories: f.categories, is_default: f.is_default, is_active: f.is_active })
-          });
-        }
-      },
 
       async loadScripts() {
         try {
@@ -7770,9 +7649,7 @@ Total Players: ${s.total}`;
         document.getElementById('va-sb-style').value = 0.0;
         document.getElementById('va-sb-isdefault').checked = false;
         document.getElementById('va-script-preview').classList.add('hidden');
-        this.pendingFillers = [];
-        this.renderFillerList();
-        this.setBuilderMode('guided');
+                this.setBuilderMode('guided');
       },
 
       async editScript(id) {
@@ -7801,8 +7678,7 @@ Total Players: ${s.total}`;
           document.getElementById('va-sb-kb').value = s.knowledge_base || '';
           document.getElementById('va-sb-freewrite').value = s.freewrite_content || '';
           document.getElementById('va-sb-voiceid').value = s.voice_id || '';
-          this.loadFillers(s.id);
-          document.getElementById('va-sb-stability').value = s.voice_stability || 0.5;
+                    document.getElementById('va-sb-stability').value = s.voice_stability || 0.5;
           document.getElementById('va-sb-speed').value = s.voice_speed || 1.0;
           document.getElementById('va-speed-val').textContent = (s.voice_speed || 1.0).toFixed(2);
           document.getElementById('va-sb-similarity').value = s.voice_similarity || 0.8;
@@ -7873,7 +7749,6 @@ Total Players: ${s.total}`;
           document.getElementById('va-builder-title').textContent = 'Edit: ' + payload.name;
           const tb = document.getElementById('va-test-call-btn'); if(tb) tb.disabled = false;
           // Save fillers together with script
-          await this.saveFillers(this.currentScriptId);
           await this.loadScriptsDropdowns();
           alert('✅ Script saved: ' + payload.name);
         } catch(e) { alert('Save error: ' + e.message); }
@@ -7889,8 +7764,7 @@ Total Players: ${s.total}`;
           const cr = await fetch('https://13.246.211.152:8080/api/scripts', {
             method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(s)
           });
-          if (cr.ok) { this.loadScripts(); this.loadScriptsDropdowns(); if(this.currentScriptId) this.loadFillers(this.currentScriptId); }
-        } catch(e) { alert('Error: ' + e.message); }
+          if (cr.ok) { this.loadScripts(); this.loadScriptsDropdowns();         } catch(e) { alert('Error: ' + e.message); }
       },
 
       async deleteScript(id) {
@@ -7927,11 +7801,6 @@ Total Players: ${s.total}`;
           const d = await r.json();
           const warn = document.getElementById('va-voice-regen-warning');
           const btn = document.getElementById('va-test-start-btn');
-          if (d.filler_regenerating) {
-            warn.classList.remove('hidden');
-            btn.disabled = true;
-            btn.classList.add('opacity-50','cursor-not-allowed');
-          } else {
             warn.classList.add('hidden');
             btn.disabled = false;
             btn.classList.remove('opacity-50','cursor-not-allowed');
@@ -8324,9 +8193,6 @@ Total Players: ${s.total}`;
           document.getElementById('va-set-style-val').textContent = (d.style||0.0).toFixed(2);
           const regen = document.getElementById('va-voice-regen-status');
           const ready = document.getElementById('va-voice-ready-status');
-          if (d.filler_regenerating) {
-            regen.classList.remove('hidden'); ready.classList.add('hidden');
-            document.getElementById('va-voice-regen-msg').textContent = `${d.fillers_loaded}/${d.fillers_total} filler phrases ready...`;
             setTimeout(() => this.refreshVoiceStatus(), 3000);
           } else {
             regen.classList.add('hidden'); ready.classList.remove('hidden');
@@ -8337,7 +8203,7 @@ Total Players: ${s.total}`;
       async updateVoice() {
         const voiceId = document.getElementById('va-settings-voiceid').value.trim();
         if (!voiceId) return alert('Enter a Voice ID');
-        if (!confirm(`Update voice to "${voiceId}" and regenerate all filler phrases? This takes ~15 seconds.`)) return;
+        if (!confirm(`Update voice to "${voiceId}"?.`)) return;
         try {
           const r = await fetch('https://13.246.211.152:8080/api/voice/update', {
             method:'POST', headers:{'Content-Type':'application/json'},
@@ -8396,7 +8262,7 @@ Total Players: ${s.total}`;
           const r = await fetch(url + '/voice/status');
           const d = await r.json();
           result.className = 'mt-3 p-3 rounded-lg text-sm bg-emerald-50 text-emerald-800 border border-emerald-200';
-          result.innerHTML = `✅ Connected — Voice Agent v${d.version} | ${d.active_calls} active calls | Fillers: ${d.fillers_loaded} | FreeSWITCH: ${d.freeswitch_connected?'✅':'❌'}`;
+          result.innerHTML = `✅ Connected — Voice Agent v${d.version} | ${d.active_calls} active calls`;
           // Hide mixed content warning if connected
           document.getElementById('va-mixed-content-warning')?.classList.add('hidden');
         } catch(e) {
