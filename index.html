@@ -7764,7 +7764,8 @@ Total Players: ${s.total}`;
           const cr = await fetch('https://13.246.211.152:8080/api/scripts', {
             method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(s)
           });
-          if (cr.ok) { this.loadScripts(); this.loadScriptsDropdowns();         } catch(e) { alert('Error: ' + e.message); }
+          if (cr.ok) { this.loadScripts(); this.loadScriptsDropdowns(); }
+        } catch(e) { alert('Error: ' + e.message); }
       },
 
       async deleteScript(id) {
