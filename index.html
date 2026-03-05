@@ -8190,10 +8190,8 @@ Total Players: ${s.total}`;
           document.getElementById('va-set-style-val').textContent = (d.style||0.0).toFixed(2);
           const regen = document.getElementById('va-voice-regen-status');
           const ready = document.getElementById('va-voice-ready-status');
-            setTimeout(() => this.refreshVoiceStatus(), 3000);
-          } else {
-            regen.classList.add('hidden'); ready.classList.remove('hidden');
-          }
+          if (regen) regen.classList.add('hidden');
+          if (ready) ready.classList.remove('hidden');
         } catch(e) {}
       },
 
