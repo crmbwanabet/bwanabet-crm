@@ -7798,14 +7798,10 @@ Total Players: ${s.total}`;
 
       async checkVoiceRegenWarning() {
         try {
-          const r = await fetch('https://13.246.211.152:8080/api/voice/status');
-          const d = await r.json();
           const warn = document.getElementById('va-voice-regen-warning');
           const btn = document.getElementById('va-test-start-btn');
-            warn.classList.add('hidden');
-            btn.disabled = false;
-            btn.classList.remove('opacity-50','cursor-not-allowed');
-          }
+          if (warn) warn.classList.add('hidden');
+          if (btn) { btn.disabled = false; btn.classList.remove('opacity-50','cursor-not-allowed'); }
         } catch(e) {}
       },
 
