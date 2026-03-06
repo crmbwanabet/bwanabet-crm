@@ -7926,8 +7926,15 @@ Total Players: ${s.total}`;
         try {
           const r = await fetch('https://13.246.211.152:8080/api/fillers/' + scriptId);
           if (!r.ok) return;
-          const data = await r.json();
-          this.pendingFillers = Array.isArray(data) ? data : (data.fillers || []);
+          const rows = await r.json();
+          // Map API format {phrase, categories[], is_active, is_default} → UI format
+          this.pendingFillers = (Array.isArray(rows) ? rows : []).map(row => ({
+            id: row.id,
+            phrase: row.phrase,
+            category: Array.isArray(row.categories) ? row.categories[0] : (row.categories || 'neutral'),
+            active: row.is_active !== false,
+            is_default: row.is_default || false,
+          }));
           this.renderFillerList();
         } catch(e) { console.warn('loadFillers error', e); }
       },
@@ -7935,12 +7942,21 @@ Total Players: ${s.total}`;
       async saveFillers(scriptId) {
         if (!scriptId) return;
         try {
-          const r = await fetch('https://13.246.211.152:8080/api/fillers/' + scriptId, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(this.pendingFillers)
-          });
-          if (!r.ok) console.warn('saveFillers failed:', r.status);
+          // 1. Wipe existing fillers for this script
+          await fetch('https://13.246.211.152:8080/api/fillers/script/' + scriptId, { method: 'DELETE' });
+          // 2. Re-create each filler with correct API field names
+          for (const f of this.pendingFillers) {
+            await fetch('https://13.246.211.152:8080/api/fillers/' + scriptId, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                phrase: f.phrase,
+                categories: [f.category || 'neutral'],
+                is_default: f.is_default || false,
+                is_active: f.active !== false,
+              })
+            });
+          }
         } catch(e) { console.warn('saveFillers error', e); }
       },
       // ── End Fillers ────────────────────────────────────────────
