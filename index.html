@@ -1697,9 +1697,20 @@
                 </div>
               </div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-              <div class="bg-gradient-to-r from-slate-800 to-slate-700 text-white p-4">
+            <!-- Launch Campaign Card -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-4">
+              <div class="bg-gradient-to-r from-slate-800 to-slate-700 text-white p-4 flex items-center justify-between">
                 <h3 class="font-bold flex items-center gap-2"><i data-lucide="radio" class="h-4 w-4"></i>Launch Campaign</h3>
+                <div class="flex gap-2 text-xs">
+                  <label id="va-schedule-toggle-label" class="flex items-center gap-1.5 cursor-pointer select-none">
+                    <div class="relative">
+                      <input type="checkbox" id="va-schedule-toggle" class="sr-only" onchange="VA.toggleSchedule()">
+                      <div id="va-schedule-track" class="w-9 h-5 bg-slate-600 rounded-full transition-colors"></div>
+                      <div id="va-schedule-thumb" class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform"></div>
+                    </div>
+                    <span class="text-slate-300">Schedule</span>
+                  </label>
+                </div>
               </div>
               <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
@@ -1720,25 +1731,84 @@
                   <label class="block text-sm font-medium text-slate-700 mb-1">Calls per Minute</label>
                   <input id="va-camp-cpm" type="number" value="2" min="1" max="10" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
                 </div>
-                <div class="md:col-span-2">
-                  <label class="block text-sm font-medium text-slate-700 mb-1">Contact List <span id="va-camp-contact-count" class="text-slate-400 font-normal">(0 contacts)</span></label>
-                  <textarea id="va-camp-contacts" rows="6" placeholder="260971234567&#10;260977654321,John Banda&#10;260955555555,Mary Phiri&#10;&#10;Paste phone numbers, one per line. Optional: phone,name" class="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
-                  <p class="text-xs text-slate-400 mt-1">Format: phone number per line, or phone,name</p>
+
+                <!-- Schedule row (hidden by default) -->
+                <div id="va-schedule-row" class="md:col-span-2 hidden">
+                  <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-wrap items-center gap-4">
+                    <i data-lucide="clock" class="h-5 w-5 text-blue-500 flex-shrink-0"></i>
+                    <div class="flex-1 min-w-0">
+                      <label class="block text-sm font-medium text-blue-800 mb-1">Run at</label>
+                      <input id="va-schedule-time" type="datetime-local" class="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                    </div>
+                    <div id="va-schedule-countdown" class="text-sm text-blue-700 font-medium whitespace-nowrap hidden"></div>
+                  </div>
                 </div>
+
+                <!-- Contact List -->
                 <div class="md:col-span-2">
-                  <button onclick="VA.launchCampaign()" class="w-full py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 flex items-center justify-center gap-2">
-                    <i data-lucide="play" class="h-4 w-4"></i>Launch Campaign
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="block text-sm font-medium text-slate-700">Contact List <span id="va-camp-contact-count" class="text-slate-400 font-normal">(0 contacts)</span></label>
+                    <div class="flex gap-2">
+                      <button onclick="VA.showSavedLists()" class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-1">
+                        <i data-lucide="bookmark" class="h-3 w-3"></i>Saved Lists
+                      </button>
+                      <label class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-1 cursor-pointer">
+                        <i data-lucide="upload" class="h-3 w-3"></i>Upload CSV/Excel
+                        <input type="file" id="va-camp-file" accept=".csv,.xlsx,.xls,.txt" class="hidden" onchange="VA.handleContactFile(event)">
+                      </label>
+                    </div>
+                  </div>
+                  <textarea id="va-camp-contacts" rows="6" placeholder="260971234567&#10;260977654321,John Banda&#10;260955555555,Mary Phiri&#10;&#10;Paste phone numbers, one per line. Optional: phone,name" class="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
+                  <div class="flex items-center justify-between mt-1">
+                    <p class="text-xs text-slate-400">Paste numbers, or upload CSV/Excel with a phone column</p>
+                    <button onclick="VA.saveCurrentList()" class="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+                      <i data-lucide="save" class="h-3 w-3"></i>Save list
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Launch Button -->
+                <div class="md:col-span-2">
+                  <button onclick="VA.launchCampaign()" id="va-launch-btn" class="w-full py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 flex items-center justify-center gap-2">
+                    <i data-lucide="play" class="h-4 w-4"></i><span id="va-launch-btn-text">Launch Campaign</span>
                   </button>
+                  <div id="va-scheduled-badge" class="hidden mt-2 text-center text-sm text-blue-600 font-medium"></div>
                 </div>
               </div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+
+            <!-- Saved Lists Modal -->
+            <div id="va-saved-lists-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onclick="if(event.target===this)VA.hideSavedLists()">
+              <div class="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+                <div class="bg-slate-800 text-white p-4 rounded-t-xl flex items-center justify-between">
+                  <h3 class="font-bold flex items-center gap-2"><i data-lucide="bookmark" class="h-4 w-4"></i>Saved Contact Lists</h3>
+                  <button onclick="VA.hideSavedLists()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
+                </div>
+                <div id="va-saved-lists-body" class="p-4 overflow-y-auto flex-1">
+                  <div class="text-center text-slate-400 py-8"><i data-lucide="inbox" class="h-8 w-8 mx-auto mb-2 opacity-40"></i><p class="text-sm">No saved lists yet</p></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active Campaigns -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-4">
               <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
                 <h3 class="font-bold flex items-center gap-2"><i data-lucide="list" class="h-4 w-4"></i>Active Campaigns</h3>
                 <button onclick="VA.refreshCampaigns()" class="text-slate-400 hover:text-white"><i data-lucide="refresh-cw" class="h-4 w-4"></i></button>
               </div>
               <div id="va-campaigns-list" class="p-4">
                 <div class="text-center text-slate-400 py-8"><i data-lucide="inbox" class="h-8 w-8 mx-auto mb-2 opacity-40"></i><p>No active campaigns</p></div>
+              </div>
+            </div>
+
+            <!-- Campaign History -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div class="bg-slate-700 text-white p-4 flex items-center justify-between">
+                <h3 class="font-bold flex items-center gap-2"><i data-lucide="history" class="h-4 w-4"></i>Campaign History</h3>
+                <button onclick="VA.renderCampaignHistory()" class="text-slate-400 hover:text-white"><i data-lucide="refresh-cw" class="h-4 w-4"></i></button>
+              </div>
+              <div id="va-campaign-history" class="p-4">
+                <div class="text-center text-slate-400 py-6 text-sm">No campaigns run yet</div>
               </div>
             </div>
           </div>
@@ -7488,6 +7558,7 @@ Total Players: ${s.total}`;
         if (tab === 'monitor') this.refreshMonitor();
         if (tab === 'outcomes') this.loadOutcomeCounts();
         if (tab === 'settings') { this.refreshVoiceStatus(); this.loadCallSettings(); }
+        if (tab === 'campaigns') { this.renderCampaignHistory(); this.refreshCampaigns(); }
       },
 
       // ── Health ─────────────────────────────────────────────────
@@ -7553,37 +7624,347 @@ Total Players: ${s.total}`;
       },
 
       // ── Campaigns ─────────────────────────────────────────────
+      // ── Schedule toggle ─────────────────────────────────────────
+      _scheduleTimer: null,
+      _scheduledCampaign: null,
+      _countdownInterval: null,
+
+      toggleSchedule() {
+        const on = document.getElementById('va-schedule-toggle').checked;
+        const track = document.getElementById('va-schedule-track');
+        const thumb = document.getElementById('va-schedule-thumb');
+        const row   = document.getElementById('va-schedule-row');
+        const btn   = document.getElementById('va-launch-btn-text');
+        const badge = document.getElementById('va-scheduled-badge');
+        if (on) {
+          track.classList.replace('bg-slate-600','bg-blue-500');
+          thumb.style.transform = 'translateX(16px)';
+          row.classList.remove('hidden');
+          btn.textContent = 'Schedule Campaign';
+          // default to 1 hour from now
+          const d = new Date(Date.now() + 3600000);
+          document.getElementById('va-schedule-time').value = d.toISOString().slice(0,16);
+        } else {
+          track.classList.replace('bg-blue-500','bg-slate-600');
+          thumb.style.transform = '';
+          row.classList.add('hidden');
+          btn.textContent = 'Launch Campaign';
+          badge.classList.add('hidden');
+          badge.textContent = '';
+          if (this._scheduleTimer) { clearTimeout(this._scheduleTimer); this._scheduleTimer = null; }
+          if (this._countdownInterval) { clearInterval(this._countdownInterval); this._countdownInterval = null; }
+        }
+      },
+
+      // ── CSV / Excel file upload ─────────────────────────────────
+      async handleContactFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const ext = file.name.split('.').pop().toLowerCase();
+
+        if (ext === 'csv' || ext === 'txt') {
+          const text = await file.text();
+          this._populateContactsFromText(text, file.name);
+        } else if (ext === 'xlsx' || ext === 'xls') {
+          // Dynamically load SheetJS
+          if (!window.XLSX) {
+            await new Promise((res, rej) => {
+              const s = document.createElement('script');
+              s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+              s.onload = res; s.onerror = rej;
+              document.head.appendChild(s);
+            });
+          }
+          const buf = await file.arrayBuffer();
+          const wb  = XLSX.read(buf, { type: 'array' });
+          const ws  = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+          this._populateContactsFromRows(rows, file.name);
+        } else {
+          alert('Unsupported file type. Use CSV, Excel (.xlsx/.xls), or TXT.');
+        }
+        event.target.value = ''; // reset file input
+      },
+
+      _populateContactsFromText(text, filename) {
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        // Try to detect if first line is a header
+        const firstLine = lines[0] || '';
+        const isHeader = /phone|mobile|number|msisdn|contact/i.test(firstLine) && !/^\d/.test(firstLine);
+        const dataLines = isHeader ? lines.slice(1) : lines;
+
+        if (isHeader) {
+          // Parse CSV header to find phone and name columns
+          const headers = firstLine.split(',').map(h => h.trim().toLowerCase());
+          const phoneIdx = headers.findIndex(h => /phone|mobile|number|msisdn|contact/.test(h));
+          const nameIdx  = headers.findIndex(h => /name|player|customer/.test(h));
+          const contacts = dataLines.map(l => {
+            const cols = l.split(',');
+            const phone = phoneIdx >= 0 ? cols[phoneIdx]?.trim() : cols[0]?.trim();
+            const name  = nameIdx  >= 0 ? cols[nameIdx]?.trim()  : '';
+            return phone ? (name ? `${phone},${name}` : phone) : null;
+          }).filter(Boolean);
+          this._setContacts(contacts, filename);
+        } else {
+          this._setContacts(dataLines, filename);
+        }
+      },
+
+      _populateContactsFromRows(rows, filename) {
+        if (!rows.length) return alert('Empty spreadsheet.');
+        const firstRow = rows[0].map(c => String(c).trim().toLowerCase());
+        const isHeader = firstRow.some(c => /phone|mobile|number|msisdn|contact|name/.test(c));
+        const phoneIdx = isHeader ? firstRow.findIndex(c => /phone|mobile|number|msisdn|contact/.test(c)) : 0;
+        const nameIdx  = isHeader ? firstRow.findIndex(c => /name|player|customer/.test(c))              : -1;
+        const dataRows = isHeader ? rows.slice(1) : rows;
+        const contacts = dataRows.map(row => {
+          const phone = String(row[phoneIdx] || '').trim().replace(/\s+/g,'');
+          const name  = nameIdx >= 0 ? String(row[nameIdx] || '').trim() : '';
+          return phone ? (name ? `${phone},${name}` : phone) : null;
+        }).filter(Boolean);
+        this._setContacts(contacts, filename);
+      },
+
+      _setContacts(lines, source) {
+        const ta = document.getElementById('va-camp-contacts');
+        const co = document.getElementById('va-camp-contact-count');
+        if (ta) ta.value = lines.join('\n');
+        if (co) co.textContent = `(${lines.length} contacts from ${source})`;
+        if (!document.getElementById('va-camp-name').value) {
+          document.getElementById('va-camp-name').value = source.replace(/\.[^.]+$/,'') + ' — ' + new Date().toLocaleDateString();
+        }
+      },
+
+      // ── Saved Lists ─────────────────────────────────────────────
+      _getSavedLists() {
+        try { return JSON.parse(localStorage.getItem('va_saved_contact_lists') || '[]'); } catch { return []; }
+      },
+      _setSavedLists(lists) {
+        localStorage.setItem('va_saved_contact_lists', JSON.stringify(lists));
+      },
+
+      saveCurrentList() {
+        const raw = document.getElementById('va-camp-contacts')?.value.trim();
+        if (!raw) return alert('No contacts to save.');
+        const name = prompt('Name this contact list:', document.getElementById('va-camp-name')?.value || 'My List');
+        if (!name) return;
+        const lists = this._getSavedLists();
+        const count = raw.split('\n').filter(l => l.trim()).length;
+        lists.unshift({ id: Date.now(), name, contacts: raw, count, saved_at: new Date().toISOString() });
+        this._setSavedLists(lists.slice(0, 20)); // keep 20 max
+        alert(`Saved "${name}" (${count} contacts).`);
+      },
+
+      showSavedLists() {
+        const modal = document.getElementById('va-saved-lists-modal');
+        const body  = document.getElementById('va-saved-lists-body');
+        const lists = this._getSavedLists();
+        if (!lists.length) {
+          body.innerHTML = '<div class="text-center text-slate-400 py-8"><i data-lucide="inbox" class="h-8 w-8 mx-auto mb-2 opacity-40"></i><p class="text-sm">No saved lists yet.<br>Use "Save list" under the contacts textarea.</p></div>';
+        } else {
+          body.innerHTML = lists.map((l, i) => `
+            <div class="flex items-center gap-3 p-3 border rounded-lg mb-2 hover:bg-slate-50">
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-slate-800 text-sm truncate">${l.name}</p>
+                <p class="text-xs text-slate-400">${l.count} contacts · ${new Date(l.saved_at).toLocaleDateString()}</p>
+              </div>
+              <button onclick="VA.loadSavedList(${i})" class="px-3 py-1.5 bg-yellow-400 text-black text-xs font-bold rounded-lg hover:bg-yellow-300">Load</button>
+              <button onclick="VA.deleteSavedList(${i})" class="px-2 py-1.5 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200"><i data-lucide="trash-2" class="h-3 w-3"></i></button>
+            </div>`).join('');
+        }
+        modal.classList.remove('hidden');
+        lucide.createIcons();
+      },
+
+      hideSavedLists() {
+        document.getElementById('va-saved-lists-modal').classList.add('hidden');
+      },
+
+      loadSavedList(idx) {
+        const lists = this._getSavedLists();
+        const l = lists[idx];
+        if (!l) return;
+        const ta = document.getElementById('va-camp-contacts');
+        const co = document.getElementById('va-camp-contact-count');
+        if (ta) ta.value = l.contacts;
+        if (co) co.textContent = `(${l.count} contacts)`;
+        if (!document.getElementById('va-camp-name').value) {
+          document.getElementById('va-camp-name').value = l.name + ' — ' + new Date().toLocaleDateString();
+        }
+        this.hideSavedLists();
+      },
+
+      deleteSavedList(idx) {
+        if (!confirm('Delete this saved list?')) return;
+        const lists = this._getSavedLists();
+        lists.splice(idx, 1);
+        this._setSavedLists(lists);
+        this.showSavedLists();
+      },
+
+      // ── Campaign History ─────────────────────────────────────────
+      _getCampaignHistory() {
+        try { return JSON.parse(localStorage.getItem('va_campaign_history') || '[]'); } catch { return []; }
+      },
+      _addToHistory(entry) {
+        const h = this._getCampaignHistory();
+        h.unshift(entry);
+        localStorage.setItem('va_campaign_history', JSON.stringify(h.slice(0, 50)));
+      },
+
+      renderCampaignHistory() {
+        const el = document.getElementById('va-campaign-history');
+        if (!el) return;
+        const hist = this._getCampaignHistory();
+        if (!hist.length) {
+          el.innerHTML = '<div class="text-center text-slate-400 py-6 text-sm">No campaigns run yet</div>';
+          return;
+        }
+         el.innerHTML = hist.map((h, i) => {
+           const dt = new Date(h.launched_at);
+           const scheduled = h.scheduled ? '<span class="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">scheduled</span>' : '';
+           return '<div class="border rounded-lg p-3 mb-2 flex flex-wrap items-center gap-3">' +
+             '<div class="flex-1 min-w-0">' +
+               '<p class="font-medium text-slate-800 text-sm truncate">' + h.name + scheduled + '</p>' +
+               '<p class="text-xs text-slate-400">' + h.contact_count + ' contacts · ' + dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</p>' +
+             '</div>' +
+             '<div class="flex gap-2">' +
+               '<button onclick="VA.reRunCampaign(' + i + ')" class="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-medium rounded-lg hover:bg-slate-200 flex items-center gap-1">' +
+                 '<i data-lucide="repeat" class="h-3 w-3"></i>Re-run All' +
+               '</button>' +
+               '<button onclick="VA.reRunNoAnswer(' + i + ', this)" class="px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-lg hover:bg-orange-200 flex items-center gap-1">' +
+                 '<i data-lucide="phone-missed" class="h-3 w-3"></i>No-Answer Only' +
+               '</button>' +
+             '</div>' +
+           '</div>';
+         }).join('');
+         lucide.createIcons();
+       },
+      },
+
+      reRunCampaign(idx) {
+        const h = this._getCampaignHistory()[idx];
+        if (!h) return;
+        const ta   = document.getElementById('va-camp-contacts');
+        const name = document.getElementById('va-camp-name');
+        const co   = document.getElementById('va-camp-contact-count');
+        if (ta) ta.value = h.contacts_raw;
+        if (name) name.value = h.name + ' (Re-run) — ' + new Date().toLocaleDateString();
+        const count = (h.contacts_raw || '').split('\n').filter(l => l.trim()).length;
+        if (co) co.textContent = `(${count} contacts)`;
+        document.getElementById('va-camp-name')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      },
+
+      async reRunNoAnswer(idx, btn) {
+        const h = this._getCampaignHistory()[idx];
+        if (!h) return;
+        if (btn) { btn.innerHTML = 'Fetching…'; btn.disabled = true; }
+        try {
+          // Get no_answer outcomes for this campaign from server
+          const r = await fetch(`${this.serverUrl}/outcomes/no_answer?campaign_id=${encodeURIComponent(h.campaign_id)}&limit=1000`);
+          let noAnswerPhones = new Set();
+          if (r.ok) {
+            const records = await r.json();
+            records.forEach(rec => { if (rec.phone_number) noAnswerPhones.add(rec.phone_number); });
+          }
+
+          // Fall back: filter original contacts against positive outcomes
+          const allContacts = (h.contacts_raw || '').split('\n').filter(l => l.trim());
+          let contacts;
+          if (noAnswerPhones.size > 0) {
+            contacts = allContacts.filter(l => noAnswerPhones.has(l.split(',')[0].trim()));
+          } else {
+            // Server doesn't support campaign filter — use all original contacts
+            contacts = allContacts;
+            alert(`Note: Could not fetch per-campaign no-answer data. Loading all ${contacts.length} original contacts.`);
+          }
+
+          if (!contacts.length) return alert('No no-answer contacts found for this campaign.');
+          const ta = document.getElementById('va-camp-contacts');
+          const nm = document.getElementById('va-camp-name');
+          const co = document.getElementById('va-camp-contact-count');
+          if (ta) ta.value = contacts.join('\n');
+          if (nm) nm.value = h.name + ' (No-Answer Retry) — ' + new Date().toLocaleDateString();
+          if (co) co.textContent = `(${contacts.length} contacts)`;
+          document.getElementById('va-camp-name')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch(e) {
+          alert('Error fetching no-answer list: ' + e.message);
+        } finally {
+          if (btn) { btn.disabled = false; this.renderCampaignHistory(); }
+        }
+      },
+
+      // ── Launch Campaign (with schedule support) ─────────────────
       async launchCampaign() {
-        const name = document.getElementById('va-camp-name')?.value.trim();
+        const name     = document.getElementById('va-camp-name')?.value.trim();
         const scriptId = document.getElementById('va-camp-script')?.value;
         const callerId = document.getElementById('va-camp-callerid')?.value.trim();
-        const cpm = parseInt(document.getElementById('va-camp-cpm')?.value) || 2;
-        const raw = document.getElementById('va-camp-contacts')?.value.trim();
+        const cpm      = parseInt(document.getElementById('va-camp-cpm')?.value) || 2;
+        const raw      = document.getElementById('va-camp-contacts')?.value.trim();
+        const scheduled = document.getElementById('va-schedule-toggle')?.checked;
+        const schedTime = document.getElementById('va-schedule-time')?.value;
+
         if (!name) return alert('Enter a campaign name');
-        if (!raw) return alert('Enter at least one contact');
+        if (!raw)  return alert('Enter at least one contact');
         const contacts = raw.split('\n').filter(l=>l.trim()).map(l => {
           const parts = l.split(',');
           return { phone_number: parts[0].trim(), name: parts[1]?.trim() || '' };
         });
         if (!contacts.length) return alert('No valid contacts');
+
+        // Schedule mode
+        if (scheduled) {
+          if (!schedTime) return alert('Pick a date and time to schedule.');
+          const runAt = new Date(schedTime).getTime();
+          const now   = Date.now();
+          if (runAt <= now) return alert('Scheduled time must be in the future.');
+          const delay = runAt - now;
+          const badge = document.getElementById('va-scheduled-badge');
+          badge.textContent = `⏰ Scheduled for ${new Date(schedTime).toLocaleString()} (${Math.round(delay/60000)} min from now)`;
+          badge.classList.remove('hidden');
+          if (this._scheduleTimer) clearTimeout(this._scheduleTimer);
+          if (this._countdownInterval) clearInterval(this._countdownInterval);
+          const countdown = document.getElementById('va-schedule-countdown');
+          countdown.classList.remove('hidden');
+          this._countdownInterval = setInterval(() => {
+            const left = new Date(schedTime).getTime() - Date.now();
+            if (left <= 0) { clearInterval(this._countdownInterval); countdown.classList.add('hidden'); return; }
+            const m = Math.floor(left/60000), s = Math.floor((left%60000)/1000);
+            countdown.textContent = `${m}m ${s}s until launch`;
+          }, 1000);
+          this._scheduleTimer = setTimeout(() => this._doLaunch(name, scriptId, callerId, cpm, contacts, raw, true), delay);
+          alert(`Campaign scheduled for ${new Date(schedTime).toLocaleString()}`);
+          return;
+        }
+
+        await this._doLaunch(name, scriptId, callerId, cpm, contacts, raw, false);
+      },
+
+      async _doLaunch(name, scriptId, callerId, cpm, contacts, raw, isScheduled) {
         const campaign_id = name.toLowerCase().replace(/\s+/g,'-') + '-' + Date.now();
         let script = '';
         if (scriptId) {
           try {
-            const sr = await fetch('https://13.246.211.152:8080/api/scripts/' + scriptId);
+            const sr = await fetch(`${this.serverUrl}/scripts/` + scriptId);
             const sd = await sr.json();
             script = sd.compiled_script || '';
           } catch(e) {}
         }
         try {
-          const r = await fetch('https://13.246.211.152:8080/api/campaign/start', {
+          const r = await fetch(`${this.serverUrl}/campaign/start`, {
             method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ campaign_id, contacts, script, script_id: scriptId, caller_id: callerId, calls_per_minute: cpm })
           });
           const d = await r.json();
           if (d.status === 'running') {
-            alert(`Campaign "${name}" launched! ${contacts.length} contacts queued.`);
+            this._addToHistory({ campaign_id, name, contact_count: contacts.length, contacts_raw: raw, script_id: scriptId, launched_at: new Date().toISOString(), scheduled: isScheduled });
+            this.renderCampaignHistory();
             this.refreshCampaigns();
+            const badge = document.getElementById('va-scheduled-badge');
+            badge.classList.add('hidden');
+            if (this._countdownInterval) clearInterval(this._countdownInterval);
+            document.getElementById('va-schedule-countdown')?.classList.add('hidden');
+            alert(`Campaign "${name}" launched! ${contacts.length} contacts queued.`);
           } else alert('Error: ' + JSON.stringify(d));
         } catch(e) { alert('Connection error: ' + e.message); }
       },
@@ -8284,13 +8665,9 @@ Total Players: ${s.total}`;
 
       async viewOutcomeDetail(id) {
         try {
-          const r = await fetch('https://13.246.211.152:8080/api/outcomes/callback?limit=500');
-          const all = await r.json();
-          // Fetch from all lists
-          const allR1 = await fetch('https://13.246.211.152:8080/api/outcomes/take_action?limit=500');
-          const allR2 = await fetch('https://13.246.211.152:8080/api/outcomes/blacklist_list?limit=500');
-          const all2 = await allR1.json(); const all3 = await allR2.json();
-          const record = [...all,...all2,...all3].find(x => x.id === id);
+          const r = await fetch(`https://13.246.211.152:8080/api/outcomes/${id}`);
+          const record = await r.json();
+          if (!record || record.detail) throw new Error('Record not found');
           if (!record) return;
           const modal = document.getElementById('va-outcome-modal');
           const content = document.getElementById('va-outcome-modal-content');
