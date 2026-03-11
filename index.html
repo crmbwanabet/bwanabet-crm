@@ -8178,11 +8178,10 @@ Total Players: ${s.total}`;
         const panel = document.getElementById('va-tracker-panel');
         this._trackerOpen = !this._trackerOpen;
         panel.classList.toggle('hidden', !this._trackerOpen);
-        if (this._trackerOpen) this.refreshTracker();
+        if (this._trackerOpen) { this.refreshTracker(); this._refreshDashboard(); }
       },
       async refreshTracker() {
         await this._refreshActiveCampaign();
-        await this._refreshDashboard();
       },
       async _refreshActiveCampaign() {
         const section = document.getElementById('va-tr-outcomes-section');
@@ -8282,10 +8281,10 @@ Total Players: ${s.total}`;
           const summaries = await Promise.all(recent.map(async h => {
             try {
               const r = await fetch(`${this.serverUrl}/campaign/summary/${encodeURIComponent(h.campaign_id)}`);
-              if (!r.ok) return { ...h, total_calls: h.contact_count || 0, totals: {} };
+              if (!r.ok) return { ...h, total_calls: h.contact_count || 0, totals: {}, _noData: true };
               const d = await r.json();
               return { ...h, ...d };
-            } catch(e) { return { ...h, total_calls: 0, totals: {} }; }
+            } catch(e) { return { ...h, total_calls: 0, totals: {}, _noData: true }; }
           }));
           el.innerHTML = summaries.map((s, i) => {
             const positive = (s.totals?.callback||0) + (s.totals?.take_action||0);
@@ -8330,8 +8329,6 @@ Total Players: ${s.total}`;
             }
             if (this._trackerOpen) {
               this._refreshActiveCampaign();
-              // Only refresh dashboard if active campaign exists (avoid spamming 404s)
-              if (hasActive) this._refreshDashboard();
             }
           }).catch(()=>{});
         }, 5000);
@@ -8534,6 +8531,7 @@ Total Players: ${s.total}`;
 
         try {
           const r = await fetch(`${this.serverUrl}/campaign/summary/${encodeURIComponent(campaignId)}`);
+          if (!r.ok) throw new Error(`Campaign data not found (${r.status}). This campaign may be too old.`);
           const d = await r.json();
           const t = d.totals;
           const total = d.total_calls || 1;
@@ -9263,7 +9261,6 @@ Total Players: ${s.total}`;
             if (countEl) countEl.textContent = count;
           } catch(e) {}
         }
-        this._btnRestore(btn);
         this.loadOutcomeList();
         // Update badge
         try {
