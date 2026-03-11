@@ -3048,13 +3048,7 @@ BEHAVIOUR RULES:
         const cfg = await r.json();
         SUPABASE_URL = cfg.supabaseUrl || '';
         SUPABASE_ANON_KEY = cfg.supabaseAnonKey || '';
-      } this._btnRestore(btn);
-        this._btnRestore(btn);
-        this._btnRestore(btn);
-        this._btnRestore(btn);
-        this._btnRestore(btn);
-        this._btnRestore(btn);
-        catch(e) { console.error('Failed to load config:', e); }
+      } catch(e) { console.error('Failed to load config:', e); }
     }
     
     // Default parameters - used for reset functionality
