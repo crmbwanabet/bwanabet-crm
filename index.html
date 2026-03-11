@@ -8181,7 +8181,8 @@ Total Players: ${s.total}`;
         if (this._trackerOpen) this.refreshTracker();
       },
       async refreshTracker() {
-        await Promise.all([this._refreshActiveCampaign(), this._refreshDashboard()]);
+        await this._refreshActiveCampaign();
+        await this._refreshDashboard();
       },
       async _refreshActiveCampaign() {
         const section = document.getElementById('va-tr-outcomes-section');
@@ -8277,11 +8278,11 @@ Total Players: ${s.total}`;
         }
         // Fetch summaries for last 5 campaigns
         const recent = hist.slice(0, 5);
-        el.innerHTML = '<div class="animate-pulse text-xs text-slate-400 text-center py-2">Loading...</div>';
         try {
           const summaries = await Promise.all(recent.map(async h => {
             try {
               const r = await fetch(`${this.serverUrl}/campaign/summary/${encodeURIComponent(h.campaign_id)}`);
+              if (!r.ok) return { ...h, total_calls: h.contact_count || 0, totals: {} };
               const d = await r.json();
               return { ...h, ...d };
             } catch(e) { return { ...h, total_calls: 0, totals: {} }; }
@@ -8317,16 +8318,20 @@ Total Players: ${s.total}`;
         this.showTracker();
         if (this._trackerPoller) clearInterval(this._trackerPoller);
         this._trackerPoller = setInterval(() => {
-          if (this._trackerOpen) this.refreshTracker();
-          // Auto-open if a campaign starts
+          // Only poll active campaign section when panel is open
           fetch(`${this.serverUrl}/campaign/list`).then(r=>r.json()).then(campaigns => {
-            if (campaigns.some(c=>c.status==='running')) {
+            const hasActive = campaigns.some(c=>c.status==='running');
+            if (hasActive) {
               this.showTracker();
               if (!this._trackerOpen) {
                 this._trackerOpen = true;
                 document.getElementById('va-tracker-panel').classList.remove('hidden');
-                this.refreshTracker();
               }
+            }
+            if (this._trackerOpen) {
+              this._refreshActiveCampaign();
+              // Only refresh dashboard if active campaign exists (avoid spamming 404s)
+              if (hasActive) this._refreshDashboard();
             }
           }).catch(()=>{});
         }, 5000);
