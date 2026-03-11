@@ -8072,15 +8072,15 @@ Total Players: ${s.total}`;
             const m = Math.floor(left/60000), s = Math.floor((left%60000)/1000);
             countdown.textContent = `${m}m ${s}s until launch`;
           }, 1000);
-          this._scheduleTimer = setTimeout(() => this._doLaunch(name, scriptId, cpm, contacts, raw, true), delay);
+          this._scheduleTimer = setTimeout(() => this._doLaunch(name, scriptId, cpm, contacts, raw, true, btn), delay);
           alert(`Campaign scheduled for ${new Date(schedTime).toLocaleString()}`);
           return;
         }
 
-        await this._doLaunch(name, scriptId, cpm, contacts, raw, false);
+        await this._doLaunch(name, scriptId, cpm, contacts, raw, false, btn);
       },
 
-      async _doLaunch(name, scriptId, cpm, contacts, raw, isScheduled) {
+      async _doLaunch(name, scriptId, cpm, contacts, raw, isScheduled, btn=null) {
         const campaign_id = name.toLowerCase().replace(/\s+/g,'-') + '-' + Date.now();
         let script = '';
         if (scriptId) {
@@ -8241,27 +8241,32 @@ Total Players: ${s.total}`;
           const outContent = document.getElementById('va-tr-outcomes-content');
           if (running.length) {
             const cid = running[0].campaign_id;
-            const completedSoFar = running[0].completed || 0;
+            const campaignTotal = running[0].total || 0;
             try {
-              // Only fetch summary once some calls have completed to avoid 404 spam
-              if (completedSoFar === 0) {
-                outContent.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">Waiting for first calls to complete...</p>';
-                return;
-              }
-              const sr = await fetch(`${this.serverUrl}/campaign/summary/${encodeURIComponent(cid)}`);
-              if (!sr.ok) { outContent.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No outcomes yet...</p>'; return; }
-              const sd = await sr.json();
-              const t = sd.totals;
-              const total = sd.total_calls || 1;
+              // Fetch live outcome counts directly — no summary endpoint needed
+              const [rCb, rTa, rNx, rNa] = await Promise.all([
+                fetch(`${this.serverUrl}/outcomes/callback?campaign_id=${encodeURIComponent(cid)}&limit=1`),
+                fetch(`${this.serverUrl}/outcomes/take_action?campaign_id=${encodeURIComponent(cid)}&limit=1`),
+                fetch(`${this.serverUrl}/outcomes/no_action?campaign_id=${encodeURIComponent(cid)}&limit=500`),
+                fetch(`${this.serverUrl}/outcomes/no_answer?campaign_id=${encodeURIComponent(cid)}&limit=500`),
+              ]);
+              const [cb, ta, nx, na] = await Promise.all([rCb.json(), rTa.json(), rNx.json(), rNa.json()]);
+              const counts = {
+                callback: Array.isArray(cb) ? cb.length : 0,
+                take_action: Array.isArray(ta) ? ta.length : 0,
+                no_action: Array.isArray(nx) ? nx.length : 0,
+                no_answer: Array.isArray(na) ? na.length : 0,
+              };
+              const total = campaignTotal || Object.values(counts).reduce((a,b)=>a+b,0) || 1;
               const outcomes = [
                 {key:'callback', label:'Callbacks', color:'bg-amber-400', text:'text-amber-700'},
                 {key:'take_action', label:'Take Action', color:'bg-emerald-500', text:'text-emerald-700'},
                 {key:'no_action', label:'No Action', color:'bg-slate-400', text:'text-slate-600'},
                 {key:'no_answer', label:'No Answer', color:'bg-orange-400', text:'text-orange-700'},
-                {key:'blacklist', label:'Blacklisted', color:'bg-red-500', text:'text-red-700'},
               ];
-              outContent.innerHTML = outcomes.map(o => {
-                const n = t[o.key] || 0;
+              const hasAny = Object.values(counts).some(v=>v>0);
+              outContent.innerHTML = hasAny ? outcomes.map(o => {
+                const n = counts[o.key] || 0;
                 const pct = total > 0 ? Math.round((n/total)*100) : 0;
                 return `<div class="flex items-center gap-2 mb-2">
                   <span class="text-xs ${o.text} w-20 flex-shrink-0">${o.label}</span>
@@ -8270,7 +8275,7 @@ Total Players: ${s.total}`;
                   </div>
                   <span class="text-xs font-bold text-slate-700 w-6 text-right">${n}</span>
                 </div>`;
-              }).join('');
+              }).join('') : '<p class="text-xs text-slate-400 text-center py-2">Waiting for first calls to complete...</p>';
             } catch(e) {}
           }
           lucide.createIcons();
