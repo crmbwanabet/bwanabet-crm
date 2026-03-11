@@ -8239,8 +8239,15 @@ Total Players: ${s.total}`;
           const outContent = document.getElementById('va-tr-outcomes-content');
           if (running.length) {
             const cid = running[0].campaign_id;
+            const completedSoFar = running[0].completed || 0;
             try {
+              // Only fetch summary once some calls have completed to avoid 404 spam
+              if (completedSoFar === 0) {
+                outContent.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">Waiting for first calls to complete...</p>';
+                return;
+              }
               const sr = await fetch(`${this.serverUrl}/campaign/summary/${encodeURIComponent(cid)}`);
+              if (!sr.ok) { outContent.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No outcomes yet...</p>'; return; }
               const sd = await sr.json();
               const t = sd.totals;
               const total = sd.total_calls || 1;
