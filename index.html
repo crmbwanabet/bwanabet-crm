@@ -3222,8 +3222,7 @@ BEHAVIOUR RULES:
 
     function togglePwVis(inputId, btn) {
       const el = document.getElementById(inputId);
-      if (!el) this._btnRestore(btn);
-        return;
+      if (!el) return;
       el.type = el.type === 'password' ? 'text' : 'password';
       btn.innerHTML = el.type === 'password' ? '<i data-lucide="eye" class="h-4 w-4"></i>' : '<i data-lucide="eye-off" class="h-4 w-4"></i>';
       refreshIcons();
@@ -7621,7 +7620,7 @@ Total Players: ${s.total}`;
       currentBuilderMode: 'guided',
       serverUrl: 'https://13.246.211.152:8080/api',
       _btnLoad(btn, label='Loading...') {
-        if (!btn) return;
+        if (!btn || btn === undefined) return;
         btn._origHTML = btn.innerHTML;
         btn._origDisabled = btn.disabled;
         btn.disabled = true;
@@ -8101,6 +8100,7 @@ Total Players: ${s.total}`;
             this._btnRestore(btn);
         this._addToHistory({ campaign_id, name, contact_count: contacts.length, contacts_raw: raw, script_id: scriptId, launched_at: new Date().toISOString(), scheduled: isScheduled });
             this.renderCampaignHistory();
+            this._trackerUserClosed = false;
             this._trackerOpen = true;
             document.getElementById('va-tracker-panel').classList.remove('hidden');
             this.refreshTracker();
@@ -8111,7 +8111,7 @@ Total Players: ${s.total}`;
             document.getElementById('va-schedule-countdown')?.classList.add('hidden');
             alert(`Campaign "${name}" launched! ${contacts.length} contacts queued.`);
           } else alert('Error: ' + JSON.stringify(d));
-        } catch(e) { alert('Connection error: ' + e.message); }
+        } catch(e) { this._btnRestore(btn); alert('Connection error: ' + e.message); }
       },
 
       async refreshCampaigns() {
@@ -8171,6 +8171,7 @@ Total Players: ${s.total}`;
       // ── Campaign Tracker ───────────────────────────────────────
       _trackerPoller: null,
       _trackerOpen: false,
+      _trackerUserClosed: false,
 
       showTracker() {
         document.getElementById('va-tracker-sidebar').classList.remove('hidden');
@@ -8178,6 +8179,7 @@ Total Players: ${s.total}`;
       toggleTracker() {
         const panel = document.getElementById('va-tracker-panel');
         this._trackerOpen = !this._trackerOpen;
+        this._trackerUserClosed = !this._trackerOpen; // remember user intent
         panel.classList.toggle('hidden', !this._trackerOpen);
         if (this._trackerOpen) { this.refreshTracker(); }
       },
@@ -8305,7 +8307,7 @@ Total Players: ${s.total}`;
           // Only poll active campaign section when panel is open
           fetch(`${this.serverUrl}/campaign/list`).then(r=>r.json()).then(campaigns => {
             const hasActive = campaigns.some(c=>c.status==='running');
-            if (hasActive) {
+            if (hasActive && !this._trackerUserClosed) {
               this.showTracker();
               if (!this._trackerOpen) {
                 this._trackerOpen = true;
@@ -8417,12 +8419,19 @@ Total Players: ${s.total}`;
         if (keepChk) keepChk.checked = stored?.keep || false;
 
         const renderMessages = (msgs) => {
-          if (!msgs || !msgs.length) return '<p class="text-slate-400 text-sm text-center py-8">No messages yet.</p>';
-          return msgs.map(m => {
+          if (!msgs || !msgs.length) return '<p class="text-slate-400 text-sm text-center py-8">No messages recorded for this call.</p>';
+          // Filter out system messages
+          const visible = msgs.filter(m => m.content && !m.content.startsWith('[Call connected'));
+          if (!visible.length) return '<p class="text-slate-400 text-sm text-center py-8">No customer dialogue recorded.</p>';
+          return visible.map(m => {
             const isAgent = m.role === 'assistant' || m.role === 'agent';
-            return `<div class="flex gap-2 ${isAgent ? 'flex-row-reverse' : ''}">
+            const label = isAgent ? 'Agent' : 'Customer';
+            return `<div class="flex gap-2 mb-2 ${isAgent ? 'flex-row-reverse' : ''}">
               <div class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 ${isAgent ? 'bg-yellow-400 text-black' : 'bg-slate-200 text-slate-700'}">${isAgent ? 'A' : 'C'}</div>
-              <div class="max-w-xs lg:max-w-sm px-3 py-2 rounded-2xl text-sm ${isAgent ? 'bg-yellow-50 border border-yellow-200 text-slate-800' : 'bg-slate-100 text-slate-800'}">${m.content}</div>
+              <div class="max-w-xs lg:max-w-sm">
+                <p class="text-xs text-slate-400 mb-0.5 ${isAgent ? 'text-right' : ''}">${label}</p>
+                <div class="px-3 py-2 rounded-2xl text-sm ${isAgent ? 'bg-yellow-50 border border-yellow-200 text-slate-800' : 'bg-slate-100 text-slate-800'}">${m.content}</div>
+              </div>
             </div>`;
           }).join('');
         };
@@ -8569,7 +8578,7 @@ Total Players: ${s.total}`;
             const rows = recs.map(r => {
               const _rdt = r.created_at ? new Date(r.created_at) : null;
               const date = _rdt ? _rdt.toLocaleDateString([],{day:'2-digit',month:'short'}) + ' ' + _rdt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
-              const detail = r.bonus_details || r.callback_reason || r.blacklist_reason || r.summary?.substring(0,60) || '-';
+              const detail = r.bonus_details || r.callback_reason || r.blacklist_reason || r.summary?.substring(0,80) || '-';
               return `<tr class="border-b hover:bg-slate-50 cursor-pointer" onclick="VA.viewOutcomeDetail('${r.id}', this)">
                 <td class="px-3 py-2 font-mono text-sm font-medium text-slate-800">${r.phone_number}</td>
                 <td class="px-3 py-2 text-xs text-slate-600 max-w-xs truncate">${detail}</td>
@@ -8901,7 +8910,8 @@ Total Players: ${s.total}`;
 
       loadDefaultFillers(btn) {
 
-        this._btnLoad(btn, 'Loading...');        this.pendingFillers = [
+        this._btnLoad(btn, 'Loading...');
+        this.pendingFillers = [
           { phrase: 'Uhmmm,',                    category: 'neutral',  active: true },
           { phrase: 'Okay so,',                  category: 'neutral',  active: true },
           { phrase: 'Soooo,',                    category: 'neutral',  active: true },
@@ -8968,7 +8978,8 @@ Total Players: ${s.total}`;
 
       async saveFillers(scriptId, btn) {
 
-        this._btnLoad(btn, 'Saving...');        if (!scriptId) return;
+        this._btnLoad(btn, 'Saving...');
+        if (!scriptId) return;
         try {
           // 1. Wipe existing fillers for this script
           await fetch('https://13.246.211.152:8080/api/fillers/script/' + scriptId, { method: 'DELETE' });
@@ -9310,7 +9321,7 @@ Total Players: ${s.total}`;
         }
         return `<tr class="border-b hover:bg-slate-50 ${doneBg}">
           <td class="px-4 py-3 font-mono font-medium text-slate-800">${r.phone_number}</td>
-          <td class="px-4 py-3 text-slate-600 max-w-xs">${r.summary ? r.summary.substring(0,100)+(r.summary.length>100?'...':'') : '-'}</td>
+          <td class="px-4 py-3 text-slate-600 max-w-xs"><span title="${r.summary||''}">${r.summary ? r.summary.substring(0,80)+(r.summary.length>80?'...':'') : '-'}</span></td>
           <td class="px-4 py-3 hidden md:table-cell">${detailHtml || '-'}</td>
           <td class="px-4 py-3 text-slate-400 text-xs hidden lg:table-cell">${dateHtml}</td>
           <td class="px-4 py-3">
@@ -9333,7 +9344,7 @@ Total Players: ${s.total}`;
           const modal = document.getElementById('va-outcome-modal');
           const content = document.getElementById('va-outcome-modal-content');
           const ocMap = {callback:'🔔 Callback',take_action:'⚡ Take Action',blacklist_soft:'🔕 Soft Blacklist',blacklist_hard:'🚫 Hard Blacklist',no_action:'➖ No Action',no_answer:'📵 No Answer'};
-          const transcript = (record.full_transcript||[]).map(m => `<div class="mb-2"><span class="text-xs font-bold ${m.role==='agent'?'text-yellow-600':'text-slate-500'}">${m.role==='agent'?'🤖 Agent':'👤 Customer'}</span><p class="mt-0.5 text-sm ${m.role==='agent'?'bg-yellow-50':'bg-slate-50'} rounded-lg p-2">${m.content}</p></div>`).join('');
+          const transcript = (record.full_transcript||[]).filter(m=>m.content && !m.content.startsWith('[Call connected')).map(m => { const isAg = m.role==='agent'||m.role==='assistant'; return `<div class="mb-2"><span class="text-xs font-bold ${isAg?'text-yellow-600':'text-slate-500'}">${isAg?'🤖 Agent':'👤 Customer'}</span><p class="mt-0.5 text-sm ${isAg?'bg-yellow-50':'bg-slate-50'} rounded-lg p-2">${m.content}</p></div>`; }).join('');
           content.innerHTML = `
             <div class="grid grid-cols-2 gap-4 mb-5">
               <div><p class="text-xs text-slate-500">Phone</p><p class="font-mono font-bold">${record.phone_number}</p></div>
@@ -9345,7 +9356,7 @@ Total Players: ${s.total}`;
               ${record.callback_reason?`<div class="col-span-2"><p class="text-xs text-slate-500">Callback Reason</p><p class="text-amber-700">${record.callback_reason}</p></div>`:''}
               ${record.non_english?`<div class="col-span-2 p-2 bg-orange-50 rounded"><p class="text-orange-700 text-sm">⚠️ Non-English: ${record.language_detected}</p></div>`:''}
             </div>
-            ${record.summary?`<div class="mb-4 p-3 bg-slate-50 rounded-lg"><p class="text-xs text-slate-500 mb-1">Summary</p><p class="text-sm">${record.summary}</p></div>`:''}
+            ${record.summary?`<div class="mb-4 p-3 bg-slate-50 rounded-lg"><p class="text-xs text-slate-500 mb-1">Summary</p><p class="text-sm leading-relaxed">${record.summary}</p></div>`:''}
             ${transcript?`<div class="mb-4"><p class="text-xs text-slate-500 mb-2 font-semibold">Full Transcript</p><div class="max-h-80 overflow-y-auto border rounded-lg p-3">${transcript}</div></div>`:''}
             <div class="flex gap-2">
               ${!record.actioned?`<button onclick="VA.markOneDone('${record.id}', this); document.getElementById('va-outcome-modal').style.display='none';" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">✅ Mark Done</button>`:''}
