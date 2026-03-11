@@ -8578,10 +8578,10 @@ Total Players: ${s.total}`;
             const rows = recs.map(r => {
               const _rdt = r.created_at ? new Date(r.created_at) : null;
               const date = _rdt ? _rdt.toLocaleDateString([],{day:'2-digit',month:'short'}) + ' ' + _rdt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
-              const detail = r.bonus_details || r.callback_reason || r.blacklist_reason || r.summary?.substring(0,80) || '-';
+              const detail = r.bonus_details || r.callback_reason || r.blacklist_reason || r.summary || '-';
               return `<tr class="border-b hover:bg-slate-50 cursor-pointer" onclick="VA.viewOutcomeDetail('${r.id}', this)">
                 <td class="px-3 py-2 font-mono text-sm font-medium text-slate-800">${r.phone_number}</td>
-                <td class="px-3 py-2 text-xs text-slate-600 max-w-xs truncate">${detail}</td>
+                <td class="px-3 py-2 text-xs text-slate-600" style="max-width:280px;white-space:normal;word-break:break-word;">${detail}</td>
                 <td class="px-3 py-2 text-xs text-slate-400 hidden sm:table-cell">${date}</td>
                 <td class="px-3 py-2 text-center"><i data-lucide="eye" class="h-3.5 w-3.5 text-blue-500 inline"></i></td>
               </tr>`;
@@ -9321,7 +9321,7 @@ Total Players: ${s.total}`;
         }
         return `<tr class="border-b hover:bg-slate-50 ${doneBg}">
           <td class="px-4 py-3 font-mono font-medium text-slate-800">${r.phone_number}</td>
-          <td class="px-4 py-3 text-slate-600 max-w-xs"><span title="${r.summary||''}">${r.summary ? r.summary.substring(0,80)+(r.summary.length>80?'...':'') : '-'}</span></td>
+          <td class="px-4 py-3 text-slate-600" style="max-width:320px;white-space:normal;word-break:break-word;">${r.summary || '-'}</td>
           <td class="px-4 py-3 hidden md:table-cell">${detailHtml || '-'}</td>
           <td class="px-4 py-3 text-slate-400 text-xs hidden lg:table-cell">${dateHtml}</td>
           <td class="px-4 py-3">
