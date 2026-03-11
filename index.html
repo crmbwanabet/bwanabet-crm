@@ -7880,7 +7880,8 @@ Total Players: ${s.total}`;
 
       saveCurrentList(btn) {
 
-        this._btnLoad(btn, 'Saving...');        const raw = document.getElementById('va-camp-contacts')?.value.trim();
+        this._btnLoad(btn, 'Saving...');
+        const raw = document.getElementById('va-camp-contacts')?.value.trim();
         if (!raw) return alert('No contacts to save.');
         const name = prompt('Name this contact list:', document.getElementById('va-camp-name')?.value || 'My List');
         if (!name) return;
@@ -8035,8 +8036,8 @@ Total Players: ${s.total}`;
 
       // ── Launch Campaign (with schedule support) ─────────────────
       async launchCampaign(btn) {
-        const name
-        this._btnLoad(btn, 'Launching...');     = document.getElementById('va-camp-name')?.value.trim();
+        this._btnLoad(btn, 'Launching...');
+        const name     = document.getElementById('va-camp-name')?.value.trim();
         const scriptId = document.getElementById('va-camp-script')?.value;
         const cpm      = parseInt(document.getElementById('va-camp-cpm')?.value) || 2;
         const raw      = document.getElementById('va-camp-contacts')?.value.trim();
@@ -8822,7 +8823,8 @@ Total Players: ${s.total}`;
 
       async saveScript(btn) {
 
-        this._btnLoad(btn, 'Saving...');        const payload = this.getBuilderPayload();
+        this._btnLoad(btn, 'Saving...');
+        const payload = this.getBuilderPayload();
         if (!payload.name) return alert('Please enter a script name');
         if (this.currentBuilderMode === 'freewrite' && !payload.freewrite_content) return alert('Please write your script content');
         if (this.currentBuilderMode === 'guided' && !payload.company_name) return alert('Please enter a company name');
@@ -9435,7 +9437,8 @@ Total Players: ${s.total}`;
 
       async updateVoice(btn) {
 
-        this._btnLoad(btn, 'Updating...');        const voiceId = document.getElementById('va-settings-voiceid').value.trim();
+        this._btnLoad(btn, 'Updating...');
+        const voiceId = document.getElementById('va-settings-voiceid').value.trim();
         if (!voiceId) return alert('Enter a Voice ID');
         if (!confirm(`Update voice to "${voiceId}"?.`)) return;
         try {
@@ -9469,7 +9472,8 @@ Total Players: ${s.total}`;
 
       async saveSettings(btn) {
 
-        this._btnLoad(btn, 'Saving...');        const data = {
+        this._btnLoad(btn, 'Saving...');
+        const data = {
           max_concurrent_calls: parseInt(document.getElementById('va-set-maxcalls').value),
           call_timeout: parseInt(document.getElementById('va-set-timeout').value),
           max_turns: parseInt(document.getElementById('va-set-maxturns').value),
@@ -9487,7 +9491,8 @@ Total Players: ${s.total}`;
 
       async testServerConnection(btn) {
 
-        this._btnLoad(btn, 'Testing...');        const url = document.getElementById('va-server-url').value;
+        this._btnLoad(btn, 'Testing...');
+        const url = document.getElementById('va-server-url').value;
         this.serverUrl = url;
         localStorage.setItem('va_server_url', url);
         const result = document.getElementById('va-conn-result');
@@ -9548,7 +9553,8 @@ Total Players: ${s.total}`;
 
       async runCampaignFromList(btn) {
 
-        this._btnLoad(btn, 'Loading...');        const list = this.currentOutcomeList;
+        this._btnLoad(btn, 'Loading...');
+        const list = this.currentOutcomeList;
         const label = {callback:'Callback',take_action:'Take Action',blacklist:'Blacklist'}[list] || list;
 
         // Get phone numbers from current list
