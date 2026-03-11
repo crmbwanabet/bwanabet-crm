@@ -1255,6 +1255,94 @@
       </div>
 
       <!-- Outcome Detail Modal -->
+
+
+
+      <!-- ── Campaign Tracker Sidebar ──────────────────────────── -->
+      <div id="va-tracker-sidebar" class="hidden fixed right-0 top-0 h-full z-40 flex items-stretch pointer-events-none">
+        <!-- Toggle tab -->
+        <div class="pointer-events-auto flex items-center">
+          <button id="va-tracker-toggle" onclick="VA.toggleTracker()" class="bg-yellow-400 text-black font-bold text-xs py-6 px-2 rounded-l-xl shadow-xl hover:bg-yellow-300 transition-colors" style="writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:0.05em">
+            📊 CAMPAIGN TRACKER
+          </button>
+        </div>
+        <!-- Panel -->
+        <div id="va-tracker-panel" class="hidden pointer-events-auto bg-white shadow-2xl border-l border-slate-200 flex flex-col" style="width:360px;max-height:100vh">
+          <div class="bg-slate-800 text-white px-4 py-3 flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center gap-2">
+              <div id="va-tr-dot" class="w-2.5 h-2.5 rounded-full bg-slate-400"></div>
+              <span class="font-bold text-sm">Campaign Tracker</span>
+            </div>
+            <button onclick="VA.toggleTracker()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-4 w-4"></i></button>
+          </div>
+          <div class="flex-1 overflow-y-auto">
+            <!-- Active Campaign Section -->
+            <div id="va-tr-active-section" class="p-4 border-b">
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Active Campaign</p>
+              <div id="va-tr-active-content">
+                <p class="text-slate-400 text-sm text-center py-4">No campaign running</p>
+              </div>
+            </div>
+            <!-- Real-time Outcomes -->
+            <div id="va-tr-outcomes-section" class="p-4 border-b hidden">
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Live Outcomes</p>
+              <div id="va-tr-outcomes-content"></div>
+            </div>
+            <!-- All Campaigns Dashboard -->
+            <div class="p-4">
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">All Campaigns</p>
+              <div id="va-tr-dashboard-content">
+                <p class="text-slate-400 text-sm text-center py-4">No campaigns yet</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Campaign Review Modal ──────────────────────────────── -->
+      <div id="va-campaign-review-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col" style="max-height:90vh">
+          <div class="bg-slate-800 text-white px-5 py-4 rounded-t-2xl flex items-center justify-between flex-shrink-0">
+            <div>
+              <h3 id="va-cr-title" class="font-bold text-base">Campaign Review</h3>
+              <p id="va-cr-subtitle" class="text-slate-400 text-xs mt-0.5"></p>
+            </div>
+            <button onclick="document.getElementById('va-campaign-review-modal').classList.add('hidden')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
+          </div>
+          <div id="va-cr-body" class="flex-1 overflow-y-auto p-5 min-h-0">
+            <div class="text-center py-12 text-slate-400"><div class="animate-spin h-8 w-8 border-2 border-slate-300 border-t-slate-700 rounded-full mx-auto mb-3"></div>Loading campaign data...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Transcript Modal ─────────────────────────────────── -->
+      <div id="va-transcript-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height:90vh">
+          <div class="bg-slate-800 text-white px-5 py-4 rounded-t-2xl flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center gap-3">
+              <div id="va-tm-dot" class="w-2.5 h-2.5 rounded-full bg-slate-400"></div>
+              <div>
+                <h3 id="va-tm-phone" class="font-bold font-mono text-base">+260 xxx xxx xxx</h3>
+                <p id="va-tm-status" class="text-slate-400 text-xs">Loading...</p>
+              </div>
+            </div>
+            <button onclick="VA.closeTranscriptModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
+          </div>
+          <div id="va-tm-transcript" class="flex-1 overflow-y-auto p-4 space-y-2 min-h-0" style="min-height:200px;max-height:55vh">
+            <p class="text-slate-400 text-sm text-center py-8">Connecting...</p>
+          </div>
+          <div id="va-tm-footer" class="border-t p-4 flex items-center justify-between flex-shrink-0 bg-slate-50 rounded-b-2xl">
+            <div class="flex items-center gap-3">
+              <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
+                <input type="checkbox" id="va-tm-keep" class="accent-yellow-500 w-4 h-4" onchange="VA.toggleKeepTranscript()">
+                Keep transcript (don't auto-delete after 24h)
+              </label>
+            </div>
+            <button id="va-tm-delete-btn" onclick="VA.deleteTranscript()" class="px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-lg">Delete</button>
+          </div>
+        </div>
+      </div>
+
       <div id="va-outcome-modal" style="display:none" class="fixed inset-0 bg-black bg-opacity-50 z-50  flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <div class="bg-slate-800 text-white p-5 rounded-t-2xl flex items-center justify-between sticky top-0">
@@ -1757,7 +1845,7 @@
                   <textarea id="va-camp-contacts" rows="6" placeholder="260971234567&#10;260977654321,John Banda&#10;260955555555,Mary Phiri&#10;&#10;Paste phone numbers, one per line. Optional: phone,name" class="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
                   <div class="flex items-center justify-between mt-1">
                     <p class="text-xs text-slate-400">Paste numbers, or upload CSV/Excel with a phone column</p>
-                    <button onclick="VA.saveCurrentList()" class="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+                    <button onclick="VA.saveCurrentList(this)" class="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
                       <i data-lucide="save" class="h-3 w-3"></i>Save list
                     </button>
                   </div>
@@ -1765,7 +1853,7 @@
 
                 <!-- Launch Button -->
                 <div class="md:col-span-2">
-                  <button onclick="VA.launchCampaign()" id="va-launch-btn" class="w-full py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 flex items-center justify-center gap-2">
+                  <button onclick="VA.launchCampaign(this)" id="va-launch-btn" class="w-full py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 flex items-center justify-center gap-2">
                     <i data-lucide="play" class="h-4 w-4"></i><span id="va-launch-btn-text">Launch Campaign</span>
                   </button>
                   <div id="va-scheduled-badge" class="hidden mt-2 text-center text-sm text-blue-600 font-medium"></div>
@@ -1942,7 +2030,7 @@ BEHAVIOUR RULES:
                       <option value="repeat">Repeat</option>
                       <option value="greeting">Greeting</option>
                     </select>
-                    <button onclick="VA.addFiller()"
+                    <button onclick="VA.addFiller(this)"
                       class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700">
                       Add
                     </button>
@@ -1952,7 +2040,7 @@ BEHAVIOUR RULES:
                     <div id="filler-empty-state" class="text-center py-5 text-slate-400 text-sm">
                       No fillers yet.
                       <br/>
-                      <button onclick="VA.loadDefaultFillers()"
+                      <button onclick="VA.loadDefaultFillers(this)"
                         class="mt-2 px-4 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium hover:bg-slate-200">
                         Load Default Fillers
                       </button>
@@ -1960,7 +2048,7 @@ BEHAVIOUR RULES:
                   </div>
                   <!-- Save fillers -->
                   <div class="mt-3 flex justify-end">
-                    <button onclick="VA.saveFillers(VA.currentScriptId)"
+                    <button onclick="VA.saveFillers(VA.currentScriptId, this)"
                       class="px-5 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 flex items-center gap-2">
                       <i data-lucide="save" class="h-4 w-4"></i>Save Fillers
                     </button>
@@ -1982,7 +2070,7 @@ BEHAVIOUR RULES:
                       <select id="va-sb-voicepick" class="flex-1 min-w-0 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="VA.onVoicePickerChange('sb')">
                         <option value="">-- Select or enter ID below --</option>
                       </select>
-                      <button onclick="VA.loadVoices('sb')" class="flex-shrink-0 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700">Load Voices</button>
+                      <button onclick="VA.loadVoices('sb', this)" class="flex-shrink-0 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700">Load Voices</button>
                     </div>
                     <input id="va-sb-voiceid" type="text" placeholder="Voice ID (auto-filled from picker)" class="w-full mt-2 px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
                   </div>
@@ -1996,13 +2084,13 @@ BEHAVIOUR RULES:
                     <input id="va-sb-speed" type="range" min="0.7" max="1.2" step="0.05" value="1.0" oninput="document.getElementById('va-speed-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600">
                     <div class="flex justify-between text-xs text-blue-400 mt-1"><span>0.7 Slow</span><span>1.0 Normal</span><span>1.2 Fast</span></div>
                   </div>
-                  <button onclick="VA.updateVoice()" class="mt-4 w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Update Voice</button>
+                  <button onclick="VA.updateVoice(this)" class="mt-4 w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Update Voice</button>
                 </div>
               </div>
 
               <!-- Save & Test -->
               <div class="bg-white rounded-xl shadow-sm p-4 mt-4 flex gap-3">
-                <button onclick="VA.saveScript()" class="flex-1 py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 flex items-center justify-center gap-2"><i data-lucide="save" class="h-4 w-4"></i>Save Script</button>
+                <button onclick="VA.saveScript(this)" class="flex-1 py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 flex items-center justify-center gap-2"><i data-lucide="save" class="h-4 w-4"></i>Save Script</button>
                 <button onclick="VA.showTestCallModal()" id="va-test-call-btn" class="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"><i data-lucide="phone-call" class="h-4 w-4"></i>Test Call</button>
               </div>
             </div>
@@ -2020,6 +2108,16 @@ BEHAVIOUR RULES:
             <div id="va-monitor-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div class="col-span-2 bg-white rounded-xl shadow-sm p-8 text-center text-slate-400"><i data-lucide="phone-off" class="h-10 w-10 mx-auto mb-3 opacity-40"></i><p>No active calls.</p></div>
             </div>
+            <!-- Recent / stored transcripts -->
+            <div class="mt-6">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-semibold text-slate-700 flex items-center gap-2"><i data-lucide="clock" class="h-4 w-4"></i>Recent Calls (stored 24h)</h4>
+                <button onclick="VA.clearExpiredTranscripts(true)" class="text-xs text-red-400 hover:text-red-600">Clear All</button>
+              </div>
+              <div id="va-recent-calls-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <p class="text-slate-400 text-sm col-span-2 text-center py-4">No recent calls stored yet.</p>
+              </div>
+            </div>
           </div>
 
           <div id="vaContent-outcomes" class="hidden">
@@ -2033,6 +2131,12 @@ BEHAVIOUR RULES:
               <button id="va-ol-tab-blacklist" onclick="VA.switchOutcomeList('blacklist')" class="va-ol-tab flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-all">
                 <i data-lucide="ban" class="h-4 w-4 inline mr-1"></i>Blacklist <span id="va-ol-count-blacklist" class="ml-1 bg-slate-200 px-1.5 py-0.5 rounded text-xs">0</span>
               </button>
+              <button id="va-ol-tab-no_action" onclick="VA.switchOutcomeList('no_action')" class="va-ol-tab flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-all">
+                <i data-lucide="minus-circle" class="h-4 w-4 inline mr-1"></i>No Action <span id="va-ol-count-no_action" class="ml-1 bg-slate-200 px-1.5 py-0.5 rounded text-xs">0</span>
+              </button>
+              <button id="va-ol-tab-no_answer" onclick="VA.switchOutcomeList('no_answer')" class="va-ol-tab flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-all">
+                <i data-lucide="phone-missed" class="h-4 w-4 inline mr-1"></i>No Answer <span id="va-ol-count-no_answer" class="ml-1 bg-slate-200 px-1.5 py-0.5 rounded text-xs">0</span>
+              </button>
             </div>
             <!-- Run Campaign banner — always visible on outcome lists -->
             <div id="va-run-campaign-banner" class="mb-4 p-4 bg-gradient-to-r from-yellow-400 to-yellow-300 rounded-xl flex items-center justify-between shadow-sm">
@@ -2040,7 +2144,7 @@ BEHAVIOUR RULES:
                 <p class="font-bold text-black">Run a Campaign on this List</p>
                 <p id="va-run-campaign-desc" class="text-sm text-yellow-900">Use these contacts as the audience for a new AI call campaign</p>
               </div>
-              <button onclick="VA.runCampaignFromList()" class="px-5 py-2.5 bg-black text-yellow-400 font-bold rounded-lg hover:bg-slate-800 flex items-center gap-2 whitespace-nowrap">
+              <button onclick="VA.runCampaignFromList(this)" class="px-5 py-2.5 bg-black text-yellow-400 font-bold rounded-lg hover:bg-slate-800 flex items-center gap-2 whitespace-nowrap">
                 <i data-lucide="play" class="h-4 w-4"></i>Run Campaign
               </button>
             </div>
@@ -2050,8 +2154,8 @@ BEHAVIOUR RULES:
                 <option value="true">Done Only</option>
                 <option value="">All</option>
               </select>
-              <button onclick="VA.markAllDone()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 flex items-center gap-2"><i data-lucide="check-check" class="h-4 w-4"></i>Mark All Done</button>
-              <button onclick="VA.loadOutcomeList()" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200"><i data-lucide="refresh-cw" class="h-4 w-4 inline mr-1"></i>Refresh</button>
+              <button onclick="VA.markAllDone(this)" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 flex items-center gap-2"><i data-lucide="check-check" class="h-4 w-4"></i>Mark All Done</button>
+              <button onclick="VA.loadOutcomeList(this)" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200"><i data-lucide="refresh-cw" class="h-4 w-4 inline mr-1"></i>Refresh</button>
               <div class="ml-auto text-sm text-slate-500">Showing: <strong id="va-ol-showing">0</strong> records</div>
             </div>
             <div id="va-outcome-list-content">
@@ -2079,7 +2183,7 @@ BEHAVIOUR RULES:
                       <select id="va-settings-voicepick" class="flex-1 min-w-0 px-3 py-2 border rounded-lg text-sm" onchange="VA.onVoicePickerChange('settings')">
                         <option value="">-- Select or enter ID below --</option>
                       </select>
-                      <button onclick="VA.loadVoices('settings')" class="flex-shrink-0 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700">Load Voices</button>
+                      <button onclick="VA.loadVoices('settings', this)" class="flex-shrink-0 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700">Load Voices</button>
                     </div>
                     <input id="va-settings-voiceid" type="text" placeholder="Voice ID" class="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
                     <p class="text-xs text-slate-500 mt-1">Find more voices in your ElevenLabs dashboard</p>
@@ -2090,7 +2194,7 @@ BEHAVIOUR RULES:
                     <div><label class="block text-xs font-medium text-slate-700 mb-1">Style: <span id="va-set-style-val">0.00</span></label><input id="va-settings-style" type="range" min="0" max="1" step="0.05" value="0.0" oninput="document.getElementById('va-set-style-val').textContent=parseFloat(this.value).toFixed(2)" class="w-full accent-blue-600"></div>
                   </div>
                 </div>
-                <button onclick="VA.updateVoice()" class="mt-4 w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Update Voice</button>
+                <button onclick="VA.updateVoice(this)" class="mt-4 w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Update Voice</button>
               </div>
             </div>
             <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-5">
@@ -2103,7 +2207,7 @@ BEHAVIOUR RULES:
                 <div><label class="block text-xs font-medium text-slate-700 mb-1">Endpointing (ms)</label><input id="va-set-endpointing" type="number" value="300" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
                 <div><label class="block text-xs font-medium text-slate-700 mb-1">Max Silence Count</label><input id="va-set-silence" type="number" value="2" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
               </div>
-              <div class="p-4 border-t"><button onclick="VA.saveSettings()" class="w-full py-2.5 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-700 flex items-center justify-center gap-2"><i data-lucide="save" class="h-4 w-4"></i>Save Call Settings</button></div>
+              <div class="p-4 border-t"><button onclick="VA.saveSettings(this)" class="w-full py-2.5 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-700 flex items-center justify-center gap-2"><i data-lucide="save" class="h-4 w-4"></i>Save Call Settings</button></div>
             </div>
             <div class="bg-white rounded-xl shadow-sm overflow-hidden">
               <div class="bg-slate-800 text-white p-4"><h3 class="font-bold flex items-center gap-2"><i data-lucide="server" class="h-4 w-4"></i>Server Connection</h3></div>
@@ -2111,7 +2215,7 @@ BEHAVIOUR RULES:
                 <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3"><i data-lucide="alert-triangle" class="h-4 w-4 inline mr-1"></i><strong>HTTPS Issue:</strong> If the CRM is on HTTPS, access it via <strong>http://</strong> instead to avoid mixed content errors blocking the server connection.</p>
                 <div class="flex gap-3">
                   <input id="va-server-url" type="text" value="https://13.246.211.152:8080/api" class="flex-1 px-3 py-2 border rounded-lg text-sm font-mono">
-                  <button onclick="VA.testServerConnection()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">Test</button>
+                  <button onclick="VA.testServerConnection(this)" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">Test</button>
                 </div>
                 <div id="va-conn-result" class="mt-3 hidden p-3 rounded-lg text-sm"></div>
               </div>
@@ -2944,7 +3048,13 @@ BEHAVIOUR RULES:
         const cfg = await r.json();
         SUPABASE_URL = cfg.supabaseUrl || '';
         SUPABASE_ANON_KEY = cfg.supabaseAnonKey || '';
-      } catch(e) { console.error('Failed to load config:', e); }
+      } this._btnRestore(btn);
+        this._btnRestore(btn);
+        this._btnRestore(btn);
+        this._btnRestore(btn);
+        this._btnRestore(btn);
+        this._btnRestore(btn);
+        catch(e) { console.error('Failed to load config:', e); }
     }
     
     // Default parameters - used for reset functionality
@@ -3117,7 +3227,8 @@ BEHAVIOUR RULES:
 
     function togglePwVis(inputId, btn) {
       const el = document.getElementById(inputId);
-      if (!el) return;
+      if (!el) this._btnRestore(btn);
+        return;
       el.type = el.type === 'password' ? 'text' : 'password';
       btn.innerHTML = el.type === 'password' ? '<i data-lucide="eye" class="h-4 w-4"></i>' : '<i data-lucide="eye-off" class="h-4 w-4"></i>';
       refreshIcons();
@@ -5195,6 +5306,7 @@ Total Players: ${s.total}`;
           ? 'Showing: My agents recruited by <strong>' + (App.userName||'-') + '</strong>'
           : 'Showing: <strong>All agents</strong> in the system';
         // Re-render current sub-tab
+        this._btnRestore(btn);
         this.switchSubTab(this.currentSubTab);
       },
 
@@ -6113,10 +6225,12 @@ Total Players: ${s.total}`;
               Object.assign(tier, fields);
             }
           }
-          statusEl.textContent = '✅ Tier settings saved!'; statusEl.className = 'text-sm mt-3 text-emerald-600';
+          this._btnRestore(btn);
+        statusEl.textContent = '✅ Tier settings saved!'; statusEl.className = 'text-sm mt-3 text-emerald-600';
           this.renderAgentTierStatus();
         } catch(e) {
-          statusEl.textContent = '❌ Error: ' + (e.message || 'Unknown'); statusEl.className = 'text-sm mt-3 text-red-600';
+          this._btnRestore(btn);
+        statusEl.textContent = '❌ Error: ' + (e.message || 'Unknown'); statusEl.className = 'text-sm mt-3 text-red-600';
         }
         setTimeout(() => statusEl.classList.add('hidden'), 4000);
       },
@@ -6336,7 +6450,8 @@ Total Players: ${s.total}`;
         const password = document.getElementById('teamNewPassword')?.value;
         const role = document.getElementById('teamNewRole')?.value || 'affiliate_manager';
         
-        if (!name) { alert('Please enter a name'); return; }
+        if (!name) { this._btnRestore(btn);
+        alert('Please enter a name'); return; }
         if (!email) { alert('Please enter an email'); return; }
         if (!password || password.length < 6) { alert('Password must be at least 6 characters'); return; }
         
@@ -7510,6 +7625,19 @@ Total Players: ${s.total}`;
       currentScriptId: null,
       currentBuilderMode: 'guided',
       serverUrl: 'https://13.246.211.152:8080/api',
+      _btnLoad(btn, label='Loading...') {
+        if (!btn) return;
+        btn._origHTML = btn.innerHTML;
+        btn._origDisabled = btn.disabled;
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline mr-1.5 -mt-0.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>${label}`;
+      },
+      _btnRestore(btn) {
+        if (!btn) return;
+        btn.disabled = btn._origDisabled || false;
+        btn.innerHTML = btn._origHTML || btn.innerHTML;
+        lucide.createIcons();
+      },
       pollingInterval: null,
       testCallId: null,
       testWs: null,
@@ -7521,6 +7649,8 @@ Total Players: ${s.total}`;
       // ── Init ──────────────────────────────────────────────────
       async init() {
         this.serverUrl = localStorage.getItem('va_server_url') || 'https://13.246.211.152:8080/api';
+        this.clearExpiredTranscripts();
+        setTimeout(() => this.startTrackerPolling(), 2000);
         const urlInput = document.getElementById('va-server-url');
         if (urlInput) urlInput.value = this.serverUrl;
         await this.refreshHealth();
@@ -7551,10 +7681,24 @@ Total Players: ${s.total}`;
         document.querySelectorAll('[id^="vaContent-"]').forEach(el => el.classList.add('hidden'));
         document.getElementById('vaContent-' + tab)?.classList.remove('hidden');
         if (tab === 'scripts') this.loadScripts();
-        if (tab === 'monitor') this.refreshMonitor();
+        if (tab === 'monitor') {
+          this.refreshMonitor();
+          this.renderRecentCalls();
+          if (this._monitorPoller) clearInterval(this._monitorPoller);
+          this._monitorPoller = setInterval(() => this.refreshMonitor(), 5000);
+        } else {
+          if (this._monitorPoller) { clearInterval(this._monitorPoller); this._monitorPoller = null; }
+        }
         if (tab === 'outcomes') this.loadOutcomeCounts();
         if (tab === 'settings') { this.refreshVoiceStatus(); this.loadCallSettings(); }
-        if (tab === 'campaigns') { this.renderCampaignHistory(); this.refreshCampaigns(); }
+        if (tab === 'campaigns') {
+          this.renderCampaignHistory();
+          this.refreshCampaigns();
+          if (this._campaignPoller) clearInterval(this._campaignPoller);
+          this._campaignPoller = setInterval(() => this.refreshCampaigns(), 5000);
+        } else {
+          if (this._campaignPoller) { clearInterval(this._campaignPoller); this._campaignPoller = null; }
+        }
       },
 
       // ── Health ─────────────────────────────────────────────────
@@ -7624,6 +7768,7 @@ Total Players: ${s.total}`;
       _scheduleTimer: null,
       _scheduledCampaign: null,
       _countdownInterval: null,
+      _campaignPoller: null,
 
       toggleSchedule() {
         const on = document.getElementById('va-schedule-toggle').checked;
@@ -7739,8 +7884,9 @@ Total Players: ${s.total}`;
         localStorage.setItem('va_saved_contact_lists', JSON.stringify(lists));
       },
 
-      saveCurrentList() {
-        const raw = document.getElementById('va-camp-contacts')?.value.trim();
+      saveCurrentList(btn) {
+
+        this._btnLoad(btn, 'Saving...');        const raw = document.getElementById('va-camp-contacts')?.value.trim();
         if (!raw) return alert('No contacts to save.');
         const name = prompt('Name this contact list:', document.getElementById('va-camp-name')?.value || 'My List');
         if (!name) return;
@@ -7819,9 +7965,10 @@ Total Players: ${s.total}`;
          el.innerHTML = hist.map((h, i) => {
            const dt = new Date(h.launched_at);
            const scheduled = h.scheduled ? '<span class="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">scheduled</span>' : '';
+           const isRetry = h.campaign_id && h.campaign_id.includes('_retry_') ? '<span class="ml-1 px-1.5 py-0.5 bg-orange-100 text-orange-700 text-xs rounded">auto-retry</span>' : '';
            return '<div class="border rounded-lg p-3 mb-2 flex flex-wrap items-center gap-3">' +
              '<div class="flex-1 min-w-0">' +
-               '<p class="font-medium text-slate-800 text-sm truncate">' + h.name + scheduled + '</p>' +
+               '<p class="font-medium text-slate-800 text-sm truncate">' + h.name + scheduled + isRetry + '</p>' +
                '<p class="text-xs text-slate-400">' + h.contact_count + ' contacts · ' + dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</p>' +
              '</div>' +
              '<div class="flex gap-2">' +
@@ -7830,6 +7977,9 @@ Total Players: ${s.total}`;
                '</button>' +
                '<button onclick="VA.reRunNoAnswer(' + i + ', this)" class="px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-lg hover:bg-orange-200 flex items-center gap-1">' +
                  '<i data-lucide="phone-missed" class="h-3 w-3"></i>No-Answer Only' +
+               '</button>' +
+               '<button onclick="VA.openCampaignReview(\'' + h.campaign_id + '\',' + i + ', this)" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 flex items-center gap-1">' +
+                 '<i data-lucide="bar-chart-2" class="h-3 w-3"></i>Review' +
                '</button>' +
              '</div>' +
            '</div>';
@@ -7853,7 +8003,7 @@ Total Players: ${s.total}`;
       async reRunNoAnswer(idx, btn) {
         const h = this._getCampaignHistory()[idx];
         if (!h) return;
-        if (btn) { btn.innerHTML = 'Fetching…'; btn.disabled = true; }
+        this._btnLoad(btn, 'Fetching...');
         try {
           // Get no_answer outcomes for this campaign from server
           const r = await fetch(`${this.serverUrl}/outcomes/no_answer?campaign_id=${encodeURIComponent(h.campaign_id)}&limit=1000`);
@@ -7885,13 +8035,14 @@ Total Players: ${s.total}`;
         } catch(e) {
           alert('Error fetching no-answer list: ' + e.message);
         } finally {
-          if (btn) { btn.disabled = false; this.renderCampaignHistory(); }
+          this._btnRestore(btn); this.renderCampaignHistory();
         }
       },
 
       // ── Launch Campaign (with schedule support) ─────────────────
-      async launchCampaign() {
-        const name     = document.getElementById('va-camp-name')?.value.trim();
+      async launchCampaign(btn) {
+        const name
+        this._btnLoad(btn, 'Launching...');     = document.getElementById('va-camp-name')?.value.trim();
         const scriptId = document.getElementById('va-camp-script')?.value;
         const cpm      = parseInt(document.getElementById('va-camp-cpm')?.value) || 2;
         const raw      = document.getElementById('va-camp-contacts')?.value.trim();
@@ -7951,8 +8102,12 @@ Total Players: ${s.total}`;
           });
           const d = await r.json();
           if (d.status === 'running') {
-            this._addToHistory({ campaign_id, name, contact_count: contacts.length, contacts_raw: raw, script_id: scriptId, launched_at: new Date().toISOString(), scheduled: isScheduled });
+            this._btnRestore(btn);
+        this._addToHistory({ campaign_id, name, contact_count: contacts.length, contacts_raw: raw, script_id: scriptId, launched_at: new Date().toISOString(), scheduled: isScheduled });
             this.renderCampaignHistory();
+            this._trackerOpen = true;
+            document.getElementById('va-tracker-panel').classList.remove('hidden');
+            this.refreshTracker();
             this.refreshCampaigns();
             const badge = document.getElementById('va-scheduled-badge');
             badge.classList.add('hidden');
@@ -7964,18 +8119,529 @@ Total Players: ${s.total}`;
       },
 
       async refreshCampaigns() {
-        // Fetch active campaigns from server
         const container = document.getElementById('va-campaigns-list');
         if (!container) return;
         try {
-          const r = await fetch('https://13.246.211.152:8080/api/voice/status');
-          const d = await r.json();
-          if ((d.active_campaigns || 0) === 0) {
+          const r = await fetch(`${this.serverUrl}/campaign/list`);
+          const campaigns = await r.json();
+          if (!campaigns.length) {
             container.innerHTML = '<div class="text-center text-slate-400 py-8"><i data-lucide="inbox" class="h-8 w-8 mx-auto mb-2 opacity-40"></i><p>No active campaigns</p></div>';
             lucide.createIcons(); return;
           }
-          container.innerHTML = `<p class="text-sm text-slate-600">${d.active_campaigns} campaign(s) running. ${d.active_calls} active calls.</p>`;
+          container.innerHTML = campaigns.map(c => {
+            const pct = c.total > 0 ? Math.round((c.completed / c.total) * 100) : 0;
+            const statusColor = c.status === 'running' ? 'bg-green-100 text-green-700' : c.status === 'stopped' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600';
+            return `<div class="border rounded-lg p-4 mb-3">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded text-xs font-medium ${statusColor}">${c.status}</span>
+                  <span class="text-sm font-medium text-slate-700 truncate max-w-xs">${c.campaign_id}</span>
+                </div>
+                ${c.status === 'running' ? `<button onclick="VA.cancelCampaign('${c.campaign_id}', this)" class="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 flex items-center gap-1"><i data-lucide="square" class="h-3 w-3"></i>Stop</button>` : ''}
+              </div>
+              <div class="flex items-center gap-3 text-xs text-slate-500 mb-2">
+                <span>${c.completed}/${c.total} calls</span>
+                <span>${c.active_calls} active now</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2">
+                <div class="bg-yellow-400 h-2 rounded-full transition-all" style="width:${pct}%"></div>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">${pct}% complete</p>
+            </div>`;
+          }).join('');
+          lucide.createIcons();
         } catch(e) { container.innerHTML = '<p class="text-red-500 text-sm">Could not load campaigns</p>'; }
+      },
+
+      async cancelCampaign(campaign_id, btn) {
+        if (!confirm(`Stop campaign "${campaign_id}"? Active calls will finish but no new calls will be made.`)) return;
+        this._btnLoad(btn, 'Stopping...');
+        try {
+          const r = await fetch(`${this.serverUrl}/campaign/stop/${encodeURIComponent(campaign_id)}`, { method: 'POST' });
+          const d = await r.json();
+          if (d.status === 'stopped') {
+            setTimeout(() => this.refreshCampaigns(), 1000);
+          } else {
+            alert('Error: ' + JSON.stringify(d));
+            this._btnRestore(btn);
+          }
+        } catch(e) {
+          alert('Error: ' + e.message);
+          this._btnRestore(btn);
+        }
+      },
+
+
+      // ── Campaign Tracker ───────────────────────────────────────
+      _trackerPoller: null,
+      _trackerOpen: false,
+
+      showTracker() {
+        document.getElementById('va-tracker-sidebar').classList.remove('hidden');
+      },
+      toggleTracker() {
+        const panel = document.getElementById('va-tracker-panel');
+        this._trackerOpen = !this._trackerOpen;
+        panel.classList.toggle('hidden', !this._trackerOpen);
+        if (this._trackerOpen) this.refreshTracker();
+      },
+      async refreshTracker() {
+        await Promise.all([this._refreshActiveCampaign(), this._refreshDashboard()]);
+      },
+      async _refreshActiveCampaign() {
+        const section = document.getElementById('va-tr-outcomes-section');
+        const content = document.getElementById('va-tr-active-content');
+        const dot = document.getElementById('va-tr-dot');
+        try {
+          const r = await fetch(`${this.serverUrl}/campaign/list`);
+          const campaigns = await r.json();
+          const running = campaigns.filter(c => c.status === 'running');
+          if (!running.length) {
+            dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400';
+            content.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">No campaign running</p>';
+            section.classList.add('hidden');
+            return;
+          }
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse';
+          content.innerHTML = running.map(c => {
+            const pct = c.total > 0 ? Math.round((c.completed / c.total) * 100) : 0;
+            const remaining = c.total - c.completed;
+            const isRetry = c.campaign_id.includes('_retry_');
+            const retryLabel = isRetry ? '<span class="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded font-medium">Auto-retry</span>' : '';
+            return `<div class="mb-3">
+              <p class="text-xs font-medium text-slate-700 truncate mb-1">${c.campaign_id.replace(/_retry_\d+$/,' ↺ Retry')}${retryLabel}</p>
+              <div class="grid grid-cols-3 gap-2 mb-2">
+                <div class="bg-slate-50 rounded-lg p-2 text-center">
+                  <p class="text-lg font-bold text-slate-800">${c.completed}</p>
+                  <p class="text-xs text-slate-500">Done</p>
+                </div>
+                <div class="bg-green-50 rounded-lg p-2 text-center">
+                  <p class="text-lg font-bold text-green-700">${c.active_calls}</p>
+                  <p class="text-xs text-green-600">Active</p>
+                </div>
+                <div class="bg-orange-50 rounded-lg p-2 text-center">
+                  <p class="text-lg font-bold text-orange-700">${remaining}</p>
+                  <p class="text-xs text-orange-600">Left</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="flex-1 bg-slate-100 rounded-full h-2">
+                  <div class="bg-yellow-400 h-2 rounded-full transition-all" style="width:${pct}%"></div>
+                </div>
+                <span class="text-xs font-bold text-slate-600 w-10 text-right">${pct}%</span>
+              </div>
+              <div class="flex gap-2 mt-2">
+                <button onclick="VA.cancelCampaign('${c.campaign_id}', this)" class="flex-1 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100 flex items-center justify-center gap-1">
+                  <i data-lucide="square" class="h-3 w-3"></i>Stop
+                </button>
+              </div>
+            </div>`;
+          }).join('<hr class="my-3">');
+
+          // Also load live outcome counts for active campaigns
+          section.classList.remove('hidden');
+          const outContent = document.getElementById('va-tr-outcomes-content');
+          if (running.length) {
+            const cid = running[0].campaign_id;
+            try {
+              const sr = await fetch(`${this.serverUrl}/campaign/summary/${encodeURIComponent(cid)}`);
+              const sd = await sr.json();
+              const t = sd.totals;
+              const total = sd.total_calls || 1;
+              const outcomes = [
+                {key:'callback', label:'Callbacks', color:'bg-amber-400', text:'text-amber-700'},
+                {key:'take_action', label:'Take Action', color:'bg-emerald-500', text:'text-emerald-700'},
+                {key:'no_action', label:'No Action', color:'bg-slate-400', text:'text-slate-600'},
+                {key:'no_answer', label:'No Answer', color:'bg-orange-400', text:'text-orange-700'},
+                {key:'blacklist', label:'Blacklisted', color:'bg-red-500', text:'text-red-700'},
+              ];
+              outContent.innerHTML = outcomes.map(o => {
+                const n = t[o.key] || 0;
+                const pct = total > 0 ? Math.round((n/total)*100) : 0;
+                return `<div class="flex items-center gap-2 mb-2">
+                  <span class="text-xs ${o.text} w-20 flex-shrink-0">${o.label}</span>
+                  <div class="flex-1 bg-slate-100 rounded-full h-1.5">
+                    <div class="${o.color} h-1.5 rounded-full" style="width:${pct}%"></div>
+                  </div>
+                  <span class="text-xs font-bold text-slate-700 w-6 text-right">${n}</span>
+                </div>`;
+              }).join('');
+            } catch(e) {}
+          }
+          lucide.createIcons();
+        } catch(e) {
+          content.innerHTML = '<p class="text-red-400 text-xs">Error loading</p>';
+        }
+      },
+      async _refreshDashboard() {
+        const el = document.getElementById('va-tr-dashboard-content');
+        const hist = this._getCampaignHistory();
+        if (!hist.length) {
+          el.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">No campaigns yet</p>';
+          return;
+        }
+        // Fetch summaries for last 5 campaigns
+        const recent = hist.slice(0, 5);
+        el.innerHTML = '<div class="animate-pulse text-xs text-slate-400 text-center py-2">Loading...</div>';
+        try {
+          const summaries = await Promise.all(recent.map(async h => {
+            try {
+              const r = await fetch(`${this.serverUrl}/campaign/summary/${encodeURIComponent(h.campaign_id)}`);
+              const d = await r.json();
+              return { ...h, ...d };
+            } catch(e) { return { ...h, total_calls: 0, totals: {} }; }
+          }));
+          el.innerHTML = summaries.map((s, i) => {
+            const positive = (s.totals?.callback||0) + (s.totals?.take_action||0);
+            const total = s.total_calls || s.contact_count || 1;
+            const rate = total > 0 ? Math.round((positive/total)*100) : 0;
+            const dt = new Date(s.launched_at);
+            return `<div class="mb-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100" onclick="VA.openCampaignReview('${s.campaign_id}', ${i})">
+              <div class="flex items-start justify-between gap-2 mb-1">
+                <p class="text-xs font-semibold text-slate-700 truncate flex-1">${s.name}</p>
+                <span class="text-xs font-bold text-emerald-600 flex-shrink-0">${rate}%</span>
+              </div>
+              <p class="text-xs text-slate-400 mb-1.5">${s.contact_count} contacts · ${dt.toLocaleDateString()}</p>
+              <div class="grid grid-cols-4 gap-1 text-center">
+                <div><p class="text-sm font-bold text-amber-600">${s.totals?.callback||0}</p><p class="text-xs text-slate-400">CB</p></div>
+                <div><p class="text-sm font-bold text-emerald-600">${s.totals?.take_action||0}</p><p class="text-xs text-slate-400">TA</p></div>
+                <div><p class="text-sm font-bold text-orange-500">${s.totals?.no_answer||0}</p><p class="text-xs text-slate-400">NA</p></div>
+                <div><p class="text-sm font-bold text-slate-500">${s.totals?.no_action||0}</p><p class="text-xs text-slate-400">NX</p></div>
+              </div>
+              <div class="w-full bg-slate-200 rounded-full h-1 mt-2">
+                <div class="bg-emerald-500 h-1 rounded-full" style="width:${rate}%"></div>
+              </div>
+            </div>`;
+          }).join('');
+          lucide.createIcons();
+        } catch(e) {
+          el.innerHTML = '<p class="text-red-400 text-xs text-center">Error loading</p>';
+        }
+      },
+      startTrackerPolling() {
+        this.showTracker();
+        if (this._trackerPoller) clearInterval(this._trackerPoller);
+        this._trackerPoller = setInterval(() => {
+          if (this._trackerOpen) this.refreshTracker();
+          // Auto-open if a campaign starts
+          fetch(`${this.serverUrl}/campaign/list`).then(r=>r.json()).then(campaigns => {
+            if (campaigns.some(c=>c.status==='running')) {
+              this.showTracker();
+              if (!this._trackerOpen) {
+                this._trackerOpen = true;
+                document.getElementById('va-tracker-panel').classList.remove('hidden');
+                this.refreshTracker();
+              }
+            }
+          }).catch(()=>{});
+        }, 5000);
+      },
+
+      // ── Transcript Store ───────────────────────────────────────
+      _TRANSCRIPT_KEY: 'va_transcripts_v1',
+      _activeTranscriptWs: null,
+      _currentTranscriptCallId: null,
+      _monitorPoller: null,
+
+      _loadTranscriptStore() {
+        try { return JSON.parse(localStorage.getItem(this._TRANSCRIPT_KEY) || '{}'); } catch(e) { return {}; }
+      },
+      _saveTranscriptStore(store) {
+        localStorage.setItem(this._TRANSCRIPT_KEY, JSON.stringify(store));
+      },
+      saveTranscript(callId, phone, messages, status, keep=false) {
+        const store = this._loadTranscriptStore();
+        const existing = store[callId] || {};
+        store[callId] = {
+          call_id: callId,
+          phone,
+          messages,
+          status,
+          keep: keep || existing.keep || false,
+          started_at: existing.started_at || new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        this._saveTranscriptStore(store);
+      },
+      clearExpiredTranscripts(force=false) {
+        const store = this._loadTranscriptStore();
+        const now = Date.now();
+        const ttl = 24 * 60 * 60 * 1000;
+        let changed = false;
+        for (const id of Object.keys(store)) {
+          const t = store[id];
+          if (force && !t.keep) { delete store[id]; changed = true; continue; }
+          if (!t.keep && now - new Date(t.updated_at).getTime() > ttl) {
+            delete store[id]; changed = true;
+          }
+        }
+        if (changed) this._saveTranscriptStore(store);
+        this.renderRecentCalls();
+      },
+      renderRecentCalls() {
+        const grid = document.getElementById('va-recent-calls-grid');
+        if (!grid) return;
+        const store = this._loadTranscriptStore();
+        const entries = Object.values(store).sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at));
+        if (!entries.length) {
+          grid.innerHTML = '<p class="text-slate-400 text-sm col-span-2 text-center py-4">No recent calls stored yet.</p>';
+          return;
+        }
+        grid.innerHTML = entries.map(t => {
+          const turns = t.messages.filter(m=>m.role==='user').length;
+          const last = [...t.messages].reverse().find(m=>m.role==='assistant')?.content || '';
+          const ago = this._timeAgo(t.updated_at);
+          const statusColor = t.status === 'ended' ? 'bg-slate-100 text-slate-600' : 'bg-green-100 text-green-700';
+          const keepBadge = t.keep ? '<span class="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded font-medium">Kept</span>' : '';
+          return `<div class="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow border border-slate-100" onclick="VA.openTranscriptModal('${t.call_id}','${t.phone}',false)">
+            <div class="p-3 flex items-center justify-between border-b">
+              <span class="font-mono font-bold text-slate-800">${t.phone}</span>
+              <div class="flex items-center gap-2">
+                ${keepBadge}
+                <span class="px-2 py-0.5 ${statusColor} rounded text-xs font-medium">${t.status}</span>
+              </div>
+            </div>
+            <div class="p-3">
+              ${last ? `<p class="text-xs text-slate-600 italic truncate">"${last.substring(0,80)}"</p>` : '<p class="text-xs text-slate-400">No messages</p>'}
+              <p class="text-xs text-slate-400 mt-1.5" title="${t.updated_at ? new Date(t.updated_at).toLocaleString() : ''}">${turns} turns · ${ago}</p>
+            </div>
+          </div>`;
+        }).join('');
+        lucide.createIcons();
+      },
+      _timeAgo(iso) {
+        const diff = Date.now() - new Date(iso).getTime();
+        if (diff < 60000) return 'just now';
+        if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+        if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+        return Math.floor(diff/86400000) + 'd ago';
+      },
+
+      openTranscriptModal(callId, phone, isLive) {
+        this._currentTranscriptCallId = callId;
+        const modal = document.getElementById('va-transcript-modal');
+        const phoneEl = document.getElementById('va-tm-phone');
+        const statusEl = document.getElementById('va-tm-status');
+        const dot = document.getElementById('va-tm-dot');
+        const keepChk = document.getElementById('va-tm-keep');
+        const transcriptDiv = document.getElementById('va-tm-transcript');
+
+        phoneEl.textContent = phone;
+        modal.classList.remove('hidden');
+
+        // Load existing stored transcript
+        const store = this._loadTranscriptStore();
+        const stored = store[callId];
+        if (keepChk) keepChk.checked = stored?.keep || false;
+
+        const renderMessages = (msgs) => {
+          if (!msgs || !msgs.length) return '<p class="text-slate-400 text-sm text-center py-8">No messages yet.</p>';
+          return msgs.map(m => {
+            const isAgent = m.role === 'assistant' || m.role === 'agent';
+            return `<div class="flex gap-2 ${isAgent ? 'flex-row-reverse' : ''}">
+              <div class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 ${isAgent ? 'bg-yellow-400 text-black' : 'bg-slate-200 text-slate-700'}">${isAgent ? 'A' : 'C'}</div>
+              <div class="max-w-xs lg:max-w-sm px-3 py-2 rounded-2xl text-sm ${isAgent ? 'bg-yellow-50 border border-yellow-200 text-slate-800' : 'bg-slate-100 text-slate-800'}">${m.content}</div>
+            </div>`;
+          }).join('');
+        };
+
+        if (!isLive) {
+          // Show stored transcript only
+          const msgs = stored?.messages || [];
+          transcriptDiv.innerHTML = renderMessages(msgs);
+          transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+          const _tdt = stored?.updated_at ? new Date(stored.updated_at) : null;
+          const _tfull = _tdt ? _tdt.toLocaleDateString([],{day:'2-digit',month:'short',year:'numeric'}) + ' · ' + _tdt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+          statusEl.textContent = stored ? `${stored.status} · ${_tfull}` : 'Not found';
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400';
+          return;
+        }
+
+        // Live call — connect WebSocket
+        statusEl.textContent = 'Connecting...';
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse';
+
+        // Seed with any already-stored messages
+        const seedMsgs = stored?.messages || [];
+        transcriptDiv.innerHTML = renderMessages(seedMsgs);
+        transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+
+        if (this._activeTranscriptWs) { try { this._activeTranscriptWs.close(); } catch(e){} }
+
+        const wsBase = this.serverUrl.replace('https://','wss://').replace('http://','ws://').replace('/api','');
+        const ws = new WebSocket(`${wsBase}/ws/live/${callId}`);
+        this._activeTranscriptWs = ws;
+        const liveMessages = [...seedMsgs];
+
+        ws.onmessage = (e) => {
+          const msg = JSON.parse(e.data);
+          if (msg.type === 'call_info') {
+            dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse';
+            statusEl.textContent = '📞 Ringing...';
+          } else if (msg.type === 'transcript_final') {
+            liveMessages.push({role:'user', content: msg.text});
+            transcriptDiv.innerHTML = renderMessages(liveMessages);
+            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+            dot.className = 'w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse';
+            statusEl.textContent = '🎙️ Live';
+            this.saveTranscript(callId, phone, liveMessages, 'active', keepChk?.checked);
+          } else if (msg.type === 'agent_response') {
+            liveMessages.push({role:'assistant', content: msg.text});
+            transcriptDiv.innerHTML = renderMessages(liveMessages);
+            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+            this.saveTranscript(callId, phone, liveMessages, 'active', keepChk?.checked);
+          } else if (msg.type === 'call_ended') {
+            dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400';
+            statusEl.textContent = '✅ Call ended · ' + (msg.outcome ? msg.outcome.replace(/_/g,' ') : '');
+            this.saveTranscript(callId, phone, liveMessages, 'ended', keepChk?.checked);
+            this.renderRecentCalls();
+          }
+        };
+        ws.onopen = () => { statusEl.textContent = 'Connected · waiting for call events...'; };
+        ws.onerror = () => { statusEl.textContent = '⚠️ Connection error'; dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500'; };
+        ws.onclose = () => { if (statusEl.textContent.includes('Live')) { dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400'; statusEl.textContent = 'Disconnected'; } };
+      },
+
+      closeTranscriptModal() {
+        document.getElementById('va-transcript-modal').classList.add('hidden');
+        if (this._activeTranscriptWs) { try { this._activeTranscriptWs.close(); } catch(e){} this._activeTranscriptWs = null; }
+        this._currentTranscriptCallId = null;
+      },
+
+      toggleKeepTranscript() {
+        const id = this._currentTranscriptCallId;
+        if (!id) return;
+        const keep = document.getElementById('va-tm-keep')?.checked;
+        const store = this._loadTranscriptStore();
+        if (store[id]) { store[id].keep = keep; this._saveTranscriptStore(store); }
+        this.renderRecentCalls();
+      },
+
+      async openCampaignReview(campaignId, histIdx, btn) {
+        this._btnLoad(btn, 'Loading...');
+        const modal = document.getElementById('va-campaign-review-modal');
+        const body = document.getElementById('va-cr-body');
+        const title = document.getElementById('va-cr-title');
+        const subtitle = document.getElementById('va-cr-subtitle');
+        modal.classList.remove('hidden');
+        body.innerHTML = '<div class="text-center py-12 text-slate-400"><div class="animate-spin h-8 w-8 border-2 border-slate-300 border-t-slate-700 rounded-full mx-auto mb-3"></div>Loading campaign data...</div>';
+        lucide.createIcons();
+
+        const hist = this._getCampaignHistory();
+        const h = hist[histIdx] || {};
+        title.textContent = h.name || campaignId;
+        subtitle.textContent = campaignId + (h.launched_at ? ' · ' + new Date(h.launched_at).toLocaleString() : '');
+
+        try {
+          const r = await fetch(`${this.serverUrl}/campaign/summary/${encodeURIComponent(campaignId)}`);
+          const d = await r.json();
+          const t = d.totals;
+          const total = d.total_calls || 1;
+
+          const pct = (n) => total > 0 ? Math.round((n/total)*100) : 0;
+          const bar = (n, color) => `<div class="w-full bg-slate-100 rounded-full h-2 mt-1"><div class="${color} h-2 rounded-full" style="width:${pct(n)}%"></div></div>`;
+
+          const statCards = [
+            { label:'Total Calls', value: total, color:'bg-slate-700', icon:'phone' },
+            { label:'Callbacks', value: t.callback, color:'bg-amber-500', icon:'phone-incoming' },
+            { label:'Take Action', value: t.take_action, color:'bg-emerald-600', icon:'zap' },
+            { label:'No Action', value: t.no_action, color:'bg-slate-500', icon:'minus-circle' },
+            { label:'No Answer', value: t.no_answer, color:'bg-orange-500', icon:'phone-missed' },
+            { label:'Blacklisted', value: t.blacklist, color:'bg-red-600', icon:'ban' },
+          ].map(s => `<div class="bg-white border rounded-xl p-4 text-center">
+            <div class="w-8 h-8 ${s.color} rounded-full flex items-center justify-center mx-auto mb-2">
+              <i data-lucide="${s.icon}" class="h-4 w-4 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-slate-800">${s.value}</p>
+            <p class="text-xs text-slate-500 mt-0.5">${s.label}</p>
+            ${s.label !== 'Total Calls' ? `<p class="text-xs text-slate-400 mt-1">${pct(s.value)}%</p>` + bar(s.value, s.color) : ''}
+          </div>`).join('');
+
+          // Attempt breakdown badge
+          const abd = d.attempt_breakdown || {};
+          const attemptHtml = Object.keys(abd).length > 1 ? `
+            <div class="mb-5 p-3 bg-blue-50 border border-blue-200 rounded-xl flex flex-wrap items-center gap-4">
+              <span class="text-xs font-semibold text-blue-700 uppercase tracking-wider">Retry Attempts</span>
+              ${Object.entries(abd).sort((a,b)=>a[0]-b[0]).map(([attempt, count]) =>
+                `<div class="flex items-center gap-1.5">
+                  <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">${attempt}</span>
+                  <span class="text-sm font-medium text-blue-800">${count} call${count>1?'s':''}</span>
+                </div>`
+              ).join('')}
+              <span class="text-xs text-blue-500 ml-auto">Auto-retries included</span>
+            </div>` : '';
+
+          // Outcome breakdown table with call records
+          const outcomeConfig = [
+            { key:'callback', label:'Callbacks', color:'text-amber-600', bg:'bg-amber-50' },
+            { key:'take_action', label:'Take Action', color:'text-emerald-600', bg:'bg-emerald-50' },
+            { key:'blacklist', label:'Blacklisted', color:'text-red-600', bg:'bg-red-50' },
+            { key:'no_action', label:'No Action', color:'text-slate-600', bg:'bg-slate-50' },
+            { key:'no_answer', label:'No Answer', color:'text-orange-600', bg:'bg-orange-50' },
+          ];
+
+          const tables = outcomeConfig.map(oc => {
+            const recs = d.records[oc.key] || [];
+            if (!recs.length) return '';
+            const rows = recs.map(r => {
+              const _rdt = r.created_at ? new Date(r.created_at) : null;
+              const date = _rdt ? _rdt.toLocaleDateString([],{day:'2-digit',month:'short'}) + ' ' + _rdt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+              const detail = r.bonus_details || r.callback_reason || r.blacklist_reason || r.summary?.substring(0,60) || '-';
+              return `<tr class="border-b hover:bg-slate-50 cursor-pointer" onclick="VA.viewOutcomeDetail('${r.id}', this)">
+                <td class="px-3 py-2 font-mono text-sm font-medium text-slate-800">${r.phone_number}</td>
+                <td class="px-3 py-2 text-xs text-slate-600 max-w-xs truncate">${detail}</td>
+                <td class="px-3 py-2 text-xs text-slate-400 hidden sm:table-cell">${date}</td>
+                <td class="px-3 py-2 text-center"><i data-lucide="eye" class="h-3.5 w-3.5 text-blue-500 inline"></i></td>
+              </tr>`;
+            }).join('');
+            return `<div class="mb-5">
+              <h4 class="font-semibold ${oc.color} mb-2 flex items-center gap-2">
+                <span class="px-2 py-0.5 ${oc.bg} rounded text-xs">${oc.label}</span>
+                <span class="text-slate-400 font-normal text-sm">${recs.length} calls · ${pct(recs.length)}%</span>
+              </h4>
+              <div class="overflow-x-auto rounded-lg border">
+                <table class="w-full text-sm">
+                  <thead class="bg-slate-50 border-b"><tr>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500">Phone</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500">Detail</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 hidden sm:table-cell">Date</th>
+                    <th class="px-3 py-2 text-xs font-semibold text-slate-500"></th>
+                  </tr></thead>
+                  <tbody>${rows}</tbody>
+                </table>
+              </div>
+            </div>`;
+          }).join('');
+
+          // Re-run actions
+          const actions = `<div class="flex flex-wrap gap-2 mt-4 pt-4 border-t">
+            <button onclick="VA.reRunCampaign(${histIdx}); document.getElementById('va-campaign-review-modal').classList.add('hidden')" class="px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-lg hover:bg-slate-700 flex items-center gap-2"><i data-lucide="repeat" class="h-4 w-4"></i>Re-run All</button>
+            <button onclick="VA.reRunNoAnswer(${histIdx}, this); document.getElementById('va-campaign-review-modal').classList.add('hidden')" class="px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 flex items-center gap-2"><i data-lucide="phone-missed" class="h-4 w-4"></i>Retry No-Answer</button>
+          </div>`;
+
+          body.innerHTML = `
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">${statCards}</div>
+            ${attemptHtml}
+            <hr class="mb-5">
+            ${tables}
+            ${actions}
+          `;
+          lucide.createIcons();
+          this._btnRestore(btn);
+        } catch(e) {
+          this._btnRestore(btn);
+          body.innerHTML = `<p class="text-red-500 text-sm p-4">Error loading campaign data: ${e.message}</p>`;
+        }
+      },
+
+      deleteTranscript() {
+        const id = this._currentTranscriptCallId;
+        if (!id || !confirm('Delete this transcript?')) return;
+        const store = this._loadTranscriptStore();
+        delete store[id];
+        this._saveTranscriptStore(store);
+        this.closeTranscriptModal();
+        this.renderRecentCalls();
       },
 
       // ── Script Library ─────────────────────────────────────────
@@ -8160,8 +8826,9 @@ Total Players: ${s.total}`;
         } catch(e) { alert('Preview error: ' + e.message); }
       },
 
-      async saveScript() {
-        const payload = this.getBuilderPayload();
+      async saveScript(btn) {
+
+        this._btnLoad(btn, 'Saving...');        const payload = this.getBuilderPayload();
         if (!payload.name) return alert('Please enter a script name');
         if (this.currentBuilderMode === 'freewrite' && !payload.freewrite_content) return alert('Please write your script content');
         if (this.currentBuilderMode === 'guided' && !payload.company_name) return alert('Please enter a company name');
@@ -8248,8 +8915,9 @@ Total Players: ${s.total}`;
         });
       },
 
-      loadDefaultFillers() {
-        this.pendingFillers = [
+      loadDefaultFillers(btn) {
+
+        this._btnLoad(btn, 'Loading...');        this.pendingFillers = [
           { phrase: 'Uhmmm,',                    category: 'neutral',  active: true },
           { phrase: 'Okay so,',                  category: 'neutral',  active: true },
           { phrase: 'Soooo,',                    category: 'neutral',  active: true },
@@ -8266,7 +8934,7 @@ Total Players: ${s.total}`;
         this.renderFillerList();
       },
 
-      addFiller() {
+      addFiller(btn) {
         const phraseEl = document.getElementById('new-filler-phrase');
         const catEl = document.getElementById('new-filler-cat');
         const phrase = (phraseEl?.value || '').trim();
@@ -8314,8 +8982,9 @@ Total Players: ${s.total}`;
         } catch(e) { console.warn('loadFillers error', e); }
       },
 
-      async saveFillers(scriptId) {
-        if (!scriptId) return;
+      async saveFillers(scriptId, btn) {
+
+        this._btnLoad(btn, 'Saving...');        if (!scriptId) return;
         try {
           // 1. Wipe existing fillers for this script
           await fetch('https://13.246.211.152:8080/api/fillers/script/' + scriptId, { method: 'DELETE' });
@@ -8553,14 +9222,22 @@ Total Players: ${s.total}`;
           }
           dot.className = 'w-3 h-3 rounded-full bg-green-500 animate-pulse';
           status.textContent = `${calls.length} active call${calls.length>1?'s':''}`;
+          // Seed transcript store for any new active calls
+          calls.forEach(c => {
+            const store = this._loadTranscriptStore();
+            if (!store[c.call_id]) this.saveTranscript(c.call_id, c.phone_number, c.transcript || [], 'active');
+          });
           grid.innerHTML = calls.map(c => {
             const turns = c.transcript?.filter(m=>m.role==='user').length || 0;
             const statusColor = {ringing:'bg-amber-100 text-amber-800', talking:'bg-green-100 text-green-800', initiating:'bg-blue-100 text-blue-800'}[c.status]||'bg-slate-100 text-slate-600';
             const lastMsg = c.transcript?.filter(m=>m.role==='assistant').pop()?.content || '';
-            return `<div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            return `<div class="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow" onclick="VA.openTranscriptModal('${c.call_id}','${c.phone_number}',true)">
               <div class="p-3 flex items-center justify-between border-b">
                 <span class="font-mono font-bold text-slate-800">${c.phone_number}</span>
-                <span class="px-2 py-0.5 ${statusColor} rounded text-xs font-medium">${c.status}</span>
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 ${statusColor} rounded text-xs font-medium">${c.status}</span>
+                  <span class="text-xs text-blue-500 flex items-center gap-1"><i data-lucide="eye" class="h-3 w-3"></i>Live</span>
+                </div>
               </div>
               <div class="p-3 text-sm">
                 ${lastMsg ? `<div class="bg-yellow-50 rounded-lg p-2 text-slate-700 text-xs italic">"${lastMsg}"</div>` : '<p class="text-slate-400 text-xs">Connecting...</p>'}
@@ -8574,17 +9251,18 @@ Total Players: ${s.total}`;
 
       // ── Outcome Lists ──────────────────────────────────────────
       async loadOutcomeCounts() {
-        const lists = ['callback','take_action','blacklist'];
+        const lists = ['callback','take_action','blacklist','no_action','no_answer'];
         for (const l of lists) {
           try {
             const endpoint = l === 'blacklist' ? '/api/outcomes/blacklist_list?limit=500' : `/api/outcomes/${l}?actioned=false&limit=500`;
-            const r = await fetch('https://13.246.211.152:8080/api/' + endpoint.replace(/^\/api\//,''));
+            const r = await fetch(`${this.serverUrl}/${endpoint.replace(/^\/api\//,'')}`);
             const d = await r.json();
             const count = Array.isArray(d) ? d.length : 0;
             const countEl = document.getElementById(`va-ol-count-${l}`);
             if (countEl) countEl.textContent = count;
           } catch(e) {}
         }
+        this._btnRestore(btn);
         this.loadOutcomeList();
         // Update badge
         try {
@@ -8603,13 +9281,14 @@ Total Players: ${s.total}`;
           b.classList.remove('bg-amber-500','bg-emerald-600','bg-red-600','bg-slate-800','text-white');
           b.classList.add('text-slate-500','hover:bg-slate-100');
         });
-        const colors = {callback:'bg-amber-500',take_action:'bg-emerald-600',blacklist:'bg-red-600'};
+        const colors = {callback:'bg-amber-500',take_action:'bg-emerald-600',blacklist:'bg-red-600',no_action:'bg-slate-700',no_answer:'bg-orange-500'};
         const tab = document.getElementById('va-ol-tab-' + list);
         if (tab) { tab.classList.add(colors[list]||'bg-slate-800','text-white'); tab.classList.remove('text-slate-500','hover:bg-slate-100'); }
         this.loadOutcomeList();
       },
 
-      async loadOutcomeList() {
+      async loadOutcomeList(btn) {
+        this._btnLoad(btn, 'Loading...');
         const list = this.currentOutcomeList;
         const actioned = document.getElementById('va-ol-filter-actioned')?.value;
         const container = document.getElementById('va-outcome-list-content');
@@ -8617,8 +9296,8 @@ Total Players: ${s.total}`;
         container.innerHTML = '<div class="bg-white rounded-xl p-8 text-center text-slate-400"><div class="animate-spin h-8 w-8 border-2 border-slate-300 border-t-slate-700 rounded-full mx-auto mb-3"></div><p>Loading...</p></div>';
         try {
           let url;
-          if (list === 'blacklist') url = `${this.apiBase}/outcomes/blacklist_list?limit=100`;
-          else url = `${this.apiBase}/outcomes/${list}?limit=100${actioned !== '' ? '&actioned='+actioned : ''}`;
+          if (list === 'blacklist') url = `${this.serverUrl}/outcomes/blacklist_list?limit=500`;
+          else url = `${this.serverUrl}/outcomes/${list}?limit=500${actioned !== '' ? '&actioned='+actioned : ''}`;
           const r = await fetch(url);
           const records = await r.json();
           document.getElementById('va-ol-showing').textContent = records.length;
@@ -8628,12 +9307,16 @@ Total Players: ${s.total}`;
           }
           const rows = records.map(r => this.renderOutcomeRow(r, list)).join('');
           container.innerHTML = `<div class="bg-white rounded-xl shadow-sm overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-slate-50 border-b"><tr><th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Phone</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Summary</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 hidden md:table-cell">Details</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 hidden lg:table-cell">Date</th><th class="px-4 py-3 text-center text-xs font-semibold text-slate-600">Actions</th></tr></thead><tbody id="va-ol-tbody">${rows}</tbody></table></div></div>`;
+          this._btnRestore(btn);
           lucide.createIcons();
-        } catch(e) { container.innerHTML = `<div class="bg-red-50 rounded-xl p-4 text-red-700">Error: ${e.message}</div>`; }
+        } catch(e) { this._btnRestore(btn); container.innerHTML = `<div class="bg-red-50 rounded-xl p-4 text-red-700">Error: ${e.message}</div>`; }
       },
 
       renderOutcomeRow(r, list) {
-        const date = r.created_at ? new Date(r.created_at).toLocaleDateString() : '';
+        const _dt = r.created_at ? new Date(r.created_at) : null;
+        const date = _dt ? _dt.toLocaleDateString([], {day:'2-digit',month:'short',year:'numeric'}) : '';
+        const time = _dt ? _dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+        const dateHtml = _dt ? `<span class="block">${date}</span><span class="block text-slate-300">${time}</span>` : '-';
         const doneBg = r.actioned ? 'bg-slate-50 opacity-60' : '';
         let detailHtml = '';
         if (list === 'take_action' && r.bonus_details) detailHtml = `<span class="text-emerald-700 font-medium text-xs">${r.bonus_details}</span>`;
@@ -8646,18 +9329,19 @@ Total Players: ${s.total}`;
           <td class="px-4 py-3 font-mono font-medium text-slate-800">${r.phone_number}</td>
           <td class="px-4 py-3 text-slate-600 max-w-xs">${r.summary ? r.summary.substring(0,100)+(r.summary.length>100?'...':'') : '-'}</td>
           <td class="px-4 py-3 hidden md:table-cell">${detailHtml || '-'}</td>
-          <td class="px-4 py-3 text-slate-400 text-xs hidden lg:table-cell">${date}</td>
+          <td class="px-4 py-3 text-slate-400 text-xs hidden lg:table-cell">${dateHtml}</td>
           <td class="px-4 py-3">
             <div class="flex items-center justify-center gap-1">
-              <button onclick="VA.viewOutcomeDetail('${r.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="View Details"><i data-lucide="eye" class="h-3.5 w-3.5"></i></button>
-              ${!r.actioned ? `<button onclick="VA.markOneDone('${r.id}')" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded" title="Mark Done"><i data-lucide="check" class="h-3.5 w-3.5"></i></button>` : ''}
+              <button onclick="VA.viewOutcomeDetail('${r.id}', this)" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="View Details"><i data-lucide="eye" class="h-3.5 w-3.5"></i></button>
+              ${!r.actioned ? `<button onclick="VA.markOneDone('${r.id}', this)" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded" title="Mark Done"><i data-lucide="check" class="h-3.5 w-3.5"></i></button>` : ''}
               <button onclick="VA.showReclassifyMenu('${r.id}', event)" class="p-1.5 text-slate-500 hover:bg-slate-100 rounded" title="Move to..."><i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></button>
             </div>
           </td>
         </tr>`;
       },
 
-      async viewOutcomeDetail(id) {
+      async viewOutcomeDetail(id, btn) {
+        this._btnLoad(btn, '...');
         try {
           const r = await fetch(`https://13.246.211.152:8080/api/outcomes/${id}`);
           const record = await r.json();
@@ -8665,7 +9349,7 @@ Total Players: ${s.total}`;
           if (!record) return;
           const modal = document.getElementById('va-outcome-modal');
           const content = document.getElementById('va-outcome-modal-content');
-          const ocMap = {callback:'🔔 Callback',take_action:'⚡ Take Action',blacklist_soft:'🔕 Soft Blacklist',blacklist_hard:'🚫 Hard Blacklist',no_action:'✅ No Action'};
+          const ocMap = {callback:'🔔 Callback',take_action:'⚡ Take Action',blacklist_soft:'🔕 Soft Blacklist',blacklist_hard:'🚫 Hard Blacklist',no_action:'➖ No Action',no_answer:'📵 No Answer'};
           const transcript = (record.full_transcript||[]).map(m => `<div class="mb-2"><span class="text-xs font-bold ${m.role==='agent'?'text-yellow-600':'text-slate-500'}">${m.role==='agent'?'🤖 Agent':'👤 Customer'}</span><p class="mt-0.5 text-sm ${m.role==='agent'?'bg-yellow-50':'bg-slate-50'} rounded-lg p-2">${m.content}</p></div>`).join('');
           content.innerHTML = `
             <div class="grid grid-cols-2 gap-4 mb-5">
@@ -8673,6 +9357,7 @@ Total Players: ${s.total}`;
               <div><p class="text-xs text-slate-500">Outcome</p><p class="font-bold">${ocMap[record.outcome]||record.outcome}</p></div>
               <div><p class="text-xs text-slate-500">Success</p><p>${record.success?'✅ Yes':'❌ No'}</p></div>
               <div><p class="text-xs text-slate-500">Duration</p><p>${record.call_duration ? record.call_duration+'s' : '-'}</p></div>
+              <div class="col-span-2 border-t pt-3 mt-1"><p class="text-xs text-slate-500 mb-1">Call Time</p><p class="font-medium text-slate-700">${record.created_at ? new Date(record.created_at).toLocaleDateString([],{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) + ' &nbsp;·&nbsp; ' + new Date(record.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : 'Unknown'}</p></div>
               ${record.bonus_details?`<div class="col-span-2"><p class="text-xs text-slate-500">Bonus Details</p><p class="font-medium text-emerald-700">${record.bonus_details}</p></div>`:''}
               ${record.callback_reason?`<div class="col-span-2"><p class="text-xs text-slate-500">Callback Reason</p><p class="text-amber-700">${record.callback_reason}</p></div>`:''}
               ${record.non_english?`<div class="col-span-2 p-2 bg-orange-50 rounded"><p class="text-orange-700 text-sm">⚠️ Non-English: ${record.language_detected}</p></div>`:''}
@@ -8680,12 +9365,13 @@ Total Players: ${s.total}`;
             ${record.summary?`<div class="mb-4 p-3 bg-slate-50 rounded-lg"><p class="text-xs text-slate-500 mb-1">Summary</p><p class="text-sm">${record.summary}</p></div>`:''}
             ${transcript?`<div class="mb-4"><p class="text-xs text-slate-500 mb-2 font-semibold">Full Transcript</p><div class="max-h-80 overflow-y-auto border rounded-lg p-3">${transcript}</div></div>`:''}
             <div class="flex gap-2">
-              ${!record.actioned?`<button onclick="VA.markOneDone('${record.id}'); document.getElementById('va-outcome-modal').style.display='none';" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">✅ Mark Done</button>`:''}
+              ${!record.actioned?`<button onclick="VA.markOneDone('${record.id}', this); document.getElementById('va-outcome-modal').style.display='none';" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">✅ Mark Done</button>`:''}
               <button onclick="VA.showReclassifyMenu('${record.id}', null, true)" class="flex-1 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700">↗️ Move to...</button>
             </div>
           `;
           modal.classList.remove('hidden');
-        } catch(e) { alert('Error: ' + e.message); }
+        } catch(e) { this._btnRestore(btn); alert('Error: ' + e.message); }
+        this._btnRestore(btn);
       },
 
       showReclassifyMenu(id, event, inModal=false) {
@@ -8710,7 +9396,8 @@ Total Players: ${s.total}`;
         } catch(e) { alert('Error: ' + e.message); }
       },
 
-      async markOneDone(id) {
+      async markOneDone(id, btn) {
+        this._btnLoad(btn, '...');
         try {
           await fetch('https://13.246.211.152:8080/api/outcomes/' + id, {
             method:'PATCH', headers:{'Content-Type':'application/json'},
@@ -8720,8 +9407,9 @@ Total Players: ${s.total}`;
         } catch(e) { alert('Error: ' + e.message); }
       },
 
-      async markAllDone() {
-        if (!confirm(`Mark ALL ${this.currentOutcomeList} records as done?`)) return;
+      async markAllDone(btn) {
+
+        this._btnLoad(btn, 'Marking done...');        if (!confirm(`Mark ALL ${this.currentOutcomeList} records as done?`)) return;
         const lists = this.currentOutcomeList === 'blacklist' ? ['blacklist_soft','blacklist_hard'] : [this.currentOutcomeList];
         for (const l of lists) {
           try {
@@ -8751,8 +9439,9 @@ Total Players: ${s.total}`;
         } catch(e) {}
       },
 
-      async updateVoice() {
-        const voiceId = document.getElementById('va-settings-voiceid').value.trim();
+      async updateVoice(btn) {
+
+        this._btnLoad(btn, 'Updating...');        const voiceId = document.getElementById('va-settings-voiceid').value.trim();
         if (!voiceId) return alert('Enter a Voice ID');
         if (!confirm(`Update voice to "${voiceId}"?.`)) return;
         try {
@@ -8784,8 +9473,9 @@ Total Players: ${s.total}`;
         } catch(e) {}
       },
 
-      async saveSettings() {
-        const data = {
+      async saveSettings(btn) {
+
+        this._btnLoad(btn, 'Saving...');        const data = {
           max_concurrent_calls: parseInt(document.getElementById('va-set-maxcalls').value),
           call_timeout: parseInt(document.getElementById('va-set-timeout').value),
           max_turns: parseInt(document.getElementById('va-set-maxturns').value),
@@ -8801,8 +9491,9 @@ Total Players: ${s.total}`;
         } catch(e) { alert('Error: ' + e.message); }
       },
 
-      async testServerConnection() {
-        const url = document.getElementById('va-server-url').value;
+      async testServerConnection(btn) {
+
+        this._btnLoad(btn, 'Testing...');        const url = document.getElementById('va-server-url').value;
         this.serverUrl = url;
         localStorage.setItem('va_server_url', url);
         const result = document.getElementById('va-conn-result');
@@ -8823,8 +9514,9 @@ Total Players: ${s.total}`;
       },
 
       // ── Voice Picker ────────────────────────────────────────────
-      async loadVoices(context) {
-        // context = 'sb' (script builder) or 'settings'
+      async loadVoices(context, btn) {
+
+        this._btnLoad(btn, 'Loading voices...');        // context = 'sb' (script builder) or 'settings'
         const pickerId = context === 'sb' ? 'va-sb-voicepick' : 'va-settings-voicepick';
         const picker = document.getElementById(pickerId);
         if (!picker) return;
@@ -8860,8 +9552,9 @@ Total Players: ${s.total}`;
       // ── Run Campaign from Outcome List ──────────────────────────
       cachedOutcomeRecords: [],
 
-      async runCampaignFromList() {
-        const list = this.currentOutcomeList;
+      async runCampaignFromList(btn) {
+
+        this._btnLoad(btn, 'Loading...');        const list = this.currentOutcomeList;
         const label = {callback:'Callback',take_action:'Take Action',blacklist:'Blacklist'}[list] || list;
 
         // Get phone numbers from current list
