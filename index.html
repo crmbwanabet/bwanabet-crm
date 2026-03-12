@@ -8406,7 +8406,7 @@ Total Players: ${s.total}`;
         return Math.floor(diff/86400000) + 'd ago';
       },
 
-      openTranscriptModal(callId, phone, isLive) {
+      async openTranscriptModal(callId, phone, isLive) {
         this._currentTranscriptCallId = callId;
         const modal = document.getElementById('va-transcript-modal');
         const phoneEl = document.getElementById('va-tm-phone');
@@ -8442,14 +8442,40 @@ Total Players: ${s.total}`;
         };
 
         if (!isLive) {
-          // Show stored transcript only
-          const msgs = stored?.messages || [];
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400';
+          let msgs = stored?.messages || [];
+          // If no local transcript, try fetching from server memory (recent calls)
+          if (!msgs.length) {
+            try {
+              statusEl.textContent = 'Loading transcript...';
+              const recent = await fetch(`${this.serverUrl}/calls/recent?limit=200`);
+              const recentCalls = await recent.json();
+              const match = recentCalls.find(c => c.call_id === callId);
+              if (match?.transcript?.length) {
+                msgs = match.transcript;
+              }
+            } catch(e) { console.warn('Recent calls fetch failed:', e); }
+          }
+          // If still empty, try fetching from Supabase outcomes by call_id
+          if (!msgs.length) {
+            try {
+              const allTypes = ['take_action','callback','no_action','no_answer'];
+              for (const t of allTypes) {
+                const r = await fetch(`${this.serverUrl}/outcomes/${t}?limit=500`);
+                const rows = await r.json();
+                const match = rows.find(r => r.call_id === callId);
+                if (match?.full_transcript?.length) {
+                  msgs = match.full_transcript;
+                  break;
+                }
+              }
+            } catch(e) { console.warn('Outcome transcript fetch failed:', e); }
+          }
           transcriptDiv.innerHTML = renderMessages(msgs);
           transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
           const _tdt = stored?.updated_at ? new Date(stored.updated_at) : null;
           const _tfull = _tdt ? _tdt.toLocaleDateString([],{day:'2-digit',month:'short',year:'numeric'}) + ' · ' + _tdt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
-          statusEl.textContent = stored ? `${stored.status} · ${_tfull}` : 'Not found';
-          dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400';
+          statusEl.textContent = msgs.length ? (stored ? `${stored.status} · ${_tfull}` : 'Loaded from server') : 'No transcript available';
           return;
         }
 
