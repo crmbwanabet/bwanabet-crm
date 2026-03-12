@@ -8245,8 +8245,8 @@ Total Players: ${s.total}`;
             try {
               // Fetch live outcome counts directly — no summary endpoint needed
               const [rCb, rTa, rNx, rNa] = await Promise.all([
-                fetch(`${this.serverUrl}/outcomes/callback?campaign_id=${encodeURIComponent(cid)}&limit=1`),
-                fetch(`${this.serverUrl}/outcomes/take_action?campaign_id=${encodeURIComponent(cid)}&limit=1`),
+                fetch(`${this.serverUrl}/outcomes/callback?campaign_id=${encodeURIComponent(cid)}&limit=500`),
+                fetch(`${this.serverUrl}/outcomes/take_action?campaign_id=${encodeURIComponent(cid)}&limit=500`),
                 fetch(`${this.serverUrl}/outcomes/no_action?campaign_id=${encodeURIComponent(cid)}&limit=500`),
                 fetch(`${this.serverUrl}/outcomes/no_answer?campaign_id=${encodeURIComponent(cid)}&limit=500`),
               ]);
