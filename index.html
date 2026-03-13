@@ -10074,8 +10074,10 @@ Total Players: ${s.total}`;
             opt.textContent = `${v.name}${accent ? ' · '+accent : ''}`;
             picker.appendChild(opt);
           });
+          this._btnRestore(btn);
         } catch(e) {
           picker.innerHTML = '<option value="">Failed to load — is server connected?</option>';
+          this._btnRestore(btn);
         }
       },
 
