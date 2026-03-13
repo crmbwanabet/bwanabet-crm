@@ -7641,6 +7641,8 @@ Total Players: ${s.total}`;
       get directUrl() { return 'https://13.246.211.152:8080'; },
 
       // ── Init ──────────────────────────────────────────────────
+      _campaignHistoryCache: null,
+
       async init() {
         this.serverUrl = localStorage.getItem('va_server_url') || 'https://13.246.211.152:8080/api';
         this.clearExpiredTranscripts();
@@ -7650,6 +7652,39 @@ Total Players: ${s.total}`;
         await this.refreshHealth();
         await this.loadScriptsDropdowns();
         this.startPolling();
+        // Load campaign history from DB
+        this._loadCampaignHistoryFromDB().then(() => {
+          this.renderCampaignHistory();
+          this._refreshDashboard();
+        });
+      },
+
+      async _loadCampaignHistoryFromDB() {
+        try {
+          const r = await fetch(`${this.serverUrl}/campaigns/history?limit=50`);
+          if (!r.ok) throw new Error('DB fetch failed');
+          const rows = await r.json();
+          this._campaignHistoryCache = rows.map(row => ({
+            campaign_id: row.text_campaign_id,
+            campaign_uuid: row.id,
+            name: row.name,
+            contact_count: row.total_contacts,
+            contacts_raw: row.contacts_raw || '',
+            script_id: row.va_script_id,
+            launched_at: row.started_at || row.created_at,
+            scheduled: false,
+            status: row.status,
+            callback_count: row.callback_count,
+            take_action_count: row.take_action_count,
+            no_action_count: row.no_action_count,
+            no_answer_count: row.no_answer_count,
+            blacklist_count: row.blacklist_count,
+            parent_campaign_id: row.parent_campaign_id,
+          }));
+        } catch(e) {
+          console.warn('DB history load failed, using localStorage:', e);
+          this._campaignHistoryCache = null;
+        }
       },
 
       startPolling() {
@@ -7941,12 +7976,20 @@ Total Players: ${s.total}`;
 
       // ── Campaign History ─────────────────────────────────────────
       _getCampaignHistory() {
+        if (this._campaignHistoryCache) return this._campaignHistoryCache;
         try { return JSON.parse(localStorage.getItem('va_campaign_history') || '[]'); } catch { return []; }
       },
       _addToHistory(entry) {
-        const h = this._getCampaignHistory();
-        h.unshift(entry);
-        localStorage.setItem('va_campaign_history', JSON.stringify(h.slice(0, 50)));
+        // Add to in-memory cache
+        if (this._campaignHistoryCache) {
+          this._campaignHistoryCache.unshift(entry);
+        }
+        // Also write to localStorage as fallback
+        try {
+          const ls = JSON.parse(localStorage.getItem('va_campaign_history') || '[]');
+          ls.unshift(entry);
+          localStorage.setItem('va_campaign_history', JSON.stringify(ls.slice(0, 50)));
+        } catch(e) {}
       },
 
       renderCampaignHistory() {
@@ -7961,10 +8004,15 @@ Total Players: ${s.total}`;
            const dt = new Date(h.launched_at);
            const scheduled = h.scheduled ? '<span class="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">scheduled</span>' : '';
            const isRetry = h.campaign_id && h.campaign_id.includes('_retry_') ? '<span class="ml-1 px-1.5 py-0.5 bg-orange-100 text-orange-700 text-xs rounded">auto-retry</span>' : '';
+           const statusBadge = h.status === 'completed' ? '<span class="ml-1 px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded">completed</span>' :
+                              h.status === 'running' ? '<span class="ml-1 px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded animate-pulse">running</span>' :
+                              h.status === 'stopped' ? '<span class="ml-1 px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded">stopped</span>' : '';
+           const miniStats = (h.take_action_count !== undefined) ?
+             '<span class="text-xs text-slate-400 ml-1">TA:' + h.take_action_count + ' CB:' + h.callback_count + ' NA:' + h.no_answer_count + '</span>' : '';
            return '<div class="border rounded-lg p-3 mb-2 flex flex-wrap items-center gap-3">' +
              '<div class="flex-1 min-w-0">' +
-               '<p class="font-medium text-slate-800 text-sm truncate">' + h.name + scheduled + isRetry + '</p>' +
-               '<p class="text-xs text-slate-400">' + h.contact_count + ' contacts · ' + dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</p>' +
+               '<p class="font-medium text-slate-800 text-sm truncate">' + h.name + statusBadge + scheduled + isRetry + '</p>' +
+               '<p class="text-xs text-slate-400">' + h.contact_count + ' contacts · ' + dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + miniStats + '</p>' +
              '</div>' +
              '<div class="flex gap-2">' +
                '<button onclick="VA.reRunCampaign(' + i + ')" class="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-medium rounded-lg hover:bg-slate-200 flex items-center gap-1">' +
@@ -8001,7 +8049,8 @@ Total Players: ${s.total}`;
         this._btnLoad(btn, 'Fetching...');
         try {
           // Get no_answer outcomes for this campaign from server
-          const r = await fetch(`${this.serverUrl}/outcomes/no_answer?campaign_id=${encodeURIComponent(h.campaign_id)}&limit=1000`);
+          const lookupId = h.campaign_uuid || h.campaign_id;
+          const r = await fetch(`${this.serverUrl}/outcomes/no_answer?campaign_id=${encodeURIComponent(lookupId)}&limit=1000`);
           let noAnswerPhones = new Set();
           if (r.ok) {
             const records = await r.json();
@@ -8093,12 +8142,12 @@ Total Players: ${s.total}`;
         try {
           const r = await fetch(`${this.serverUrl}/campaign/start`, {
             method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ campaign_id, contacts, script, script_id: scriptId, calls_per_minute: cpm })
+            body: JSON.stringify({ campaign_id, name, contacts, script, script_id: scriptId, calls_per_minute: cpm, contacts_raw: raw })
           });
           const d = await r.json();
           if (d.status === 'running') {
             this._btnRestore(btn);
-        this._addToHistory({ campaign_id, name, contact_count: contacts.length, contacts_raw: raw, script_id: scriptId, launched_at: new Date().toISOString(), scheduled: isScheduled });
+        this._addToHistory({ campaign_id, campaign_uuid: d.campaign_uuid, name, contact_count: contacts.length, contacts_raw: raw, script_id: scriptId, launched_at: new Date().toISOString(), scheduled: isScheduled, status: 'running' });
             this.renderCampaignHistory();
             this._trackerUserClosed = false;
             this._trackerOpen = true;
@@ -8294,12 +8343,17 @@ Total Players: ${s.total}`;
         el.innerHTML = recent.map((h, i) => {
           const dt = new Date(h.launched_at);
           const isRetry = h.campaign_id?.includes('_retry_');
+          const statusLabel = h.status === 'completed' ? '<span class="text-xs px-1.5 py-0.5 bg-green-100 text-green-600 rounded flex-shrink-0">done</span>' :
+                             h.status === 'running' ? '<span class="text-xs px-1.5 py-0.5 bg-green-100 text-green-600 rounded flex-shrink-0 animate-pulse">live</span>' :
+                             h.status === 'stopped' ? '<span class="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded flex-shrink-0">stopped</span>' : '';
+          const dMini = (h.take_action_count !== undefined) ? `<span class="text-xs text-emerald-500">TA:${h.take_action_count}</span> <span class="text-xs text-amber-500">CB:${h.callback_count}</span>` : '';
           return `<div class="mb-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100" onclick="VA.openCampaignReview('${h.campaign_id}', ${i})">
             <div class="flex items-start justify-between gap-2 mb-1">
               <p class="text-xs font-semibold text-slate-700 truncate flex-1">${h.name}</p>
+              ${statusLabel}
               ${isRetry ? '<span class="text-xs px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded flex-shrink-0">retry</span>' : ''}
             </div>
-            <p class="text-xs text-slate-400 mb-1">${h.contact_count} contacts · ${dt.toLocaleDateString()}</p>
+            <p class="text-xs text-slate-400 mb-1">${h.contact_count} contacts · ${dt.toLocaleDateString()} ${dMini}</p>
             <p class="text-xs text-blue-500">Click to view full review →</p>
           </div>`;
         }).join('');
@@ -8555,7 +8609,8 @@ Total Players: ${s.total}`;
         subtitle.textContent = campaignId + (h.launched_at ? ' · ' + new Date(h.launched_at).toLocaleString() : '');
 
         try {
-          const r = await fetch(`${this.serverUrl}/campaign/summary/${encodeURIComponent(campaignId)}`);
+          const lookupId = h.campaign_uuid || campaignId;
+          const r = await fetch(`${this.serverUrl}/campaign/summary/${encodeURIComponent(lookupId)}`);
           if (!r.ok) throw new Error(`Campaign data not found (${r.status}). This campaign may be too old.`);
           const d = await r.json();
           const t = d.totals;
