@@ -8006,6 +8006,7 @@ Total Players: ${s.total}`;
            const isRetry = h.campaign_id && h.campaign_id.includes('_retry_') ? '<span class="ml-1 px-1.5 py-0.5 bg-orange-100 text-orange-700 text-xs rounded">auto-retry</span>' : '';
            const statusBadge = h.status === 'completed' ? '<span class="ml-1 px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded">completed</span>' :
                               h.status === 'running' ? '<span class="ml-1 px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded animate-pulse">running</span>' :
+                              h.status === 'paused' ? '<span class="ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">paused</span>' :
                               h.status === 'stopped' ? '<span class="ml-1 px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded">stopped</span>' : '';
            const miniStats = (h.take_action_count !== undefined) ?
              '<span class="text-xs text-slate-400 ml-1">TA:' + h.take_action_count + ' CB:' + h.callback_count + ' NA:' + h.no_answer_count + '</span>' : '';
@@ -8175,14 +8176,21 @@ Total Players: ${s.total}`;
           }
           container.innerHTML = campaigns.map(c => {
             const pct = c.total > 0 ? Math.round((c.completed / c.total) * 100) : 0;
-            const statusColor = c.status === 'running' ? 'bg-green-100 text-green-700' : c.status === 'stopped' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600';
+            const statusColor = c.status === 'running' ? 'bg-green-100 text-green-700' : c.status === 'paused' ? 'bg-amber-100 text-amber-700' : c.status === 'stopped' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600';
+            const actionBtns = c.status === 'running' ? `<div class="flex gap-1.5">
+                  <button onclick="VA.pauseCampaign('${c.campaign_id}', this)" class="px-3 py-1.5 bg-amber-500 text-white text-xs font-bold rounded-lg hover:bg-amber-600 flex items-center gap-1"><i data-lucide="pause" class="h-3 w-3"></i>Pause</button>
+                  <button onclick="VA.cancelCampaign('${c.campaign_id}', this)" class="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 flex items-center gap-1"><i data-lucide="square" class="h-3 w-3"></i>Stop</button>
+                </div>` : c.status === 'paused' ? `<div class="flex gap-1.5">
+                  <button onclick="VA.resumeCampaign('${c.campaign_id}', this)" class="px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg hover:bg-green-600 flex items-center gap-1"><i data-lucide="play" class="h-3 w-3"></i>Resume</button>
+                  <button onclick="VA.cancelCampaign('${c.campaign_id}', this)" class="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 flex items-center gap-1"><i data-lucide="square" class="h-3 w-3"></i>Stop</button>
+                </div>` : '';
             return `<div class="border rounded-lg p-4 mb-3">
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
                   <span class="px-2 py-0.5 rounded text-xs font-medium ${statusColor}">${c.status}</span>
                   <span class="text-sm font-medium text-slate-700 truncate max-w-xs">${c.campaign_id}</span>
                 </div>
-                ${c.status === 'running' ? `<button onclick="VA.cancelCampaign('${c.campaign_id}', this)" class="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 flex items-center gap-1"><i data-lucide="square" class="h-3 w-3"></i>Stop</button>` : ''}
+                ${actionBtns}
               </div>
               <div class="flex items-center gap-3 text-xs text-slate-500 mb-2">
                 <span>${c.completed}/${c.total} calls</span>
@@ -8206,6 +8214,40 @@ Total Players: ${s.total}`;
           const d = await r.json();
           if (d.status === 'stopped') {
             setTimeout(() => this.refreshCampaigns(), 1000);
+          } else {
+            alert('Error: ' + JSON.stringify(d));
+            this._btnRestore(btn);
+          }
+        } catch(e) {
+          alert('Error: ' + e.message);
+          this._btnRestore(btn);
+        }
+      },
+
+      async pauseCampaign(campaign_id, btn) {
+        this._btnLoad(btn, 'Pausing...');
+        try {
+          const r = await fetch(`${this.serverUrl}/campaign/pause/${encodeURIComponent(campaign_id)}`, { method: 'POST' });
+          const d = await r.json();
+          if (d.status === 'paused') {
+            setTimeout(() => { this.refreshCampaigns(); this._refreshActiveCampaign(); }, 1000);
+          } else {
+            alert('Error: ' + JSON.stringify(d));
+            this._btnRestore(btn);
+          }
+        } catch(e) {
+          alert('Error: ' + e.message);
+          this._btnRestore(btn);
+        }
+      },
+
+      async resumeCampaign(campaign_id, btn) {
+        this._btnLoad(btn, 'Resuming...');
+        try {
+          const r = await fetch(`${this.serverUrl}/campaign/resume/${encodeURIComponent(campaign_id)}`, { method: 'POST' });
+          const d = await r.json();
+          if (d.status === 'running') {
+            setTimeout(() => { this.refreshCampaigns(); this._refreshActiveCampaign(); }, 1000);
           } else {
             alert('Error: ' + JSON.stringify(d));
             this._btnRestore(btn);
@@ -8242,29 +8284,33 @@ Total Players: ${s.total}`;
         try {
           const r = await fetch(`${this.serverUrl}/campaign/list`);
           const campaigns = await r.json();
-          const running = campaigns.filter(c => c.status === 'running');
-          if (!running.length) {
+          const active = campaigns.filter(c => c.status === 'running' || c.status === 'paused');
+          if (!active.length) {
             dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400';
             content.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">No campaign running</p>';
             section.classList.add('hidden');
             return;
           }
-          dot.className = 'w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse';
-          content.innerHTML = running.map(c => {
+          const hasRunning = active.some(c => c.status === 'running');
+          const hasPaused = active.some(c => c.status === 'paused');
+          dot.className = hasRunning ? 'w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse' : 'w-2.5 h-2.5 rounded-full bg-amber-400';
+          content.innerHTML = active.map(c => {
             const pct = c.total > 0 ? Math.round((c.completed / c.total) * 100) : 0;
             const remaining = c.total - c.completed;
             const isRetry = c.campaign_id.includes('_retry_');
             const retryLabel = isRetry ? '<span class="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded font-medium">Auto-retry</span>' : '';
+            const isPaused = c.status === 'paused';
+            const pausedLabel = isPaused ? '<span class="ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded font-medium">Paused</span>' : '';
             return `<div class="mb-3">
-              <p class="text-xs font-medium text-slate-700 truncate mb-1">${c.campaign_id.replace(/_retry_\d+$/,' ↺ Retry')}${retryLabel}</p>
+              <p class="text-xs font-medium text-slate-700 truncate mb-1">${c.campaign_id.replace(/_retry_\d+$/,' ↺ Retry')}${retryLabel}${pausedLabel}</p>
               <div class="grid grid-cols-3 gap-2 mb-2">
                 <div class="bg-slate-50 rounded-lg p-2 text-center">
                   <p class="text-lg font-bold text-slate-800">${c.completed}</p>
                   <p class="text-xs text-slate-500">Done</p>
                 </div>
-                <div class="bg-green-50 rounded-lg p-2 text-center">
-                  <p class="text-lg font-bold text-green-700">${c.active_calls}</p>
-                  <p class="text-xs text-green-600">Active</p>
+                <div class="${isPaused ? 'bg-amber-50' : 'bg-green-50'} rounded-lg p-2 text-center">
+                  <p class="text-lg font-bold ${isPaused ? 'text-amber-700' : 'text-green-700'}">${c.active_calls}</p>
+                  <p class="text-xs ${isPaused ? 'text-amber-600' : 'text-green-600'}">${isPaused ? 'Paused' : 'Active'}</p>
                 </div>
                 <div class="bg-orange-50 rounded-lg p-2 text-center">
                   <p class="text-lg font-bold text-orange-700">${remaining}</p>
@@ -8273,11 +8319,16 @@ Total Players: ${s.total}`;
               </div>
               <div class="flex items-center gap-2">
                 <div class="flex-1 bg-slate-100 rounded-full h-2">
-                  <div class="bg-yellow-400 h-2 rounded-full transition-all" style="width:${pct}%"></div>
+                  <div class="${isPaused ? 'bg-amber-400' : 'bg-yellow-400'} h-2 rounded-full transition-all" style="width:${pct}%"></div>
                 </div>
                 <span class="text-xs font-bold text-slate-600 w-10 text-right">${pct}%</span>
               </div>
               <div class="flex gap-2 mt-2">
+                ${isPaused ? `<button onclick="VA.resumeCampaign('${c.campaign_id}', this)" class="flex-1 py-1.5 bg-green-50 text-green-600 text-xs font-medium rounded-lg hover:bg-green-100 flex items-center justify-center gap-1">
+                  <i data-lucide="play" class="h-3 w-3"></i>Resume
+                </button>` : `<button onclick="VA.pauseCampaign('${c.campaign_id}', this)" class="flex-1 py-1.5 bg-amber-50 text-amber-600 text-xs font-medium rounded-lg hover:bg-amber-100 flex items-center justify-center gap-1">
+                  <i data-lucide="pause" class="h-3 w-3"></i>Pause
+                </button>`}
                 <button onclick="VA.cancelCampaign('${c.campaign_id}', this)" class="flex-1 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100 flex items-center justify-center gap-1">
                   <i data-lucide="square" class="h-3 w-3"></i>Stop
                 </button>
@@ -8345,6 +8396,7 @@ Total Players: ${s.total}`;
           const isRetry = h.campaign_id?.includes('_retry_');
           const statusLabel = h.status === 'completed' ? '<span class="text-xs px-1.5 py-0.5 bg-green-100 text-green-600 rounded flex-shrink-0">done</span>' :
                              h.status === 'running' ? '<span class="text-xs px-1.5 py-0.5 bg-green-100 text-green-600 rounded flex-shrink-0 animate-pulse">live</span>' :
+                             h.status === 'paused' ? '<span class="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-600 rounded flex-shrink-0">paused</span>' :
                              h.status === 'stopped' ? '<span class="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded flex-shrink-0">stopped</span>' : '';
           const dMini = (h.take_action_count !== undefined) ? `<span class="text-xs text-emerald-500">TA:${h.take_action_count}</span> <span class="text-xs text-amber-500">CB:${h.callback_count}</span>` : '';
           return `<div class="mb-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100" onclick="VA.openCampaignReview('${h.campaign_id}', ${i})">
@@ -8365,7 +8417,7 @@ Total Players: ${s.total}`;
         this._trackerPoller = setInterval(() => {
           // Only poll active campaign section when panel is open
           fetch(`${this.serverUrl}/campaign/list`).then(r=>r.json()).then(campaigns => {
-            const hasActive = campaigns.some(c=>c.status==='running');
+            const hasActive = campaigns.some(c=>c.status==='running' || c.status==='paused');
             if (hasActive && !this._trackerUserClosed) {
               this.showTracker();
               if (!this._trackerOpen) {
