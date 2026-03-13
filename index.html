@@ -407,9 +407,9 @@
         <div id="emailImportBanner" class="mb-6">
           <div class="bg-gradient-to-r from-slate-50 to-blue-50 border border-slate-200 rounded-xl p-4">
             <div class="flex items-center gap-3">
-              <div class="p-2 bg-blue-100 rounded-lg"><i data-lucide="mail" class="h-5 w-5 text-blue-600"></i></div>
+              <div class="p-2 bg-blue-100 rounded-lg"><i data-lucide="database" class="h-5 w-5 text-blue-600"></i></div>
               <div class="flex-1">
-                <h3 class="font-semibold text-slate-800 text-sm">Email Data Import</h3>
+                <h3 class="font-semibold text-slate-800 text-sm">Data Import</h3>
                 <div id="emailImportStatus" class="text-sm text-slate-500 mt-0.5">Checking...</div>
               </div>
               <button onclick="refreshEmailImportStatus()" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 flex items-center gap-1"><i data-lucide="refresh-cw" class="h-3 w-3"></i>Refresh</button>
@@ -7556,7 +7556,7 @@ Total Players: ${s.total}`;
       if (!el) return;
       try {
         const vaUrl = localStorage.getItem('va_server_url') || 'https://13.246.211.152:8080/api';
-        const r = await fetch(`${vaUrl}/email-imports?limit=5`);
+        const r = await fetch(`${vaUrl}/email-imports?limit=10`);
         if (!r.ok) throw new Error('Failed');
         const imports = await r.json();
         if (!imports.length) {
@@ -7566,11 +7566,17 @@ Total Players: ${s.total}`;
         const latest = imports[0];
         const dt = new Date(latest.created_at);
         const ago = _timeAgo(dt);
-        const statusColor = latest.status === 'completed' ? 'text-green-600' : latest.status === 'error' ? 'text-red-600' : 'text-amber-600';
-        el.innerHTML = `<span class="${statusColor} font-medium">${latest.status}</span> — ` +
-          `<strong>${latest.filename}</strong> (${latest.row_count || 0} rows) from <em>${latest.sender || 'unknown'}</em>` +
+        const statusColor = latest.status === 'completed' ? 'text-green-600' :
+                            latest.status === 'completed_with_errors' ? 'text-amber-600' :
+                            latest.status === 'error' ? 'text-red-600' : 'text-blue-600';
+        const statusLabel = latest.status === 'completed_with_errors' ? 'partial' : latest.status;
+        const target = latest.table_name ? ` → <span class="text-blue-600 font-medium">${latest.table_name}</span>` : '';
+        const errCount = imports.filter(i => i.status === 'error' || i.status === 'completed_with_errors').length;
+        const errBadge = errCount > 0 ? `<span class="ml-2 px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded">${errCount} with errors</span>` : '';
+        el.innerHTML = `<span class="${statusColor} font-medium">${statusLabel}</span> — ` +
+          `<strong>${latest.filename}</strong> (${latest.row_count || 0} rows${target}) from <em>${(latest.sender || 'unknown').replace(/<[^>]+>/g, '').trim()}</em>` +
           ` — <span class="text-slate-400" title="${dt.toLocaleString()}">${ago}</span>` +
-          (imports.length > 1 ? `<span class="ml-2 text-xs text-slate-400">(${imports.length} recent imports)</span>` : '');
+          `<span class="ml-2 text-xs text-slate-400">(${imports.length} recent imports)</span>${errBadge}`;
       } catch(e) {
         el.innerHTML = '<span class="text-slate-400">Unable to check import status</span>';
       }
@@ -7587,25 +7593,36 @@ Total Players: ${s.total}`;
     async function viewEmailImports() {
       const vaUrl = localStorage.getItem('va_server_url') || 'https://13.246.211.152:8080/api';
       try {
-        const r = await fetch(`${vaUrl}/email-imports?limit=20`);
+        const r = await fetch(`${vaUrl}/email-imports?limit=50`);
         if (!r.ok) throw new Error('Failed');
         const imports = await r.json();
-        if (!imports.length) return alert('No email imports yet.');
+        if (!imports.length) return alert('No data imports yet.');
         const rows = imports.map(imp => {
           const dt = new Date(imp.created_at);
-          const statusBadge = imp.status === 'completed' ? '✅' : imp.status === 'error' ? '❌' : '⏳';
-          return `<tr class="border-b hover:bg-slate-50 cursor-pointer" onclick="viewImportData('${imp.id}', '${(imp.filename||'').replace(/'/g,"\\'")}')">` +
-            `<td class="px-3 py-2 text-sm">${statusBadge} ${imp.status}</td>` +
-            `<td class="px-3 py-2 text-sm font-medium">${imp.filename || '?'}</td>` +
-            `<td class="px-3 py-2 text-sm">${imp.row_count || 0} rows</td>` +
-            `<td class="px-3 py-2 text-sm text-slate-500">${imp.sender || ''}</td>` +
+          const hasError = imp.status === 'error' || imp.status === 'completed_with_errors';
+          const statusBadge = imp.status === 'completed' ? '<span class="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded">completed</span>' :
+                              imp.status === 'completed_with_errors' ? '<span class="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">partial</span>' :
+                              imp.status === 'error' ? '<span class="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded">error</span>' :
+                              imp.status === 'empty' ? '<span class="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-xs rounded">empty</span>' :
+                              `<span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">${imp.status}</span>`;
+          const target = imp.table_name ? `<span class="text-xs text-blue-500 ml-1">${imp.table_name}</span>` : '';
+          const errorTip = imp.error ? `<p class="text-xs text-red-500 mt-1">${imp.error}</p>` : '';
+          const rowClass = hasError ? 'bg-red-50/50 border-b hover:bg-red-50' : 'border-b hover:bg-slate-50';
+          const senderClean = (imp.sender || '').replace(/<[^>]+>/g, '').trim();
+          return `<tr class="${rowClass} cursor-pointer" onclick="viewImportData('${imp.id}', '${(imp.filename||'').replace(/'/g,"\\'")}')">` +
+            `<td class="px-3 py-2 text-sm">${statusBadge}</td>` +
+            `<td class="px-3 py-2 text-sm"><span class="font-medium">${imp.filename || '?'}</span>${target}${errorTip}</td>` +
+            `<td class="px-3 py-2 text-sm">${imp.row_count || 0}</td>` +
+            `<td class="px-3 py-2 text-sm text-slate-500">${senderClean}</td>` +
             `<td class="px-3 py-2 text-sm text-slate-500">${imp.subject || ''}</td>` +
             `<td class="px-3 py-2 text-sm text-slate-400">${dt.toLocaleString()}</td>` +
             `</tr>`;
         }).join('');
+        const errorCount = imports.filter(i => i.status === 'error' || i.status === 'completed_with_errors').length;
+        const errorSummary = errorCount > 0 ? `<span class="ml-3 px-2 py-1 bg-red-100 text-red-700 text-xs rounded-lg">${errorCount} with issues</span>` : '';
         const html = `<div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" id="emailImportsModal" onclick="if(event.target===this)this.remove()">` +
-          `<div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">` +
-          `<div class="p-4 border-b flex items-center justify-between"><h2 class="text-lg font-bold">Email Imports</h2><button onclick="document.getElementById('emailImportsModal').remove()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="h-5 w-5"></i></button></div>` +
+          `<div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[85vh] overflow-hidden flex flex-col">` +
+          `<div class="p-4 border-b flex items-center justify-between"><h2 class="text-lg font-bold">Data Imports${errorSummary}</h2><button onclick="document.getElementById('emailImportsModal').remove()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="h-5 w-5"></i></button></div>` +
           `<div class="overflow-auto flex-1"><table class="w-full text-left"><thead class="bg-slate-50 sticky top-0"><tr><th class="px-3 py-2 text-xs font-semibold text-slate-600">Status</th><th class="px-3 py-2 text-xs font-semibold text-slate-600">File</th><th class="px-3 py-2 text-xs font-semibold text-slate-600">Rows</th><th class="px-3 py-2 text-xs font-semibold text-slate-600">From</th><th class="px-3 py-2 text-xs font-semibold text-slate-600">Subject</th><th class="px-3 py-2 text-xs font-semibold text-slate-600">Date</th></tr></thead><tbody>${rows}</tbody></table></div>` +
           `</div></div>`;
         document.body.insertAdjacentHTML('beforeend', html);
