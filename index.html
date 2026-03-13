@@ -2141,6 +2141,9 @@ BEHAVIOUR RULES:
               <button id="va-ol-tab-no_answer" onclick="VA.switchOutcomeList('no_answer')" class="va-ol-tab flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-all">
                 <i data-lucide="phone-missed" class="h-4 w-4 inline mr-1"></i>No Answer <span id="va-ol-count-no_answer" class="ml-1 bg-slate-200 px-1.5 py-0.5 rounded text-xs">0</span>
               </button>
+              <button id="va-ol-tab-errors" onclick="VA.showCallErrors()" class="va-ol-tab flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-all">
+                <i data-lucide="alert-triangle" class="h-4 w-4 inline mr-1"></i>Errors <span id="va-ol-count-errors" class="ml-1 bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-xs">0</span>
+              </button>
             </div>
             <!-- Run Campaign banner — always visible on outcome lists -->
             <div id="va-run-campaign-banner" class="mb-4 p-4 bg-gradient-to-r from-yellow-400 to-yellow-300 rounded-xl flex items-center justify-between shadow-sm">
@@ -9518,6 +9521,13 @@ Total Players: ${s.total}`;
             if (countEl) countEl.textContent = count;
           } catch(e) {}
         }
+        // Load error count
+        try {
+          const er = await fetch(`${this.serverUrl}/call-errors?limit=500`);
+          const ed = await er.json();
+          const errEl = document.getElementById('va-ol-count-errors');
+          if (errEl) errEl.textContent = ed.total_errors || 0;
+        } catch(e) {}
         this.loadOutcomeList();
         // Update badge
         try {
@@ -9536,10 +9546,97 @@ Total Players: ${s.total}`;
           b.classList.remove('bg-amber-500','bg-emerald-600','bg-red-600','bg-slate-800','text-white');
           b.classList.add('text-slate-500','hover:bg-slate-100');
         });
-        const colors = {callback:'bg-amber-500',take_action:'bg-emerald-600',blacklist:'bg-red-600',no_action:'bg-slate-700',no_answer:'bg-orange-500'};
+        const colors = {callback:'bg-amber-500',take_action:'bg-emerald-600',blacklist:'bg-red-600',no_action:'bg-slate-700',no_answer:'bg-orange-500',errors:'bg-red-700'};
         const tab = document.getElementById('va-ol-tab-' + list);
         if (tab) { tab.classList.add(colors[list]||'bg-slate-800','text-white'); tab.classList.remove('text-slate-500','hover:bg-slate-100'); }
-        this.loadOutcomeList();
+        if (list !== 'errors') this.loadOutcomeList();
+      },
+
+      async showCallErrors() {
+        // Highlight the errors tab
+        document.querySelectorAll('.va-ol-tab').forEach(b => {
+          b.classList.remove('bg-amber-500','bg-emerald-600','bg-red-600','bg-red-700','bg-slate-800','bg-slate-700','bg-orange-500','text-white');
+          b.classList.add('text-slate-500','hover:bg-slate-100');
+        });
+        const errTab = document.getElementById('va-ol-tab-errors');
+        if (errTab) { errTab.classList.add('bg-red-700','text-white'); errTab.classList.remove('text-slate-500','hover:bg-slate-100'); }
+        this.currentOutcomeList = 'errors';
+
+        const container = document.getElementById('va-outcome-list-content');
+        if (!container) return;
+        container.innerHTML = '<div class="bg-white rounded-xl p-8 text-center text-slate-400"><div class="animate-spin h-8 w-8 border-2 border-slate-300 border-t-slate-700 rounded-full mx-auto mb-3"></div><p>Loading errors...</p></div>';
+
+        try {
+          const r = await fetch(`${this.serverUrl}/call-errors?limit=200`);
+          const data = await r.json();
+          const errors = data.errors || [];
+          const bySource = data.by_source || {};
+
+          if (!errors.length) {
+            container.innerHTML = '<div class="bg-white rounded-xl shadow-sm p-8 text-center text-slate-400"><i data-lucide="check-circle" class="h-10 w-10 mx-auto mb-3 opacity-40"></i><p>No errors recorded</p></div>';
+            document.getElementById('va-ol-showing').textContent = '0';
+            lucide.createIcons();
+            return;
+          }
+
+          // Source icons & colors
+          const srcMeta = {
+            freeswitch: {icon:'server', color:'bg-purple-100 text-purple-700', label:'FreeSWITCH'},
+            tts: {icon:'volume-2', color:'bg-blue-100 text-blue-700', label:'TTS (ElevenLabs)'},
+            stt: {icon:'mic', color:'bg-cyan-100 text-cyan-700', label:'STT (Deepgram)'},
+            llm: {icon:'brain', color:'bg-amber-100 text-amber-700', label:'LLM (Groq/Claude)'},
+            network: {icon:'wifi-off', color:'bg-orange-100 text-orange-700', label:'Network/Carrier'},
+            server: {icon:'alert-triangle', color:'bg-red-100 text-red-700', label:'Server Error'},
+            unknown: {icon:'help-circle', color:'bg-slate-100 text-slate-700', label:'Unknown'},
+          };
+
+          // Summary cards
+          let summaryHtml = '<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">';
+          for (const [src, count] of Object.entries(bySource).sort((a,b) => b[1]-a[1])) {
+            const meta = srcMeta[src] || srcMeta.unknown;
+            summaryHtml += `<div class="bg-white rounded-xl shadow-sm p-3 text-center border-l-4 ${meta.color.replace('bg-','border-').split(' ')[0]}">
+              <div class="flex items-center justify-center gap-2 mb-1"><i data-lucide="${meta.icon}" class="h-4 w-4"></i><span class="text-xs font-medium">${meta.label}</span></div>
+              <p class="text-2xl font-bold">${count}</p>
+            </div>`;
+          }
+          summaryHtml += '</div>';
+
+          // Error rows
+          let rowsHtml = '<div class="space-y-2">';
+          for (const e of errors) {
+            const reason = e.error_reason || 'unknown';
+            const src = reason.includes(':') ? reason.split(':')[0] : reason;
+            const detail = reason.includes(':') ? reason.split(':').slice(1).join(':') : '';
+            const meta = srcMeta[src] || srcMeta.unknown;
+            const dt = e.created_at ? new Date(e.created_at) : null;
+            const timeStr = dt ? dt.toLocaleDateString([],{day:'2-digit',month:'short'}) + ' ' + dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+            const phone = e.phone_number || '';
+            const campaign = e.campaign_id ? e.campaign_id.split('-—-')[0] : '';
+            const dur = e.call_duration || 0;
+
+            rowsHtml += `<div class="bg-white rounded-lg shadow-sm p-3 flex items-center gap-3 border-l-4 ${meta.color.replace('bg-','border-').split(' ')[0]}">
+              <div class="flex-shrink-0 w-8 h-8 rounded-full ${meta.color} flex items-center justify-center"><i data-lucide="${meta.icon}" class="h-4 w-4"></i></div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-mono text-sm font-bold">${phone}</span>
+                  <span class="text-xs px-2 py-0.5 rounded-full ${meta.color}">${meta.label}</span>
+                  ${detail ? `<span class="text-xs text-slate-500">${detail}</span>` : ''}
+                </div>
+                <div class="text-xs text-slate-400 mt-0.5">${campaign}${dur > 0 ? ' &middot; ' + dur + 's' : ''} &middot; ${timeStr}</div>
+                ${e.summary ? `<p class="text-xs text-slate-500 mt-1 truncate">${e.summary}</p>` : ''}
+              </div>
+              <button onclick="VA.viewOutcomeDetail('${e.id}', this)" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded flex-shrink-0" title="View Details"><i data-lucide="eye" class="h-3.5 w-3.5"></i></button>
+            </div>`;
+          }
+          rowsHtml += '</div>';
+
+          container.innerHTML = summaryHtml + rowsHtml;
+          document.getElementById('va-ol-showing').textContent = errors.length;
+          lucide.createIcons();
+        } catch(e) {
+          container.innerHTML = `<div class="bg-white rounded-xl shadow-sm p-8 text-center text-red-400"><i data-lucide="alert-triangle" class="h-10 w-10 mx-auto mb-3 opacity-40"></i><p>Failed to load errors: ${e.message}</p></div>`;
+          lucide.createIcons();
+        }
       },
 
       async loadOutcomeList(btn) {
