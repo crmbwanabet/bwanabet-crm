@@ -390,6 +390,7 @@
           <button id="tab-players" onclick="switchTab('players')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="users" class="h-4 w-4"></i><span data-translate="players">Players</span></button>
           <button id="tab-callcenter" onclick="switchTab('callcenter')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="phone" class="h-4 w-4"></i><span>Call Center</span></button>
           <button id="tab-agents" onclick="switchTab('agents')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="megaphone" class="h-4 w-4"></i><span>Agents</span></button>
+          <button id="tab-fraud" onclick="switchTab('fraud')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="shield-alert" class="h-4 w-4"></i><span>Fraud</span></button>
           <button id="tab-settings" onclick="switchTab('settings')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="settings" class="h-4 w-4"></i><span data-translate="settings">Settings</span></button>
         </nav>
       </div>
@@ -1354,6 +1355,61 @@
             <button onclick="document.getElementById('va-outcome-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
           </div>
           <div id="va-outcome-modal-content" class="p-5"></div>
+        </div>
+      </div>
+
+      <!-- ── Fraud Detection Tab ──────────────────────────────── -->
+      <div id="content-fraud" class="tab-content hidden">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-2">
+            <h2 class="text-xl font-bold text-slate-800">Fraud Detection</h2>
+            <span class="text-xs text-slate-400" id="fraud-last-scan"></span>
+          </div>
+          <button onclick="FraudPanel.refresh(this)" class="px-4 py-2 bg-yellow-400 text-black rounded-lg text-sm font-medium hover:bg-yellow-300 flex items-center gap-2"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh</button>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="fraud-summary-cards">
+          <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+            <p class="text-xs text-slate-500 mb-1">Total Flagged</p>
+            <p class="text-2xl font-bold" id="fraud-total">0</p>
+          </div>
+          <div class="bg-red-50 rounded-xl shadow-sm p-4 text-center border-l-4 border-red-500">
+            <p class="text-xs text-red-600 mb-1">Critical</p>
+            <p class="text-2xl font-bold text-red-700" id="fraud-critical">0</p>
+          </div>
+          <div class="bg-orange-50 rounded-xl shadow-sm p-4 text-center border-l-4 border-orange-500">
+            <p class="text-xs text-orange-600 mb-1">High</p>
+            <p class="text-2xl font-bold text-orange-700" id="fraud-high">0</p>
+          </div>
+          <div class="bg-yellow-50 rounded-xl shadow-sm p-4 text-center border-l-4 border-yellow-500">
+            <p class="text-xs text-yellow-600 mb-1">Medium</p>
+            <p class="text-2xl font-bold text-yellow-700" id="fraud-medium">0</p>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-xl shadow-sm p-3 mb-4 flex flex-wrap items-center gap-3">
+          <select id="fraud-filter-level" onchange="FraudPanel.load()" class="px-3 py-2 border rounded-lg text-sm">
+            <option value="">All Risk Levels</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+          </select>
+          <select id="fraud-filter-status" onchange="FraudPanel.load()" class="px-3 py-2 border rounded-lg text-sm">
+            <option value="false">Pending Review</option>
+            <option value="true">Reviewed</option>
+            <option value="">All</option>
+          </select>
+          <span class="text-sm text-slate-500">Showing <strong id="fraud-showing">0</strong> players</span>
+        </div>
+
+        <!-- Flagged Players Table -->
+        <div id="fraud-table-container">
+          <div class="bg-white rounded-xl shadow-sm p-8 text-center text-slate-400">
+            <i data-lucide="shield" class="h-10 w-10 mx-auto mb-3 opacity-40"></i>
+            <p>Run the fraud scanner to populate results</p>
+          </div>
         </div>
       </div>
 
@@ -7718,6 +7774,8 @@ Total Players: ${s.total}`;
         // Just ensure stats and table are up to date from memory
         if (t === 'players') renderTable();
       }
+      // Auto-load fraud data when switching to fraud tab
+      if (t === 'fraud' && typeof FraudPanel !== 'undefined') FraudPanel.load();
     }
     function toggleDarkMode() { App.darkMode = !App.darkMode; document.body.classList.toggle('dark', App.darkMode); localStorage.setItem('darkMode', App.darkMode); }
     function toggleCommandPalette(show) { document.getElementById('commandPalette').classList.toggle('open', show); document.getElementById('commandOverlay').classList.toggle('hidden', !show); if (show) document.getElementById('commandInput').focus(); }
@@ -7731,7 +7789,7 @@ Total Players: ${s.total}`;
       if ((e.ctrlKey || e.metaKey) && e.key === '/') { e.preventDefault(); AIAgent.toggle(); }
       if ((e.ctrlKey || e.metaKey) && e.key === 'e') { e.preventDefault(); exportFiltered('current', 'export'); }
       if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); toggleDarkMode(); }
-      const tabs = { '1': 'dashboard', '2': 'profitability', '3': 'behavior', '4': 'churn', '5': 'analytics', '6': 'players', '7': 'callcenter', '8': 'settings' };
+      const tabs = { '1': 'dashboard', '2': 'profitability', '3': 'behavior', '4': 'churn', '5': 'analytics', '6': 'players', '7': 'callcenter', '8': 'fraud', '9': 'settings' };
       if (tabs[e.key] && !e.ctrlKey && !e.metaKey) switchTab(tabs[e.key]);
       if (e.key === 'Escape') { document.getElementById('playerModal').style.display='none'; document.getElementById('paramsModal').style.display='none'; toggleCommandPalette(false); closeTutorial(); }
     });
@@ -11052,9 +11110,150 @@ Total Players: ${s.total}`;
           }
         }
         
+    // ── Fraud Detection Panel ──────────────────────────────────
+    const FraudPanel = {
+      async refresh(btn) {
+        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="animate-spin inline-block h-4 w-4 border-2 border-black border-t-transparent rounded-full"></span> Refreshing...'; }
+        await this.loadSummary();
+        await this.load();
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh'; lucide.createIcons(); }
+      },
+      async loadSummary() {
+        try {
+          const r = await window._sb.from('fraud_risk_scores').select('risk_level', { count: 'exact' });
+          const rows = r.data || [];
+          let critical = 0, high = 0, medium = 0;
+          rows.forEach(r => {
+            if (r.risk_level === 'critical') critical++;
+            else if (r.risk_level === 'high') high++;
+            else if (r.risk_level === 'medium') medium++;
+          });
+          document.getElementById('fraud-total').textContent = rows.length;
+          document.getElementById('fraud-critical').textContent = critical;
+          document.getElementById('fraud-high').textContent = high;
+          document.getElementById('fraud-medium').textContent = medium;
+          // Last scan time
+          if (rows.length > 0) {
+            const latest = rows.reduce((a, b) => (a.flagged_at > b.flagged_at ? a : b));
+            const dt = new Date(latest.flagged_at);
+            document.getElementById('fraud-last-scan').textContent = 'Last scan: ' + dt.toLocaleDateString([], {day:'2-digit',month:'short',year:'numeric'}) + ' ' + dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+          }
+        } catch(e) { console.error('Fraud summary error:', e); }
+      },
+      async load() {
+        const container = document.getElementById('fraud-table-container');
+        if (!container) return;
+        container.innerHTML = '<div class="bg-white rounded-xl p-8 text-center text-slate-400"><div class="animate-spin h-8 w-8 border-2 border-slate-300 border-t-slate-700 rounded-full mx-auto mb-3"></div><p>Loading...</p></div>';
+        try {
+          let query = window._sb.from('fraud_risk_scores').select('*').order('risk_score', { ascending: false }).limit(200);
+          const level = document.getElementById('fraud-filter-level')?.value;
+          const reviewed = document.getElementById('fraud-filter-status')?.value;
+          if (level) query = query.eq('risk_level', level);
+          if (reviewed !== '') query = query.eq('reviewed', reviewed === 'true');
+          const { data: rows, error } = await query;
+          if (error) throw error;
+          document.getElementById('fraud-showing').textContent = rows.length;
+          if (!rows.length) {
+            container.innerHTML = '<div class="bg-white rounded-xl shadow-sm p-8 text-center text-slate-400"><i data-lucide="shield-check" class="h-10 w-10 mx-auto mb-3 opacity-40"></i><p>No flagged players</p></div>';
+            lucide.createIcons(); return;
+          }
+          const levelColors = { critical: 'bg-red-50 border-l-4 border-red-500', high: 'bg-orange-50 border-l-4 border-orange-500', medium: 'bg-yellow-50 border-l-4 border-yellow-400' };
+          const levelBadge = { critical: 'bg-red-100 text-red-700', high: 'bg-orange-100 text-orange-700', medium: 'bg-yellow-100 text-yellow-700' };
+          const actionBadge = { none: 'bg-slate-100 text-slate-600', warned: 'bg-amber-100 text-amber-700', bonus_restricted: 'bg-orange-100 text-orange-700', frozen: 'bg-red-100 text-red-700' };
+
+          let html = '<div class="space-y-2">';
+          for (const r of rows) {
+            const flags = r.flags || [];
+            const topFlags = flags.slice(0, 3).map(f => `<span class="text-xs px-1.5 py-0.5 rounded ${levelBadge[f.severity] || 'bg-slate-100 text-slate-600'}">${f.type.replace(/_/g, ' ')}</span>`).join(' ');
+            const color = levelColors[r.risk_level] || 'bg-white';
+            const badge = levelBadge[r.risk_level] || 'bg-slate-100';
+            const actBadge = actionBadge[r.action_taken] || actionBadge.none;
+            const reviewIcon = r.reviewed ? '<i data-lucide="check-circle" class="h-4 w-4 text-green-500 inline"></i>' : '';
+
+            html += `<div class="rounded-xl shadow-sm p-4 ${color} cursor-pointer" onclick="FraudPanel.toggleDetail('${r.id}')">
+              <div class="flex items-center gap-3 flex-wrap">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${badge}">${r.risk_score}</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-mono font-bold text-sm">${r.player_id}</span>
+                    ${r.phone_number ? `<span class="text-xs text-slate-500">${r.phone_number}</span>` : ''}
+                    <span class="text-xs px-2 py-0.5 rounded-full font-bold ${badge}">${r.risk_level.toUpperCase()}</span>
+                    ${r.action_taken !== 'none' ? `<span class="text-xs px-2 py-0.5 rounded-full ${actBadge}">${r.action_taken.replace('_', ' ')}</span>` : ''}
+                    ${reviewIcon}
+                  </div>
+                  <div class="flex items-center gap-2 mt-1 flex-wrap">${topFlags}</div>
+                </div>
+                <div class="text-right text-xs text-slate-500 flex-shrink-0">
+                  <div>Dep: K${(r.total_deposits||0).toLocaleString()}</div>
+                  <div>Bets: K${(r.total_bets||0).toLocaleString()}</div>
+                  <div>Wins: K${(r.total_wins||0).toLocaleString()}</div>
+                </div>
+                <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 flex-shrink-0"></i>
+              </div>
+              <div id="fraud-detail-${r.id}" class="hidden mt-3 pt-3 border-t border-slate-200">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3 text-xs">
+                  <div><span class="text-slate-500">First Deposit:</span> K${(r.first_deposit||0).toLocaleString()}</div>
+                  <div><span class="text-slate-500">Total Deposits:</span> K${(r.total_deposits||0).toLocaleString()}</div>
+                  <div><span class="text-slate-500">Total Withdrawals:</span> K${(r.total_withdrawals||0).toLocaleString()}</div>
+                  <div><span class="text-slate-500">Bet Count:</span> ${r.bet_count||0}</div>
+                </div>
+                <p class="text-xs font-semibold text-slate-600 mb-2">All Flags (${flags.length}):</p>
+                <div class="space-y-1 mb-3">
+                  ${flags.map(f => `<div class="flex items-start gap-2 text-xs p-2 rounded ${levelBadge[f.severity] || 'bg-slate-50'}">
+                    <span class="font-bold w-5 text-center">${f.weight}</span>
+                    <div><span class="font-medium">${f.type.replace(/_/g, ' ')}</span><br><span class="text-slate-500">${f.details?.description || ''}</span></div>
+                  </div>`).join('')}
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                  <button onclick="event.stopPropagation(); FraudPanel.setAction('${r.id}','reviewed')" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs hover:bg-emerald-700">Mark Reviewed</button>
+                  <button onclick="event.stopPropagation(); FraudPanel.setAction('${r.id}','warned')" class="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs hover:bg-amber-600">Warned</button>
+                  <button onclick="event.stopPropagation(); FraudPanel.setAction('${r.id}','bonus_restricted')" class="px-3 py-1.5 bg-orange-600 text-white rounded-lg text-xs hover:bg-orange-700">Restrict Bonus</button>
+                  <button onclick="event.stopPropagation(); FraudPanel.setAction('${r.id}','frozen')" class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs hover:bg-red-700">Freeze Account</button>
+                  <button onclick="event.stopPropagation(); FraudPanel.dismiss('${r.id}')" class="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs hover:bg-slate-300">Dismiss</button>
+                </div>
+                ${r.review_notes ? `<p class="text-xs text-slate-500 mt-2">Notes: ${r.review_notes}</p>` : ''}
+              </div>
+            </div>`;
+          }
+          html += '</div>';
+          container.innerHTML = html;
+          lucide.createIcons();
+        } catch(e) {
+          container.innerHTML = `<div class="bg-white rounded-xl shadow-sm p-8 text-center text-red-400"><p>Error: ${e.message}</p></div>`;
+        }
+      },
+      toggleDetail(id) {
+        const el = document.getElementById('fraud-detail-' + id);
+        if (el) el.classList.toggle('hidden');
+      },
+      async setAction(id, action) {
+        const notes = action === 'reviewed' ? (prompt('Review notes (optional):') || '') : '';
+        try {
+          const update = {
+            reviewed: true,
+            reviewed_by: App.currentUser?.email || 'admin',
+            reviewed_at: new Date().toISOString(),
+            action_taken: action === 'reviewed' ? 'none' : action,
+            review_notes: notes || null,
+          };
+          await window._sb.from('fraud_risk_scores').update(update).eq('id', id);
+          this.load();
+          this.loadSummary();
+        } catch(e) { alert('Error: ' + e.message); }
+      },
+      async dismiss(id) {
+        if (!confirm('Dismiss this flag as false positive?')) return;
+        try {
+          await window._sb.from('fraud_risk_scores').delete().eq('id', id);
+          this.load();
+          this.loadSummary();
+        } catch(e) { alert('Error: ' + e.message); }
+      },
+    };
+
         // Restore last active tab (default to dashboard)
         const savedTab = localStorage.getItem('crmActiveTab') || 'dashboard';
-        const validTabs = ['dashboard','profitability','behavior','churn','analytics','players','callcenter','agents','settings'];
+        const validTabs = ['dashboard','profitability','behavior','churn','analytics','players','callcenter','agents','fraud','settings'];
         // Clear stale tab keys (e.g. old 'voiceagent' tab that no longer exists)
         if (!validTabs.includes(savedTab)) localStorage.removeItem('crmActiveTab');
         switchTab(validTabs.includes(savedTab) ? savedTab : 'dashboard');
