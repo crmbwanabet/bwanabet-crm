@@ -1320,7 +1320,7 @@
       </div>
 
       <!-- ── Transcript Modal ─────────────────────────────────── -->
-      <div id="va-transcript-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+      <div id="va-transcript-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 overflow-hidden">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height:90vh">
           <div class="bg-slate-800 text-white px-5 py-4 rounded-t-2xl flex items-center justify-between flex-shrink-0">
             <div class="flex items-center gap-3">
@@ -1332,7 +1332,7 @@
             </div>
             <button onclick="VA.closeTranscriptModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
           </div>
-          <div id="va-tm-transcript" class="flex-1 overflow-y-auto p-4 space-y-2 min-h-0" style="min-height:200px;max-height:55vh">
+          <div id="va-tm-transcript" class="flex-1 overflow-y-auto p-4 space-y-2 min-h-0" style="min-height:200px;max-height:55vh;-webkit-overflow-scrolling:touch;overscroll-behavior:contain">
             <p class="text-slate-400 text-sm text-center py-8">Connecting...</p>
           </div>
           <div id="va-tm-footer" class="border-t p-4 flex items-center justify-between flex-shrink-0 bg-slate-50 rounded-b-2xl">
@@ -1347,8 +1347,8 @@
         </div>
       </div>
 
-      <div id="va-outcome-modal" style="display:none" class="fixed inset-0 bg-black bg-opacity-50 z-50  flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div id="va-outcome-modal" style="display:none" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto" style="max-height:90vh">
           <div class="bg-slate-800 text-white p-5 rounded-t-2xl flex items-center justify-between sticky top-0">
             <h3 class="font-bold flex items-center gap-2"><i data-lucide="file-text" class="h-5 w-5"></i>Call Details</h3>
             <button onclick="document.getElementById('va-outcome-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
@@ -9629,7 +9629,7 @@ Total Players: ${s.total}`;
               <button onclick="VA.showReclassifyMenu('${record.id}', null, true)" class="flex-1 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700">↗️ Move to...</button>
             </div>
           `;
-          modal.classList.remove('hidden');
+          modal.style.display = 'flex';
         } catch(e) { this._btnRestore(btn); alert('Error: ' + e.message); }
         this._btnRestore(btn);
       },
