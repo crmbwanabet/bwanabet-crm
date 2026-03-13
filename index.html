@@ -9976,11 +9976,10 @@ Total Players: ${s.total}`;
       },
 
       async updateVoice(btn) {
-
-        this._btnLoad(btn, 'Updating...');
         const voiceId = document.getElementById('va-settings-voiceid').value.trim();
-        if (!voiceId) return alert('Enter a Voice ID');
-        if (!confirm(`Update voice to "${voiceId}"?.`)) return;
+        if (!voiceId) { alert('Enter a Voice ID'); return; }
+        if (!confirm(`Update voice to "${voiceId}"?`)) return;
+        this._btnLoad(btn, 'Updating...');
         try {
           const r = await fetch('https://13.246.211.152:8080/api/voice/update', {
             method:'POST', headers:{'Content-Type':'application/json'},
