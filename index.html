@@ -9995,6 +9995,7 @@ Total Players: ${s.total}`;
           alert('Voice update started: ' + d.message);
           this.refreshVoiceStatus();
         } catch(e) { alert('Error: ' + e.message); }
+        this._btnRestore(btn);
       },
 
       async loadCallSettings() {
