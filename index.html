@@ -2157,7 +2157,22 @@ BEHAVIOUR RULES:
               <button onclick="VA.markAllDone(this)" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 flex items-center gap-2"><i data-lucide="check-check" class="h-4 w-4"></i>Mark All Done</button>
               <button onclick="VA.clearList(this)" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 flex items-center gap-2"><i data-lucide="trash-2" class="h-4 w-4"></i>Clear List</button>
               <button onclick="VA.loadOutcomeList(this)" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200"><i data-lucide="refresh-cw" class="h-4 w-4 inline mr-1"></i>Refresh</button>
+              <div class="relative">
+                <button onclick="VA.toggleExportMenu()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2"><i data-lucide="download" class="h-4 w-4"></i>Export</button>
+                <div id="va-export-menu" class="hidden absolute top-full mt-1 right-0 bg-white border rounded-lg shadow-lg z-50 py-1 w-40">
+                  <button onclick="VA.exportList('csv')" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"><i data-lucide="file-text" class="h-4 w-4 text-slate-500"></i>CSV</button>
+                  <button onclick="VA.exportList('excel')" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"><i data-lucide="file-spreadsheet" class="h-4 w-4 text-green-600"></i>Excel</button>
+                </div>
+              </div>
               <div class="ml-auto text-sm text-slate-500">Showing: <strong id="va-ol-showing">0</strong> records</div>
+            </div>
+            <!-- Mass action bar (hidden until items selected) -->
+            <div id="va-mass-action-bar" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex flex-wrap items-center gap-3 sticky top-0 z-40">
+              <span class="text-sm font-semibold text-blue-800"><span id="va-selected-count">0</span> selected</span>
+              <button onclick="VA.massMove()" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-medium rounded-lg hover:bg-slate-700 flex items-center gap-1"><i data-lucide="arrow-right" class="h-3 w-3"></i>Move to...</button>
+              <button onclick="VA.massDelete()" class="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 flex items-center gap-1"><i data-lucide="trash-2" class="h-3 w-3"></i>Delete</button>
+              <button onclick="VA.massExport('csv')" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 flex items-center gap-1"><i data-lucide="download" class="h-3 w-3"></i>Export Selected</button>
+              <button onclick="VA.clearSelection()" class="ml-auto px-3 py-1.5 text-slate-600 text-xs font-medium rounded-lg hover:bg-slate-100">Clear Selection</button>
             </div>
             <div id="va-outcome-list-content">
               <div class="bg-white rounded-xl shadow-sm p-8 text-center text-slate-400"><i data-lucide="inbox" class="h-10 w-10 mx-auto mb-3 opacity-40"></i><p>Select a list above</p></div>
@@ -9439,8 +9454,10 @@ Total Players: ${s.total}`;
             container.innerHTML = '<div class="bg-white rounded-xl shadow-sm p-8 text-center text-slate-400"><i data-lucide="check-circle" class="h-10 w-10 mx-auto mb-3 opacity-40"></i><p>No records</p></div>';
             this._btnRestore(btn); lucide.createIcons(); return;
           }
+          this._outcomeRecords = records; // store for export
           const rows = records.map(r => this.renderOutcomeRow(r, list)).join('');
-          container.innerHTML = `<div class="bg-white rounded-xl shadow-sm overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-slate-50 border-b"><tr><th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Phone</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Summary</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 hidden md:table-cell">Details</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 hidden lg:table-cell">Date</th><th class="px-4 py-3 text-center text-xs font-semibold text-slate-600">Actions</th></tr></thead><tbody id="va-ol-tbody">${rows}</tbody></table></div></div>`;
+          container.innerHTML = `<div class="bg-white rounded-xl shadow-sm overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-slate-50 border-b"><tr><th class="px-2 py-3 text-center w-10"><input type="checkbox" id="va-ol-select-all" onchange="VA.toggleSelectAll(this)" class="rounded"></th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Phone</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Summary</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 hidden md:table-cell">Details</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 hidden lg:table-cell">Date</th><th class="px-4 py-3 text-center text-xs font-semibold text-slate-600">Actions</th></tr></thead><tbody id="va-ol-tbody">${rows}</tbody></table></div></div>`;
+          this._selectedIds = new Set();
           this._btnRestore(btn);
           lucide.createIcons();
         } catch(e) { this._btnRestore(btn); container.innerHTML = `<div class="bg-red-50 rounded-xl p-4 text-red-700">Error: ${e.message}</div>`; }
@@ -9460,6 +9477,7 @@ Total Players: ${s.total}`;
           detailHtml = `${bl} ${r.blacklist_reason || ''}`;
         }
         return `<tr class="border-b hover:bg-slate-50 ${doneBg}">
+          <td class="px-2 py-3 text-center"><input type="checkbox" data-id="${r.id}" data-phone="${r.phone_number}" onchange="VA.onRowSelect(this)" class="va-ol-checkbox rounded"></td>
           <td class="px-4 py-3 font-mono font-medium text-slate-800">${r.phone_number}</td>
           <td class="px-4 py-3 text-slate-600" style="max-width:320px;white-space:normal;word-break:break-word;">${r.summary || '-'}</td>
           <td class="px-4 py-3 hidden md:table-cell">${detailHtml || '-'}</td>
@@ -9555,6 +9573,140 @@ Total Players: ${s.total}`;
           alert('Error: ' + e.message);
         }
         this._btnRestore(btn);
+      },
+
+      // ── Selection & Mass Actions ──────────────────────────────────
+      _selectedIds: new Set(),
+      _outcomeRecords: [],
+
+      toggleSelectAll(checkbox) {
+        const checkboxes = document.querySelectorAll('.va-ol-checkbox');
+        checkboxes.forEach(cb => { cb.checked = checkbox.checked; });
+        this._selectedIds = new Set();
+        if (checkbox.checked) {
+          checkboxes.forEach(cb => { this._selectedIds.add(cb.dataset.id); });
+        }
+        this._updateMassBar();
+      },
+
+      onRowSelect(checkbox) {
+        if (checkbox.checked) this._selectedIds.add(checkbox.dataset.id);
+        else this._selectedIds.delete(checkbox.dataset.id);
+        const all = document.getElementById('va-ol-select-all');
+        const total = document.querySelectorAll('.va-ol-checkbox').length;
+        if (all) all.checked = this._selectedIds.size === total && total > 0;
+        this._updateMassBar();
+      },
+
+      _updateMassBar() {
+        const bar = document.getElementById('va-mass-action-bar');
+        const countEl = document.getElementById('va-selected-count');
+        if (this._selectedIds.size > 0) {
+          bar.classList.remove('hidden');
+          countEl.textContent = this._selectedIds.size;
+        } else {
+          bar.classList.add('hidden');
+        }
+      },
+
+      clearSelection() {
+        this._selectedIds = new Set();
+        document.querySelectorAll('.va-ol-checkbox').forEach(cb => { cb.checked = false; });
+        const all = document.getElementById('va-ol-select-all');
+        if (all) all.checked = false;
+        this._updateMassBar();
+      },
+
+      async massDelete() {
+        const count = this._selectedIds.size;
+        if (!count) return;
+        if (!confirm(`Delete ${count} selected record(s)? This cannot be undone.`)) return;
+        try {
+          const r = await fetch(`${this.serverUrl}/outcomes/batch/delete`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify([...this._selectedIds])
+          });
+          const d = await r.json();
+          alert(`Deleted ${d.deleted} of ${d.total} records.`);
+          this.clearSelection();
+          this.loadOutcomeList();
+          this.loadOutcomeCounts();
+        } catch(e) { alert('Error: ' + e.message); }
+      },
+
+      async massMove() {
+        const count = this._selectedIds.size;
+        if (!count) return;
+        const options = ['callback','take_action','blacklist_soft','blacklist_hard','no_action','no_answer'];
+        const labels = ['Callback','Take Action','Soft Blacklist','Hard Blacklist','No Action','No Answer'];
+        const choice = prompt('Move ' + count + ' record(s) to:\n' + options.map((o,i) => `${i+1}. ${labels[i]}`).join('\n') + '\n\nEnter number (1-6):');
+        const idx = parseInt(choice) - 1;
+        if (idx < 0 || idx >= options.length) return;
+        try {
+          const r = await fetch(`${this.serverUrl}/outcomes/batch/move`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ ids: [...this._selectedIds], outcome: options[idx], moved_by: App.currentUser?.email || 'admin' })
+          });
+          const d = await r.json();
+          alert(`Moved ${d.moved} of ${d.total} records to ${labels[idx]}.`);
+          this.clearSelection();
+          this.loadOutcomeList();
+          this.loadOutcomeCounts();
+        } catch(e) { alert('Error: ' + e.message); }
+      },
+
+      // ── Export ──────────────────────────────────────────────────────
+      toggleExportMenu() {
+        document.getElementById('va-export-menu').classList.toggle('hidden');
+      },
+
+      _getExportData(selectedOnly = false) {
+        const records = this._outcomeRecords || [];
+        if (selectedOnly && this._selectedIds.size > 0) {
+          return records.filter(r => this._selectedIds.has(r.id));
+        }
+        return records;
+      },
+
+      exportList(format) {
+        document.getElementById('va-export-menu')?.classList.add('hidden');
+        const data = this._getExportData(false);
+        if (!data.length) return alert('No records to export.');
+        this._doExport(data, format, this.currentOutcomeList);
+      },
+
+      massExport(format) {
+        const data = this._getExportData(true);
+        if (!data.length) return alert('No records selected.');
+        this._doExport(data, format, this.currentOutcomeList + '_selected');
+      },
+
+      _doExport(records, format, filename) {
+        const headers = ['Phone','Outcome','Summary','Details','Duration (s)','Date','Actioned'];
+        const rows = records.map(r => [
+          r.phone_number || '',
+          r.outcome || '',
+          (r.summary || '').replace(/"/g, '""'),
+          (r.bonus_details || r.callback_reason || r.blacklist_reason || '').replace(/"/g, '""'),
+          r.call_duration || '',
+          r.created_at ? new Date(r.created_at).toLocaleString() : '',
+          r.actioned ? 'Yes' : 'No',
+        ]);
+
+        if (format === 'csv') {
+          const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = `${filename}_${new Date().toISOString().slice(0,10)}.csv`;
+          a.click(); URL.revokeObjectURL(url);
+        } else if (format === 'excel') {
+          if (typeof XLSX === 'undefined') return alert('XLSX library not loaded.');
+          const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, filename);
+          XLSX.writeFile(wb, `${filename}_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
       },
 
       async markAllDone(btn) {
