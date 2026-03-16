@@ -8387,7 +8387,7 @@ Total Players: ${s.total}`;
             </div>`;
           }).join('');
           lucide.createIcons();
-        } catch(e) { container.innerHTML = '<p class="text-red-500 text-sm">Could not load campaigns</p>'; }
+        } catch(e) { console.warn('Campaign list fetch failed:', e.message); }
       },
 
       async cancelCampaign(campaign_id, btn) {
@@ -8461,14 +8461,19 @@ Total Players: ${s.total}`;
       async refreshTracker() {
         await this._refreshActiveCampaign();
       },
+      _trackerFailCount: 0,
+
       async _refreshActiveCampaign() {
         const section = document.getElementById('va-tr-outcomes-section');
         const content = document.getElementById('va-tr-active-content');
         const dot = document.getElementById('va-tr-dot');
         try {
           const r = await fetch(`${this.serverUrl}/campaign/list`);
+          if (!r.ok) throw new Error(`Server ${r.status}`);
           const campaigns = await r.json();
+          this._trackerFailCount = 0;
           const active = campaigns.filter(c => c.status === 'running' || c.status === 'paused');
+          const running = active.filter(c => c.status === 'running');
           if (!active.length) {
             dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400';
             content.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">No campaign running</p>';
@@ -8564,7 +8569,12 @@ Total Players: ${s.total}`;
           }
           lucide.createIcons();
         } catch(e) {
-          content.innerHTML = '<p class="text-red-400 text-xs">Error loading</p>';
+          this._trackerFailCount = (this._trackerFailCount || 0) + 1;
+          console.error('Tracker error #' + this._trackerFailCount + ':', e.message, e.stack);
+          if (this._trackerFailCount >= 3) {
+            content.innerHTML = `<p class="text-red-400 text-xs">Error: ${e.message}</p>`;
+          }
+          // silently retry on next poll cycle
         }
       },
       _refreshDashboard() {
@@ -8609,9 +8619,7 @@ Total Players: ${s.total}`;
                 document.getElementById('va-tracker-panel').classList.remove('hidden');
               }
             }
-            if (this._trackerOpen) {
-              this._refreshActiveCampaign();
-            }
+            this._refreshActiveCampaign();
           }).catch(()=>{});
         }, 5000);
       },
@@ -9607,7 +9615,8 @@ Total Players: ${s.total}`;
         const colors = {callback:'bg-amber-500',take_action:'bg-emerald-600',blacklist:'bg-red-600',no_action:'bg-slate-700',no_answer:'bg-orange-500',errors:'bg-red-700'};
         const tab = document.getElementById('va-ol-tab-' + list);
         if (tab) { tab.classList.add(colors[list]||'bg-slate-800','text-white'); tab.classList.remove('text-slate-500','hover:bg-slate-100'); }
-        if (list !== 'errors') this.loadOutcomeList();
+        if (list === 'errors') this.showCallErrors();
+        else this.loadOutcomeList();
       },
 
       async showCallErrors() {
@@ -9703,7 +9712,7 @@ Total Players: ${s.total}`;
         const actioned = document.getElementById('va-ol-filter-actioned')?.value;
         const container = document.getElementById('va-outcome-list-content');
         if (!container) { this._btnRestore(btn); return; }
-        if (!list) { this._btnRestore(btn); return; }
+        if (!list || list === 'errors') { this._btnRestore(btn); return; }
         container.innerHTML = '<div class="bg-white rounded-xl p-8 text-center text-slate-400"><div class="animate-spin h-8 w-8 border-2 border-slate-300 border-t-slate-700 rounded-full mx-auto mb-3"></div><p>Loading...</p></div>';
         try {
           let url;
