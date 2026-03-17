@@ -2211,25 +2211,52 @@ BEHAVIOUR RULES:
                 <i data-lucide="play" class="h-4 w-4"></i>Run Campaign
               </button>
             </div>
-            <div class="bg-white rounded-xl shadow-sm p-3 mb-4 flex flex-wrap items-center gap-3">
-              <select id="va-ol-filter-actioned" onchange="VA.loadOutcomeList()" class="px-3 py-2 border rounded-lg text-sm">
-                <option value="false">Pending Only</option>
-                <option value="true">Done Only</option>
-                <option value="">All</option>
-              </select>
-              <button onclick="VA.markAllDone(this)" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 flex items-center gap-2"><i data-lucide="check-check" class="h-4 w-4"></i>Mark All Done</button>
-              <button onclick="VA.clearList(this)" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 flex items-center gap-2"><i data-lucide="trash-2" class="h-4 w-4"></i>Clear List</button>
-              <button onclick="VA.loadOutcomeList(this)" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200"><i data-lucide="refresh-cw" class="h-4 w-4 inline mr-1"></i>Refresh</button>
-              <div class="relative">
-                <button onclick="VA.toggleExportMenu()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2"><i data-lucide="download" class="h-4 w-4"></i>Export</button>
-                <div id="va-export-menu" class="hidden absolute top-full mt-1 right-0 bg-white border rounded-lg shadow-lg z-50 py-1 w-40">
-                  <button onclick="VA.exportList('csv')" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"><i data-lucide="file-text" class="h-4 w-4 text-slate-500"></i>CSV</button>
-                  <button onclick="VA.exportList('excel')" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"><i data-lucide="file-spreadsheet" class="h-4 w-4 text-green-600"></i>Excel</button>
-                  <hr class="my-1 border-slate-100">
-                  <button onclick="VA.exportToSlack(false)" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"><i data-lucide="send" class="h-4 w-4 text-purple-600"></i>Slack</button>
+            <div class="bg-white rounded-xl shadow-sm p-3 mb-4 space-y-3">
+              <!-- Row 1: Campaign filter + phone search + date range -->
+              <div class="flex flex-wrap items-center gap-3">
+                <select id="va-ol-filter-campaign" onchange="VA.loadOutcomeList();VA.loadOutcomeCounts()" class="px-3 py-2 border rounded-lg text-sm min-w-[200px]">
+                  <option value="">All Campaigns</option>
+                </select>
+                <div class="relative">
+                  <i data-lucide="search" class="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                  <input id="va-ol-filter-phone" type="text" placeholder="Search phone..." class="pl-9 pr-3 py-2 border rounded-lg text-sm w-44" onkeydown="if(event.key==='Enter'){VA.loadOutcomeList()}">
                 </div>
+                <div class="flex items-center gap-1.5">
+                  <select id="va-ol-filter-date-preset" onchange="VA.applyDatePreset()" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="7d">Last 7 Days</option>
+                    <option value="30d">Last 30 Days</option>
+                    <option value="custom">Custom Range</option>
+                  </select>
+                  <input id="va-ol-filter-date-from" type="date" class="px-2 py-2 border rounded-lg text-sm hidden" onchange="VA.loadOutcomeList()">
+                  <span id="va-ol-date-to-label" class="text-slate-400 text-xs hidden">to</span>
+                  <input id="va-ol-filter-date-to" type="date" class="px-2 py-2 border rounded-lg text-sm hidden" onchange="VA.loadOutcomeList()">
+                </div>
+                <button onclick="VA.clearOutcomeFilters()" class="px-3 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-sm" title="Clear all filters"><i data-lucide="x-circle" class="h-4 w-4 inline mr-1"></i>Clear</button>
               </div>
-              <div class="ml-auto text-sm text-slate-500">Showing: <strong id="va-ol-showing">0</strong> records</div>
+              <!-- Row 2: Actions -->
+              <div class="flex flex-wrap items-center gap-3 border-t pt-3">
+                <select id="va-ol-filter-actioned" onchange="VA.loadOutcomeList()" class="px-3 py-2 border rounded-lg text-sm">
+                  <option value="false">Pending Only</option>
+                  <option value="true">Done Only</option>
+                  <option value="">All</option>
+                </select>
+                <button onclick="VA.markAllDone(this)" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 flex items-center gap-2"><i data-lucide="check-check" class="h-4 w-4"></i>Mark All Done</button>
+                <button onclick="VA.clearList(this)" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 flex items-center gap-2"><i data-lucide="trash-2" class="h-4 w-4"></i>Clear List</button>
+                <button onclick="VA.loadOutcomeList(this)" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200"><i data-lucide="refresh-cw" class="h-4 w-4 inline mr-1"></i>Refresh</button>
+                <div class="relative">
+                  <button onclick="VA.toggleExportMenu()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2"><i data-lucide="download" class="h-4 w-4"></i>Export</button>
+                  <div id="va-export-menu" class="hidden absolute top-full mt-1 right-0 bg-white border rounded-lg shadow-lg z-50 py-1 w-40">
+                    <button onclick="VA.exportList('csv')" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"><i data-lucide="file-text" class="h-4 w-4 text-slate-500"></i>CSV</button>
+                    <button onclick="VA.exportList('excel')" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"><i data-lucide="file-spreadsheet" class="h-4 w-4 text-green-600"></i>Excel</button>
+                    <hr class="my-1 border-slate-100">
+                    <button onclick="VA.exportToSlack(false)" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"><i data-lucide="send" class="h-4 w-4 text-purple-600"></i>Slack</button>
+                  </div>
+                </div>
+                <div class="ml-auto text-sm text-slate-500">Showing: <strong id="va-ol-showing">0</strong> records</div>
+              </div>
             </div>
             <!-- Mass action bar (hidden until items selected) -->
             <div id="va-mass-action-bar" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex flex-wrap items-center gap-3 sticky top-0 z-40">
@@ -7902,7 +7929,7 @@ Total Players: ${s.total}`;
         } else {
           if (this._monitorPoller) { clearInterval(this._monitorPoller); this._monitorPoller = null; }
         }
-        if (tab === 'outcomes') this.loadOutcomeCounts();
+        if (tab === 'outcomes') { this._loadCampaignFilterOptions(); this.loadOutcomeCounts(); }
         if (tab === 'settings') { this.refreshVoiceStatus(); this.loadCallSettings(); }
         if (tab === 'campaigns') {
           this.renderCampaignHistory();
@@ -9577,9 +9604,10 @@ Total Players: ${s.total}`;
       // ── Outcome Lists ──────────────────────────────────────────
       async loadOutcomeCounts() {
         const lists = ['callback','take_action','blacklist','no_action','no_answer'];
+        const extraFilters = this._getOutcomeFilterParams();
         for (const l of lists) {
           try {
-            const endpoint = l === 'blacklist' ? '/api/outcomes/blacklist_list?limit=500' : `/api/outcomes/${l}?actioned=false&limit=500`;
+            const endpoint = l === 'blacklist' ? `/api/outcomes/blacklist_list?limit=500${extraFilters ? '&'+extraFilters : ''}` : `/api/outcomes/${l}?actioned=false&limit=500${extraFilters ? '&'+extraFilters : ''}`;
             const r = await fetch(`${this.serverUrl}/${endpoint.replace(/^\/api\//,'')}`);
             const d = await r.json();
             const count = Array.isArray(d) ? d.length : 0;
@@ -9706,6 +9734,64 @@ Total Players: ${s.total}`;
         }
       },
 
+      _getOutcomeFilterParams() {
+        const params = new URLSearchParams();
+        const campaignUuid = document.getElementById('va-ol-filter-campaign')?.value;
+        const phone = document.getElementById('va-ol-filter-phone')?.value?.trim();
+        const dateFrom = document.getElementById('va-ol-filter-date-from')?.value;
+        const dateTo = document.getElementById('va-ol-filter-date-to')?.value;
+        if (campaignUuid) params.set('campaign_uuid', campaignUuid);
+        if (phone) params.set('phone', phone);
+        if (dateFrom) params.set('date_from', dateFrom);
+        if (dateTo) params.set('date_to', dateTo);
+        return params.toString();
+      },
+
+      applyDatePreset() {
+        const preset = document.getElementById('va-ol-filter-date-preset')?.value;
+        const fromEl = document.getElementById('va-ol-filter-date-from');
+        const toEl = document.getElementById('va-ol-filter-date-to');
+        const toLbl = document.getElementById('va-ol-date-to-label');
+        if (preset === 'custom') {
+          fromEl?.classList.remove('hidden'); toEl?.classList.remove('hidden'); toLbl?.classList.remove('hidden');
+          return;
+        }
+        fromEl?.classList.add('hidden'); toEl?.classList.add('hidden'); toLbl?.classList.add('hidden');
+        const today = new Date(); const fmt = d => d.toISOString().slice(0,10);
+        if (preset === 'today') { fromEl.value = fmt(today); toEl.value = fmt(today); }
+        else if (preset === 'yesterday') { const y = new Date(today); y.setDate(y.getDate()-1); fromEl.value = fmt(y); toEl.value = fmt(y); }
+        else if (preset === '7d') { const d = new Date(today); d.setDate(d.getDate()-7); fromEl.value = fmt(d); toEl.value = fmt(today); }
+        else if (preset === '30d') { const d = new Date(today); d.setDate(d.getDate()-30); fromEl.value = fmt(d); toEl.value = fmt(today); }
+        else { fromEl.value = ''; toEl.value = ''; }
+        this.loadOutcomeList();
+      },
+
+      clearOutcomeFilters() {
+        const ids = ['va-ol-filter-campaign','va-ol-filter-phone','va-ol-filter-date-preset','va-ol-filter-date-from','va-ol-filter-date-to','va-ol-filter-actioned'];
+        ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+        document.getElementById('va-ol-filter-actioned').value = 'false';
+        document.getElementById('va-ol-filter-date-from')?.classList.add('hidden');
+        document.getElementById('va-ol-filter-date-to')?.classList.add('hidden');
+        document.getElementById('va-ol-date-to-label')?.classList.add('hidden');
+        this.loadOutcomeList(); this.loadOutcomeCounts();
+      },
+
+      async _loadCampaignFilterOptions() {
+        try {
+          const r = await fetch(`${this.serverUrl}/campaigns/history?limit=50`);
+          const campaigns = await r.json();
+          const sel = document.getElementById('va-ol-filter-campaign');
+          if (!sel || !Array.isArray(campaigns)) return;
+          sel.innerHTML = '<option value="">All Campaigns</option>';
+          campaigns.forEach(c => {
+            const name = c.name || c.text_campaign_id || c.id;
+            const shortName = name.length > 50 ? name.slice(0,47) + '...' : name;
+            const dt = c.created_at ? new Date(c.created_at).toLocaleDateString([],{day:'2-digit',month:'short'}) : '';
+            sel.innerHTML += `<option value="${c.id}">${dt ? dt + ' — ' : ''}${shortName}</option>`;
+          });
+        } catch(e) { console.error('Failed to load campaign filter:', e); }
+      },
+
       async loadOutcomeList(btn) {
         this._btnLoad(btn, 'Loading...');
         const list = this.currentOutcomeList;
@@ -9715,9 +9801,10 @@ Total Players: ${s.total}`;
         if (!list || list === 'errors') { this._btnRestore(btn); return; }
         container.innerHTML = '<div class="bg-white rounded-xl p-8 text-center text-slate-400"><div class="animate-spin h-8 w-8 border-2 border-slate-300 border-t-slate-700 rounded-full mx-auto mb-3"></div><p>Loading...</p></div>';
         try {
+          const extraFilters = this._getOutcomeFilterParams();
           let url;
-          if (list === 'blacklist') url = `${this.serverUrl}/outcomes/blacklist_list?limit=500`;
-          else url = `${this.serverUrl}/outcomes/${list}?limit=500${actioned !== '' ? '&actioned='+actioned : ''}`;
+          if (list === 'blacklist') url = `${this.serverUrl}/outcomes/blacklist_list?limit=500${extraFilters ? '&'+extraFilters : ''}`;
+          else url = `${this.serverUrl}/outcomes/${list}?limit=500${actioned !== '' ? '&actioned='+actioned : ''}${extraFilters ? '&'+extraFilters : ''}`;
           const r = await fetch(url);
           if (!r.ok) throw new Error(`Server returned ${r.status}`);
           const records = await r.json();
