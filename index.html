@@ -9336,7 +9336,7 @@ Total Players: ${s.total}`;
       async saveFillers(scriptId, btn) {
 
         this._btnLoad(btn, 'Saving...');
-        if (!scriptId) return;
+        if (!scriptId) { this._btnRestore(btn); return; }
         try {
           // 1. Wipe existing fillers for this script
           await fetch('https://13.246.211.152:8080/api/fillers/script/' + scriptId, { method: 'DELETE' });
@@ -9353,7 +9353,9 @@ Total Players: ${s.total}`;
               })
             });
           }
-        } catch(e) { console.warn('saveFillers error', e); }
+          this._btnRestore(btn);
+          this.toast('Fillers saved successfully', 'success');
+        } catch(e) { console.warn('saveFillers error', e); this._btnRestore(btn); this.toast('Failed to save fillers', 'error'); }
       },
       // ── End Fillers ────────────────────────────────────────────
 
