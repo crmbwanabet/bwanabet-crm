@@ -9354,8 +9354,7 @@ Total Players: ${s.total}`;
             });
           }
           this._btnRestore(btn);
-          this.toast('Fillers saved successfully', 'success');
-        } catch(e) { console.warn('saveFillers error', e); this._btnRestore(btn); this.toast('Failed to save fillers', 'error'); }
+        } catch(e) { console.warn('saveFillers error', e); this._btnRestore(btn); }
       },
       // ── End Fillers ────────────────────────────────────────────
 
