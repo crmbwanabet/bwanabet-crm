@@ -9179,9 +9179,9 @@ Total Players: ${s.total}`;
 
         this._btnLoad(btn, 'Saving...');
         const payload = this.getBuilderPayload();
-        if (!payload.name) return alert('Please enter a script name');
-        if (this.currentBuilderMode === 'freewrite' && !payload.freewrite_content) return alert('Please write your script content');
-        if (this.currentBuilderMode === 'guided' && !payload.company_name) return alert('Please enter a company name');
+        if (!payload.name) { this._btnRestore(btn); return alert('Please enter a script name'); }
+        if (this.currentBuilderMode === 'freewrite' && !payload.freewrite_content) { this._btnRestore(btn); return alert('Please write your script content'); }
+        if (this.currentBuilderMode === 'guided' && !payload.company_name) { this._btnRestore(btn); return alert('Please enter a company name'); }
         try {
           const url = this.currentScriptId ? 'https://13.246.211.152:8080/api/scripts/' + this.currentScriptId : 'https://13.246.211.152:8080/api/scripts';
           const method = this.currentScriptId ? 'PATCH' : 'POST';
@@ -9195,8 +9195,9 @@ Total Players: ${s.total}`;
           // Save fillers together with script
           if (this.currentScriptId) await this.saveFillers(this.currentScriptId);
           await this.loadScriptsDropdowns();
-          alert('✅ Script saved: ' + payload.name);
-        } catch(e) { alert('Save error: ' + e.message); }
+          this._btnRestore(btn);
+          alert('Script saved: ' + payload.name);
+        } catch(e) { this._btnRestore(btn); alert('Save error: ' + e.message); }
       },
 
       async duplicateScript(id) {
