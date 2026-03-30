@@ -391,6 +391,7 @@
           <button id="tab-callcenter" onclick="switchTab('callcenter')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="phone" class="h-4 w-4"></i><span>Call Center</span></button>
           <button id="tab-agents" onclick="switchTab('agents')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="megaphone" class="h-4 w-4"></i><span>Agents</span></button>
           <button id="tab-fraud" onclick="switchTab('fraud')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="shield-alert" class="h-4 w-4"></i><span>Fraud</span></button>
+          <button id="tab-bonuses" onclick="switchTab('bonuses')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="gift" class="h-4 w-4"></i><span>Bonuses</span></button>
           <button id="tab-settings" onclick="switchTab('settings')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2"><i data-lucide="settings" class="h-4 w-4"></i><span data-translate="settings">Settings</span></button>
         </nav>
       </div>
@@ -1413,6 +1414,231 @@
         </div>
       </div>
 
+
+      <!-- ── Bonus Decision Engine Tab ──────────────────────────── -->
+      <div id="content-bonuses" class="tab-content hidden">
+        <!-- Sub-tabs -->
+        <div class="flex gap-2 mb-6 flex-wrap items-center">
+          <button onclick="BonusEngine.switchSubTab('overview')" id="bonusSubTab-overview" class="px-4 py-2 rounded-lg text-sm font-semibold bg-yellow-400 text-black">Overview</button>
+          <button onclick="BonusEngine.switchSubTab('recommendations')" id="bonusSubTab-recommendations" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200">Recommendations</button>
+          <button onclick="BonusEngine.switchSubTab('signals')" id="bonusSubTab-signals" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200">Negative Signals</button>
+          <button onclick="BonusEngine.switchSubTab('audit')" id="bonusSubTab-audit" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200">Audit Trail</button>
+          <button onclick="BonusEngine.switchSubTab('config')" id="bonusSubTab-config" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200">Settings</button>
+          <div class="ml-auto flex items-center gap-3">
+            <span class="text-xs text-slate-400" id="bonus-last-run"></span>
+            <button onclick="BonusEngine.run()" class="px-4 py-2 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 inline-flex items-center gap-2 text-sm"><i data-lucide="play" class="h-4 w-4"></i>Run Engine</button>
+          </div>
+        </div>
+
+        <!-- ── Overview ──────────────────────────────────────────── -->
+        <div id="bonusSub-overview">
+          <!-- KPI Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-slate-500">Recommendations</span>
+                <div class="p-2 bg-amber-100 rounded-lg"><i data-lucide="lightbulb" class="h-4 w-4 text-amber-600"></i></div>
+              </div>
+              <div class="text-2xl font-bold text-slate-800" id="bonus-kpi-recs">-</div>
+              <div class="text-xs text-slate-400 mt-1">Players needing action</div>
+            </div>
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-slate-500">Projected EV</span>
+                <div class="p-2 bg-emerald-100 rounded-lg"><i data-lucide="trending-up" class="h-4 w-4 text-emerald-600"></i></div>
+              </div>
+              <div class="text-2xl font-bold text-emerald-600" id="bonus-kpi-ev">-</div>
+              <div class="text-xs text-slate-400 mt-1">Expected return from actions</div>
+            </div>
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-slate-500">Bonus Budget</span>
+                <div class="p-2 bg-blue-100 rounded-lg"><i data-lucide="wallet" class="h-4 w-4 text-blue-600"></i></div>
+              </div>
+              <div class="text-2xl font-bold text-slate-800" id="bonus-kpi-budget">-</div>
+              <div class="text-xs text-slate-400 mt-1">Total recommended spend</div>
+            </div>
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-slate-500">Negative Signals</span>
+                <div class="p-2 bg-red-100 rounded-lg"><i data-lucide="alert-triangle" class="h-4 w-4 text-red-600"></i></div>
+              </div>
+              <div class="text-2xl font-bold text-red-600" id="bonus-kpi-signals">-</div>
+              <div class="text-xs text-slate-400 mt-1"><span id="bonus-kpi-hard">0</span> hard &middot; <span id="bonus-kpi-soft">0</span> soft</div>
+            </div>
+          </div>
+
+          <!-- Action Distribution + Efficiency -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+              <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="pie-chart" class="h-5 w-5 text-slate-500"></i>Action Distribution</h3>
+              <div id="bonus-action-dist" class="space-y-3">
+                <div class="text-center py-8 text-slate-400 text-sm">Run engine to see distribution</div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+              <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="gauge" class="h-5 w-5 text-slate-500"></i>Bonus Efficiency</h3>
+              <div id="bonus-efficiency" class="space-y-4">
+                <div class="text-center py-8 text-slate-400 text-sm">No historical data yet</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formula Reference -->
+          <div class="bg-slate-50 rounded-xl p-5 border border-slate-200">
+            <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="book-open" class="h-5 w-5 text-slate-500"></i>Engine Rules (Constitution v2.0)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div><span class="font-semibold text-slate-700">ROI Formula:</span><br><code class="text-xs bg-white px-2 py-1 rounded border">EV = P(Dep) &times; ExpDep &times; Margin &minus; Cost &minus; RiskAdj</code></div>
+              <div><span class="font-semibold text-slate-700">Bonus Cap:</span><br><code class="text-xs bg-white px-2 py-1 rounded border">&le; 20% of Expected Deposit AND ROI-positive</code></div>
+              <div><span class="font-semibold text-slate-700">Trigger:</span><br><code class="text-xs bg-white px-2 py-1 rounded border">Churn status change only</code></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Recommendations ───────────────────────────────────── -->
+        <div id="bonusSub-recommendations" class="hidden">
+          <!-- Filter bar -->
+          <div class="flex gap-2 mb-4 flex-wrap items-center">
+            <button onclick="BonusEngine.filterRecs('all')" id="bonus-filter-all" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-yellow-400 text-black">All</button>
+            <button onclick="BonusEngine.filterRecs('bonus')" id="bonus-filter-bonus" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200">Bonus</button>
+            <button onclick="BonusEngine.filterRecs('deposit_booster')" id="bonus-filter-deposit_booster" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200">Deposit Booster</button>
+            <button onclick="BonusEngine.filterRecs('cashback')" id="bonus-filter-cashback" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200">Cashback</button>
+            <button onclick="BonusEngine.filterRecs('vip_perk')" id="bonus-filter-vip_perk" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200">VIP Perk</button>
+            <button onclick="BonusEngine.filterRecs('reminder')" id="bonus-filter-reminder" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200">Reminder</button>
+            <button onclick="BonusEngine.filterRecs('restriction')" id="bonus-filter-restriction" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200">Restriction</button>
+            <span class="ml-auto text-xs text-slate-400" id="bonus-rec-count"></span>
+          </div>
+          <!-- Table -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-600">Player</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-600">Churn</th>
+                    <th class="px-4 py-3 text-right font-semibold text-slate-600">P(Dep)</th>
+                    <th class="px-4 py-3 text-right font-semibold text-slate-600">Exp. Deposit</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-600">Action</th>
+                    <th class="px-4 py-3 text-right font-semibold text-slate-600">Bonus</th>
+                    <th class="px-4 py-3 text-right font-semibold text-slate-600">EV</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-600">Reason</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-600">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="bonus-rec-tbody"></tbody>
+              </table>
+            </div>
+            <div class="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50">
+              <button onclick="BonusEngine.recPagePrev()" class="px-3 py-1 rounded text-xs font-medium text-slate-600 hover:bg-slate-200">&larr; Prev</button>
+              <span class="text-xs text-slate-500" id="bonus-rec-page-info"></span>
+              <button onclick="BonusEngine.recPageNext()" class="px-3 py-1 rounded text-xs font-medium text-slate-600 hover:bg-slate-200">Next &rarr;</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Negative Signals ──────────────────────────────────── -->
+        <div id="bonusSub-signals" class="hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Hard signals -->
+            <div>
+              <h3 class="font-bold text-red-700 mb-3 flex items-center gap-2"><i data-lucide="shield-off" class="h-5 w-5"></i>Hard Signals <span class="text-xs font-normal text-red-400">(restrict/block)</span></h3>
+              <div id="bonus-hard-signals" class="space-y-2">
+                <div class="text-center py-8 text-slate-400 text-sm">Run engine to detect signals</div>
+              </div>
+            </div>
+            <!-- Soft signals -->
+            <div>
+              <h3 class="font-bold text-amber-700 mb-3 flex items-center gap-2"><i data-lucide="alert-circle" class="h-5 w-5"></i>Soft Signals <span class="text-xs font-normal text-amber-400">(reduce/pause bonuses)</span></h3>
+              <div id="bonus-soft-signals" class="space-y-2">
+                <div class="text-center py-8 text-slate-400 text-sm">Run engine to detect signals</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Audit Trail ───────────────────────────────────────── -->
+        <div id="bonusSub-audit" class="hidden">
+          <div class="flex gap-2 mb-4 items-center">
+            <select id="bonus-audit-filter" onchange="BonusEngine.renderAuditTrail()" class="px-3 py-1.5 rounded-lg text-xs border border-slate-200 focus:outline-none">
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="executed">Executed</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <button onclick="BonusEngine.loadAuditTrail().then(()=>BonusEngine.renderAuditTrail())" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 inline-flex items-center gap-1"><i data-lucide="refresh-cw" class="h-3 w-3"></i>Refresh</button>
+            <span class="ml-auto text-xs text-slate-400" id="bonus-audit-count"></span>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-600">Date</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-600">Player</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-600">Action</th>
+                    <th class="px-4 py-3 text-right font-semibold text-slate-600">Bonus</th>
+                    <th class="px-4 py-3 text-right font-semibold text-slate-600">EV</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-600">Status</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-600">Decided By</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-600">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="bonus-audit-tbody"></tbody>
+              </table>
+            </div>
+            <div class="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50">
+              <button onclick="BonusEngine.auditPagePrev()" class="px-3 py-1 rounded text-xs font-medium text-slate-600 hover:bg-slate-200">&larr; Prev</button>
+              <span class="text-xs text-slate-500" id="bonus-audit-page-info"></span>
+              <button onclick="BonusEngine.auditPageNext()" class="px-3 py-1 rounded text-xs font-medium text-slate-600 hover:bg-slate-200">Next &rarr;</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Settings ──────────────────────────────────────────── -->
+        <div id="bonusSub-config" class="hidden">
+          <div class="max-w-2xl">
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-6">
+              <h3 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="sliders" class="h-5 w-5 text-slate-500"></i>Engine Configuration</h3>
+              <!-- Margin -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">House Margin (%)</label>
+                <input type="number" id="bonus-cfg-margin" step="0.01" min="0" max="1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 outline-none">
+                <p class="text-xs text-slate-400 mt-1">Expected margin on each deposit (e.g. 0.05 = 5%)</p>
+              </div>
+              <!-- Max Bonus % -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Max Bonus (% of Expected Deposit)</label>
+                <input type="number" id="bonus-cfg-maxpct" step="0.01" min="0" max="1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 outline-none">
+                <p class="text-xs text-slate-400 mt-1">Constitution rule: bonus &le; 20% of expected deposit</p>
+              </div>
+              <!-- Risk Adjustment -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Risk Adjustment Base</label>
+                <input type="number" id="bonus-cfg-risk" step="0.01" min="0" max="1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 outline-none">
+                <p class="text-xs text-slate-400 mt-1">Multiplied by bonus cost &times; churn probability</p>
+              </div>
+              <!-- Probability Weights -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-3">P(Deposit|Bonus) Weights <span class="font-normal text-slate-400">(should sum to 1.0)</span></label>
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  <div><label class="block text-xs text-slate-500 mb-1">Recency</label><input type="number" id="bonus-cfg-w-recency" step="0.01" min="0" max="1" class="w-full px-2 py-1.5 border border-slate-200 rounded text-sm text-center"></div>
+                  <div><label class="block text-xs text-slate-500 mb-1">Frequency</label><input type="number" id="bonus-cfg-w-frequency" step="0.01" min="0" max="1" class="w-full px-2 py-1.5 border border-slate-200 rounded text-sm text-center"></div>
+                  <div><label class="block text-xs text-slate-500 mb-1">Monetary</label><input type="number" id="bonus-cfg-w-monetary" step="0.01" min="0" max="1" class="w-full px-2 py-1.5 border border-slate-200 rounded text-sm text-center"></div>
+                  <div><label class="block text-xs text-slate-500 mb-1">Bonus Resp.</label><input type="number" id="bonus-cfg-w-bonusResp" step="0.01" min="0" max="1" class="w-full px-2 py-1.5 border border-slate-200 rounded text-sm text-center"></div>
+                  <div><label class="block text-xs text-slate-500 mb-1">Churn Risk</label><input type="number" id="bonus-cfg-w-churnRisk" step="0.01" min="0" max="1" class="w-full px-2 py-1.5 border border-slate-200 rounded text-sm text-center"></div>
+                </div>
+                <div class="text-xs text-slate-400 mt-2">Total: <span id="bonus-cfg-w-total">1.00</span></div>
+              </div>
+              <!-- Buttons -->
+              <div class="flex gap-3 pt-2">
+                <button onclick="BonusEngine.saveConfigFromUI()" class="px-6 py-2 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 text-sm">Save Settings</button>
+                <button onclick="BonusEngine.resetConfig()" class="px-6 py-2 bg-slate-100 text-slate-600 font-medium rounded-lg hover:bg-slate-200 text-sm">Reset Defaults</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div id="content-settings" class="tab-content hidden">
         <div class="flex items-center gap-2 mb-6">
           <h2 class="text-xl font-bold text-slate-800" data-translate="settings">Settings</h2>
@@ -7803,6 +8029,7 @@ Total Players: ${s.total}`;
       }
       // Auto-load fraud data when switching to fraud tab
       if (t === 'fraud' && typeof FraudPanel !== 'undefined') FraudPanel.load();
+      if (t === 'bonuses' && typeof BonusEngine !== 'undefined') BonusEngine.init();
     }
     function toggleDarkMode() { App.darkMode = !App.darkMode; document.body.classList.toggle('dark', App.darkMode); localStorage.setItem('darkMode', App.darkMode); }
     function toggleCommandPalette(show) { document.getElementById('commandPalette').classList.toggle('open', show); document.getElementById('commandOverlay').classList.toggle('hidden', !show); if (show) document.getElementById('commandInput').focus(); }
@@ -11051,7 +11278,7 @@ Total Players: ${s.total}`;
       AgentManager.init();
       
       document.getElementById('logoutBtn').addEventListener('click', () => App.db.auth.signOut());
-      ['dashboard','profitability','behavior','churn','analytics','players','callcenter','agents','settings'].forEach(t => document.getElementById('tab-'+t)?.addEventListener('click', () => switchTab(t)));
+      ['dashboard','profitability','behavior','churn','analytics','players','callcenter','agents','bonuses','settings'].forEach(t => document.getElementById('tab-'+t)?.addEventListener('click', () => switchTab(t)));
       ['searchInput','profitFilter','prefFilter','churnFilter','valueFilter'].forEach(id => document.getElementById(id)?.addEventListener('input', filterTable));
       // Legacy CSV import removed - using new player upload system
       
@@ -11082,7 +11309,7 @@ Total Players: ${s.total}`;
     
     function applyRoleAccess() {
       const role = App.role;
-      const allTabs = ['dashboard', 'profitability', 'behavior', 'churn', 'analytics', 'players', 'callcenter', 'agents', 'settings'];
+      const allTabs = ['dashboard', 'profitability', 'behavior', 'churn', 'analytics', 'players', 'callcenter', 'agents', 'bonuses', 'settings'];
       
       // Apply Call Center sub-tab access
       CallCenter.applySubTabAccess();
@@ -11208,6 +11435,546 @@ Total Players: ${s.total}`;
           }
         }
         
+
+    // ── Bonus Decision Engine (Constitution v2.0) ─────────────────
+    const BonusEngine = {
+      _initialized: false,
+      config: { margin: 0.05, maxBonusPct: 0.20, riskAdjBase: 0.10, weights: { recency: 0.25, frequency: 0.20, monetary: 0.20, bonusResp: 0.20, churnRisk: 0.15 } },
+      recommendations: [],
+      negativeSignals: [],
+      auditTrail: [],
+      stats: {},
+      currentSubTab: "overview",
+      recPage: 1, recPageSize: 50,
+      auditPage: 1, auditPageSize: 50,
+      recFilter: "all",
+
+      async init() {
+        if (this._initialized) return;
+        await this.loadSettings();
+        await this.loadAuditTrail();
+        this.populateConfigUI();
+        this._initialized = true;
+        refreshIcons();
+      },
+
+      switchSubTab(tab) {
+        ["overview","recommendations","signals","audit","config"].forEach(t => {
+          const el = document.getElementById("bonusSub-" + t);
+          const btn = document.getElementById("bonusSubTab-" + t);
+          if (el) el.classList.toggle("hidden", t !== tab);
+          if (btn) {
+            if (t === tab) { btn.className = "px-4 py-2 rounded-lg text-sm font-semibold bg-yellow-400 text-black"; }
+            else { btn.className = "px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200"; }
+          }
+        });
+        this.currentSubTab = tab;
+        refreshIcons();
+      },
+
+      // ── Core Engine ─────────────────────────────────────────────
+      calcPDeposit(p) {
+        var w = this.config.weights;
+        var maxDays = 180;
+        var recency = Math.max(0, 1 - (p.daysSinceActivity || 0) / maxDays);
+        var freq = Math.min(1, (p.totalBetCount || 0) / 500);
+        var monet = Math.min(1, (parseFloat(p.deposit_amount) || 0) / 10000);
+        var bonusAmt = parseFloat(p.bonus_amount) || 0;
+        var depAmt = parseFloat(p.deposit_amount) || 0;
+        var bonusR = (bonusAmt > 0 && depAmt > 0) ? Math.min(1, depAmt / Math.max(bonusAmt, 1) / 10) : 0.3;
+        var churn = 1 - (p.churnScore || 0) / 100;
+        return Math.min(1, Math.max(0, recency * w.recency + freq * w.frequency + monet * w.monetary + bonusR * w.bonusResp + churn * w.churnRisk));
+      },
+
+      calcExpectedDeposit(p) {
+        var dep = parseFloat(p.deposit_amount) || 0;
+        var cnt = parseInt(p.deposit_count) || 0;
+        return cnt > 0 ? dep / cnt : 0;
+      },
+
+      calcEV(p, bonusCost) {
+        var pDep = this.calcPDeposit(p);
+        var expDep = this.calcExpectedDeposit(p);
+        var riskAdj = this.config.riskAdjBase * bonusCost * (p.churnScore || 0) / 100;
+        return (pDep * expDep * this.config.margin) - bonusCost - riskAdj;
+      },
+
+      calcOptimalBonus(p) {
+        var expDep = this.calcExpectedDeposit(p);
+        var maxB = expDep * this.config.maxBonusPct;
+        var lo = 0, hi = maxB, best = 0;
+        for (var i = 0; i < 20; i++) {
+          var mid = (lo + hi) / 2;
+          if (this.calcEV(p, mid) > 0) { best = mid; lo = mid; } else { hi = mid; }
+        }
+        return Math.round(best * 100) / 100;
+      },
+
+      detectSignals(p) {
+        var signals = [];
+        var dep = parseFloat(p.deposit_amount) || 0;
+        var wd = parseFloat(p.withdrawal_amount) || 0;
+        var bonus = parseFloat(p.bonus_amount) || 0;
+        // Hard
+        if (wd > dep * 0.9 && bonus > 0 && dep > 0) {
+          signals.push({ type: "hard", name: "immediate_withdrawal", label: "Withdrawal after wagering", desc: "Withdrew K" + Math.round(wd).toLocaleString() + " vs K" + Math.round(dep).toLocaleString() + " deposited" });
+        }
+        if (bonus > dep * 0.5 && dep > 0) {
+          signals.push({ type: "hard", name: "bonus_abuse_loop", label: "Bonus abuse pattern", desc: "Bonuses are " + Math.round(bonus / dep * 100) + "% of deposits" });
+        }
+        // Soft
+        if (bonus > 0 && (p.daysSinceActivity || 0) > 30) {
+          signals.push({ type: "soft", name: "no_activity_after_bonus", label: "No activity after bonus", desc: (p.daysSinceActivity || 0) + " days inactive despite bonuses" });
+        }
+        if (bonus > 0 && dep > 0 && bonus / dep > 0.3) {
+          signals.push({ type: "soft", name: "bonus_dependency", label: "Bonus dependency", desc: "Bonus/deposit ratio: " + Math.round(bonus / dep * 100) + "%" });
+        }
+        return signals;
+      },
+
+      getNextBestAction(p) {
+        var signals = this.detectSignals(p);
+        var hard = signals.filter(function(s) { return s.type === "hard"; });
+        var pDep = this.calcPDeposit(p);
+        var expDep = this.calcExpectedDeposit(p);
+        var optBonus = this.calcOptimalBonus(p);
+        var ev = this.calcEV(p, optBonus);
+        var base = { pDep: pDep, expDep: expDep, signals: signals };
+
+        // Restriction for hard signals
+        if (hard.length > 0) return Object.assign(base, { action: "restriction", label: "Restriction", color: "red", bonus: 0, ev: 0, reason: "Hard negative signals detected" });
+        // Do Nothing for healthy players
+        if (p.churnRisk === "low" && pDep > 0.6) return Object.assign(base, { action: "do_nothing", label: "Do Nothing", color: "slate", bonus: 0, ev: 0, reason: "Player is active and healthy" });
+        // Reminder for medium churn
+        if (p.churnRisk === "medium" && pDep > 0.4) return Object.assign(base, { action: "reminder", label: "Reminder", color: "blue", bonus: 0, ev: 0, reason: "Nudge may re-engage without cost" });
+        // VIP Perk for high-value at-risk
+        if (p.valueSegment === "vip" && (p.churnRisk === "high" || p.churnRisk === "critical")) return Object.assign(base, { action: "vip_perk", label: "VIP Perk", color: "purple", bonus: optBonus, ev: ev, reason: "High-value player at risk" });
+        // Bonus / Deposit Booster if EV-positive
+        if (ev > 0 && optBonus > 0) {
+          if (expDep > 500) return Object.assign(base, { action: "deposit_booster", label: "Deposit Booster", color: "amber", bonus: optBonus, ev: ev, reason: "ROI-positive deposit incentive" });
+          return Object.assign(base, { action: "bonus", label: "Bonus", color: "emerald", bonus: optBonus, ev: ev, reason: "ROI-positive bonus opportunity" });
+        }
+        // Cashback for soft signals
+        if (signals.some(function(s) { return s.type === "soft"; }) && pDep > 0.2) {
+          var cb = Math.round(Math.min(expDep * 0.05, 100) * 100) / 100;
+          return Object.assign(base, { action: "cashback", label: "Cashback", color: "teal", bonus: cb, ev: this.calcEV(p, cb), reason: "Cautious re-engagement" });
+        }
+        return Object.assign(base, { action: "do_nothing", label: "Do Nothing", color: "slate", bonus: 0, ev: 0, reason: "No ROI-positive action available" });
+      },
+
+      // ── Run Engine ──────────────────────────────────────────────
+      async run() {
+        if (!App.processedPlayers || !App.processedPlayers.length) {
+          showNotification("Load player data first", "error");
+          return;
+        }
+        showLoading(true, "Running Bonus Decision Engine...");
+        await new Promise(function(r) { setTimeout(r, 50); });
+
+        this.recommendations = [];
+        this.negativeSignals = [];
+
+        var total = App.processedPlayers.length;
+        for (var i = 0; i < total; i++) {
+          var p = App.processedPlayers[i];
+          if (p.phoneType === "virtual" || !p.phone_number) continue;
+
+          var nba = this.getNextBestAction(p);
+          if (nba.signals.length > 0) this.negativeSignals.push({ player: p, signals: nba.signals });
+          if (nba.action !== "do_nothing") this.recommendations.push(Object.assign({ player: p }, nba));
+        }
+
+        this.recommendations.sort(function(a, b) {
+          if (a.action === "restriction" && b.action !== "restriction") return -1;
+          if (b.action === "restriction" && a.action !== "restriction") return 1;
+          return (b.ev || 0) - (a.ev || 0);
+        });
+
+        this.calcStats();
+        this.renderOverview();
+        this.renderRecommendations();
+        this.renderSignals();
+
+        document.getElementById("bonus-last-run").textContent = "Last run: " + new Date().toLocaleTimeString();
+        showLoading(false);
+        showNotification("Engine complete: " + this.recommendations.length + " recommendations, " + this.negativeSignals.length + " signals");
+      },
+
+      calcStats() {
+        var recs = this.recommendations;
+        var ac = {};
+        var totalCost = 0, totalExpRev = 0, totalEV = 0;
+        for (var i = 0; i < recs.length; i++) {
+          var r = recs[i];
+          ac[r.action] = (ac[r.action] || 0) + 1;
+          totalCost += r.bonus || 0;
+          totalExpRev += (r.pDep * r.expDep * this.config.margin) || 0;
+          totalEV += r.ev || 0;
+        }
+        var exec = this.auditTrail.filter(function(d) { return d.status === "executed"; });
+        var spent = exec.reduce(function(s, d) { return s + (parseFloat(d.bonus_amount) || 0); }, 0);
+        var rev = exec.reduce(function(s, d) { return s + (parseFloat(d.actual_revenue) || 0); }, 0);
+        this.stats = {
+          totalRecs: recs.length, actionCounts: ac,
+          totalCost: Math.round(totalCost), totalExpRev: Math.round(totalExpRev), totalEV: Math.round(totalEV),
+          signalCount: this.negativeSignals.length,
+          hardCount: this.negativeSignals.filter(function(n) { return n.signals.some(function(s) { return s.type === "hard"; }); }).length,
+          softCount: this.negativeSignals.filter(function(n) { return n.signals.every(function(s) { return s.type === "soft"; }); }).length,
+          efficiency: spent > 0 ? rev / spent : 0, spent: spent, rev: rev, execCount: exec.length
+        };
+      },
+
+      // ── Persistence ─────────────────────────────────────────────
+      async loadSettings() {
+        try {
+          var res = await App.db.from("bonus_settings").select("*").eq("key", "config").maybeSingle();
+          if (res.data && res.data.value) Object.assign(this.config, res.data.value);
+        } catch(e) { console.log("Bonus settings load:", e.message); }
+      },
+
+      async saveSettings() {
+        try {
+          await App.db.from("bonus_settings").upsert({ key: "config", value: this.config, updated_by: App.user ? App.user.email : null, updated_at: new Date().toISOString() }, { onConflict: "key" });
+          showNotification("Bonus engine settings saved");
+        } catch(e) { showNotification("Error: " + e.message, "error"); }
+      },
+
+      async loadAuditTrail() {
+        try {
+          var res = await App.db.from("bonus_decisions").select("*").order("created_at", { ascending: false }).limit(500);
+          this.auditTrail = res.data || [];
+        } catch(e) { console.log("Audit trail load:", e.message); }
+      },
+
+      async saveDecision(rec, status) {
+        try {
+          var row = {
+            player_id: rec.player.id, phone_number: rec.player.phone_number,
+            action: rec.action, bonus_amount: rec.bonus || 0,
+            expected_deposit: rec.expDep || 0, ev: rec.ev || 0,
+            p_deposit: Math.round(rec.pDep * 10000) / 10000,
+            trigger_reason: rec.reason,
+            new_churn_status: rec.player.churnRisk,
+            status: status || "pending",
+            negative_signals: rec.signals || []
+          };
+          if (status && status !== "pending") {
+            row.decided_by = App.user ? App.user.email : null;
+            row.decided_at = new Date().toISOString();
+          }
+          var res = await App.db.from("bonus_decisions").insert(row).select();
+          if (res.error) throw res.error;
+          await this.loadAuditTrail();
+          return res.data ? res.data[0] : null;
+        } catch(e) { showNotification("Error: " + e.message, "error"); }
+      },
+
+      async updateDecisionStatus(id, status) {
+        try {
+          await App.db.from("bonus_decisions").update({
+            status: status, decided_by: App.user ? App.user.email : null, decided_at: new Date().toISOString(), updated_at: new Date().toISOString()
+          }).eq("id", id);
+          showNotification("Decision " + status);
+          await this.loadAuditTrail();
+          this.calcStats();
+          this.renderAuditTrail();
+          this.renderOverview();
+        } catch(e) { showNotification("Error: " + e.message, "error"); }
+      },
+
+      async approveAndSave(idx) {
+        var rec = this._filteredRecs()[idx];
+        if (!rec) return;
+        await this.saveDecision(rec, "approved");
+        showNotification("Approved: " + rec.action + " for " + rec.player.id);
+        this.recommendations.splice(this.recommendations.indexOf(rec), 1);
+        this.calcStats();
+        this.renderOverview();
+        this.renderRecommendations();
+        this.renderAuditTrail();
+      },
+
+      async rejectAndSave(idx) {
+        var rec = this._filteredRecs()[idx];
+        if (!rec) return;
+        await this.saveDecision(rec, "rejected");
+        this.recommendations.splice(this.recommendations.indexOf(rec), 1);
+        this.calcStats();
+        this.renderOverview();
+        this.renderRecommendations();
+      },
+
+      async approveAll() {
+        var filtered = this._filteredRecs();
+        if (!filtered.length) return;
+        if (!confirm("Approve all " + filtered.length + " recommendations?")) return;
+        showLoading(true, "Approving...");
+        for (var i = 0; i < filtered.length; i++) {
+          await this.saveDecision(filtered[i], "approved");
+        }
+        this.recommendations = this.recommendations.filter(function(r) { return filtered.indexOf(r) === -1; });
+        this.calcStats();
+        this.renderOverview();
+        this.renderRecommendations();
+        this.renderAuditTrail();
+        showLoading(false);
+        showNotification("Approved " + filtered.length + " decisions");
+      },
+
+      // ── Rendering ───────────────────────────────────────────────
+      _fmtK(n) { return "K" + (Math.round(n) || 0).toLocaleString(); },
+
+      _actionBadge(action, label, color) {
+        var colors = { red: "bg-red-100 text-red-700", blue: "bg-blue-100 text-blue-700", emerald: "bg-emerald-100 text-emerald-700", amber: "bg-amber-100 text-amber-700", purple: "bg-purple-100 text-purple-700", teal: "bg-teal-100 text-teal-700", slate: "bg-slate-100 text-slate-600" };
+        return '<span class="px-2 py-1 rounded-full text-xs font-semibold ' + (colors[color] || colors.slate) + '">' + (label || action) + '</span>';
+      },
+
+      _statusBadge(status) {
+        var m = { pending: "bg-amber-100 text-amber-700", approved: "bg-blue-100 text-blue-700", executed: "bg-emerald-100 text-emerald-700", rejected: "bg-red-100 text-red-700", expired: "bg-slate-100 text-slate-500" };
+        return '<span class="px-2 py-1 rounded-full text-xs font-semibold ' + (m[status] || m.pending) + '">' + status + '</span>';
+      },
+
+      _churnBadge(risk) {
+        var m = { low: "bg-emerald-100 text-emerald-700", medium: "bg-amber-100 text-amber-700", high: "bg-orange-100 text-orange-700", critical: "bg-red-100 text-red-700" };
+        return '<span class="px-2 py-0.5 rounded text-xs font-medium ' + (m[risk] || "") + '">' + risk + '</span>';
+      },
+
+      renderOverview() {
+        var s = this.stats;
+        document.getElementById("bonus-kpi-recs").textContent = (s.totalRecs || 0).toLocaleString();
+        document.getElementById("bonus-kpi-ev").textContent = this._fmtK(s.totalEV || 0);
+        document.getElementById("bonus-kpi-budget").textContent = this._fmtK(s.totalCost || 0);
+        document.getElementById("bonus-kpi-signals").textContent = (s.signalCount || 0).toLocaleString();
+        document.getElementById("bonus-kpi-hard").textContent = s.hardCount || 0;
+        document.getElementById("bonus-kpi-soft").textContent = s.softCount || 0;
+
+        // Action distribution
+        var distEl = document.getElementById("bonus-action-dist");
+        var ac = s.actionCounts || {};
+        var total = s.totalRecs || 1;
+        var labels = { restriction: { c: "bg-red-500", l: "Restriction" }, reminder: { c: "bg-blue-500", l: "Reminder" }, bonus: { c: "bg-emerald-500", l: "Bonus" }, deposit_booster: { c: "bg-amber-500", l: "Deposit Booster" }, cashback: { c: "bg-teal-500", l: "Cashback" }, vip_perk: { c: "bg-purple-500", l: "VIP Perk" } };
+        var html = "";
+        var keys = Object.keys(ac);
+        if (keys.length === 0) {
+          html = '<div class="text-center py-8 text-slate-400 text-sm">Run engine to see distribution</div>';
+        } else {
+          for (var i = 0; i < keys.length; i++) {
+            var k = keys[i];
+            var info = labels[k] || { c: "bg-slate-500", l: k };
+            var pct = Math.round(ac[k] / total * 100);
+            html += '<div class="flex items-center gap-3"><span class="text-xs font-medium text-slate-600 w-28">' + info.l + '</span><div class="flex-1 bg-slate-100 rounded-full h-2.5"><div class="h-2.5 rounded-full ' + info.c + '" style="width:' + pct + '%"></div></div><span class="text-xs font-semibold text-slate-700 w-16 text-right">' + ac[k] + ' (' + pct + '%)</span></div>';
+          }
+        }
+        distEl.innerHTML = html;
+
+        // Efficiency
+        var effEl = document.getElementById("bonus-efficiency");
+        if (s.execCount > 0) {
+          effEl.innerHTML = '<div class="grid grid-cols-3 gap-4 text-center">' +
+            '<div><div class="text-2xl font-bold text-slate-800">' + s.execCount + '</div><div class="text-xs text-slate-400">Executed</div></div>' +
+            '<div><div class="text-2xl font-bold text-blue-600">' + this._fmtK(s.spent) + '</div><div class="text-xs text-slate-400">Total Spent</div></div>' +
+            '<div><div class="text-2xl font-bold ' + (s.efficiency >= 1 ? "text-emerald-600" : "text-red-600") + '">' + (s.efficiency > 0 ? s.efficiency.toFixed(2) + 'x' : '-') + '</div><div class="text-xs text-slate-400">Efficiency</div></div>' +
+            '</div><div class="mt-4 p-3 rounded-lg ' + (s.efficiency >= 1 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700") + ' text-xs"><strong>Net Revenue / Bonus Cost = ' + (s.efficiency > 0 ? s.efficiency.toFixed(2) : "N/A") + '</strong></div>';
+        } else {
+          effEl.innerHTML = '<div class="text-center py-8 text-slate-400 text-sm">No executed decisions yet</div>';
+        }
+        refreshIcons();
+      },
+
+      _filteredRecs() {
+        if (this.recFilter === "all") return this.recommendations;
+        return this.recommendations.filter(function(r) { return r.action === BonusEngine.recFilter; });
+      },
+
+      filterRecs(f) {
+        this.recFilter = f;
+        this.recPage = 1;
+        ["all","bonus","deposit_booster","cashback","vip_perk","reminder","restriction"].forEach(function(t) {
+          var btn = document.getElementById("bonus-filter-" + t);
+          if (btn) btn.className = t === f ? "px-3 py-1.5 rounded-lg text-xs font-semibold bg-yellow-400 text-black" : "px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200";
+        });
+        this.renderRecommendations();
+      },
+
+      renderRecommendations() {
+        var filtered = this._filteredRecs();
+        var start = (this.recPage - 1) * this.recPageSize;
+        var page = filtered.slice(start, start + this.recPageSize);
+        var totalPages = Math.max(1, Math.ceil(filtered.length / this.recPageSize));
+
+        document.getElementById("bonus-rec-count").textContent = filtered.length + " recommendations" + (this.recFilter !== "all" ? " (" + this.recFilter + ")" : "");
+        document.getElementById("bonus-rec-page-info").textContent = "Page " + this.recPage + " of " + totalPages;
+
+        var html = "";
+        if (page.length === 0) {
+          html = '<tr><td colspan="9" class="px-4 py-8 text-center text-slate-400">No recommendations</td></tr>';
+        }
+        for (var i = 0; i < page.length; i++) {
+          var r = page[i];
+          var globalIdx = start + i;
+          html += '<tr class="border-b border-slate-100 hover:bg-slate-50">' +
+            '<td class="px-4 py-3"><div class="font-medium text-slate-800">' + (r.player.id || "-") + '</div><div class="text-xs text-slate-400">' + (r.player.phone_number || "") + '</div></td>' +
+            '<td class="px-4 py-3">' + this._churnBadge(r.player.churnRisk) + '<div class="text-xs text-slate-400 mt-1">Score: ' + (r.player.churnScore || 0) + '</div></td>' +
+            '<td class="px-4 py-3 text-right font-mono text-sm">' + (r.pDep * 100).toFixed(1) + '%</td>' +
+            '<td class="px-4 py-3 text-right font-mono text-sm">' + this._fmtK(r.expDep) + '</td>' +
+            '<td class="px-4 py-3">' + this._actionBadge(r.action, r.label, r.color) + '</td>' +
+            '<td class="px-4 py-3 text-right font-mono text-sm font-semibold">' + (r.bonus > 0 ? this._fmtK(r.bonus) : "-") + '</td>' +
+            '<td class="px-4 py-3 text-right font-mono text-sm ' + (r.ev >= 0 ? "text-emerald-600" : "text-red-600") + '">' + (r.ev !== 0 ? this._fmtK(r.ev) : "-") + '</td>' +
+            '<td class="px-4 py-3 text-xs text-slate-500 max-w-[200px] truncate" title="' + (r.reason || "") + '">' + (r.reason || "") + '</td>' +
+            '<td class="px-4 py-3 text-center"><div class="flex gap-1 justify-center">' +
+            '<button onclick="BonusEngine.approveAndSave(' + globalIdx + ')" class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium hover:bg-emerald-200" title="Approve">&#10003;</button>' +
+            '<button onclick="BonusEngine.rejectAndSave(' + globalIdx + ')" class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200" title="Reject">&#10007;</button>' +
+            '</div></td></tr>';
+        }
+        document.getElementById("bonus-rec-tbody").innerHTML = html;
+        refreshIcons();
+      },
+
+      recPagePrev() { if (this.recPage > 1) { this.recPage--; this.renderRecommendations(); } },
+      recPageNext() {
+        var total = Math.ceil(this._filteredRecs().length / this.recPageSize);
+        if (this.recPage < total) { this.recPage++; this.renderRecommendations(); }
+      },
+
+      renderSignals() {
+        var hardHtml = "", softHtml = "";
+        var hards = this.negativeSignals.filter(function(n) { return n.signals.some(function(s) { return s.type === "hard"; }); });
+        var softs = this.negativeSignals.filter(function(n) { return n.signals.every(function(s) { return s.type === "soft"; }); });
+
+        if (hards.length === 0) hardHtml = '<div class="text-center py-6 text-slate-400 text-sm">No hard signals detected</div>';
+        for (var i = 0; i < Math.min(hards.length, 100); i++) {
+          var n = hards[i];
+          var sigs = n.signals.filter(function(s) { return s.type === "hard"; });
+          hardHtml += '<div class="bg-red-50 border border-red-200 rounded-lg p-3"><div class="flex items-center justify-between mb-1"><span class="font-semibold text-red-800 text-sm">' + n.player.id + '</span><span class="text-xs text-red-400">' + (n.player.phone_number || "") + '</span></div>';
+          for (var j = 0; j < sigs.length; j++) {
+            hardHtml += '<div class="text-xs text-red-600 mt-1"><strong>' + sigs[j].label + ':</strong> ' + sigs[j].desc + '</div>';
+          }
+          hardHtml += '</div>';
+        }
+        if (hards.length > 100) hardHtml += '<div class="text-xs text-slate-400 text-center mt-2">...and ' + (hards.length - 100) + ' more</div>';
+
+        if (softs.length === 0) softHtml = '<div class="text-center py-6 text-slate-400 text-sm">No soft signals detected</div>';
+        for (var i = 0; i < Math.min(softs.length, 100); i++) {
+          var n = softs[i];
+          softHtml += '<div class="bg-amber-50 border border-amber-200 rounded-lg p-3"><div class="flex items-center justify-between mb-1"><span class="font-semibold text-amber-800 text-sm">' + n.player.id + '</span><span class="text-xs text-amber-400">' + (n.player.phone_number || "") + '</span></div>';
+          for (var j = 0; j < n.signals.length; j++) {
+            softHtml += '<div class="text-xs text-amber-600 mt-1"><strong>' + n.signals[j].label + ':</strong> ' + n.signals[j].desc + '</div>';
+          }
+          softHtml += '</div>';
+        }
+        if (softs.length > 100) softHtml += '<div class="text-xs text-slate-400 text-center mt-2">...and ' + (softs.length - 100) + ' more</div>';
+
+        document.getElementById("bonus-hard-signals").innerHTML = hardHtml;
+        document.getElementById("bonus-soft-signals").innerHTML = softHtml;
+      },
+
+      renderAuditTrail() {
+        var filter = document.getElementById("bonus-audit-filter").value;
+        var data = this.auditTrail;
+        if (filter !== "all") data = data.filter(function(d) { return d.status === filter; });
+
+        var start = (this.auditPage - 1) * this.auditPageSize;
+        var page = data.slice(start, start + this.auditPageSize);
+        var totalPages = Math.max(1, Math.ceil(data.length / this.auditPageSize));
+
+        document.getElementById("bonus-audit-count").textContent = data.length + " decisions";
+        document.getElementById("bonus-audit-page-info").textContent = "Page " + this.auditPage + " of " + totalPages;
+
+        var html = "";
+        if (page.length === 0) {
+          html = '<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">No decisions recorded</td></tr>';
+        }
+        for (var i = 0; i < page.length; i++) {
+          var d = page[i];
+          var dt = d.created_at ? new Date(d.created_at).toLocaleString() : "-";
+          html += '<tr class="border-b border-slate-100 hover:bg-slate-50">' +
+            '<td class="px-4 py-3 text-xs text-slate-500">' + dt + '</td>' +
+            '<td class="px-4 py-3"><div class="font-medium text-slate-800 text-sm">' + (d.player_id || "-") + '</div><div class="text-xs text-slate-400">' + (d.phone_number || "") + '</div></td>' +
+            '<td class="px-4 py-3">' + this._actionBadge(d.action, d.action, this._actionToColor(d.action)) + '</td>' +
+            '<td class="px-4 py-3 text-right font-mono text-sm">' + (parseFloat(d.bonus_amount) > 0 ? this._fmtK(d.bonus_amount) : "-") + '</td>' +
+            '<td class="px-4 py-3 text-right font-mono text-sm ' + (parseFloat(d.ev) >= 0 ? "text-emerald-600" : "text-red-600") + '">' + (parseFloat(d.ev) !== 0 ? this._fmtK(d.ev) : "-") + '</td>' +
+            '<td class="px-4 py-3">' + this._statusBadge(d.status) + '</td>' +
+            '<td class="px-4 py-3 text-xs text-slate-500">' + (d.decided_by || "-") + '</td>' +
+            '<td class="px-4 py-3 text-center">';
+          if (d.status === "pending") {
+            html += '<div class="flex gap-1 justify-center">' +
+              '<button onclick="BonusEngine.updateDecisionStatus(\'' + d.id + '\',\'approved\')" class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">Approve</button>' +
+              '<button onclick="BonusEngine.updateDecisionStatus(\'' + d.id + '\',\'rejected\')" class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">Reject</button></div>';
+          } else if (d.status === "approved") {
+            html += '<button onclick="BonusEngine.updateDecisionStatus(\'' + d.id + '\',\'executed\')" class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs hover:bg-emerald-200">Execute</button>';
+          } else {
+            html += '<span class="text-xs text-slate-300">-</span>';
+          }
+          html += '</td></tr>';
+        }
+        document.getElementById("bonus-audit-tbody").innerHTML = html;
+      },
+
+      auditPagePrev() { if (this.auditPage > 1) { this.auditPage--; this.renderAuditTrail(); } },
+      auditPageNext() {
+        var filter = document.getElementById("bonus-audit-filter").value;
+        var data = filter === "all" ? this.auditTrail : this.auditTrail.filter(function(d) { return d.status === filter; });
+        var total = Math.ceil(data.length / this.auditPageSize);
+        if (this.auditPage < total) { this.auditPage++; this.renderAuditTrail(); }
+      },
+
+      _actionToColor(action) {
+        var m = { restriction: "red", reminder: "blue", bonus: "emerald", deposit_booster: "amber", cashback: "teal", vip_perk: "purple", do_nothing: "slate" };
+        return m[action] || "slate";
+      },
+
+      // ── Settings UI ─────────────────────────────────────────────
+      populateConfigUI() {
+        var c = this.config;
+        var el = function(id) { return document.getElementById(id); };
+        if (el("bonus-cfg-margin")) el("bonus-cfg-margin").value = c.margin;
+        if (el("bonus-cfg-maxpct")) el("bonus-cfg-maxpct").value = c.maxBonusPct;
+        if (el("bonus-cfg-risk")) el("bonus-cfg-risk").value = c.riskAdjBase;
+        if (c.weights) {
+          if (el("bonus-cfg-w-recency")) el("bonus-cfg-w-recency").value = c.weights.recency;
+          if (el("bonus-cfg-w-frequency")) el("bonus-cfg-w-frequency").value = c.weights.frequency;
+          if (el("bonus-cfg-w-monetary")) el("bonus-cfg-w-monetary").value = c.weights.monetary;
+          if (el("bonus-cfg-w-bonusResp")) el("bonus-cfg-w-bonusResp").value = c.weights.bonusResp;
+          if (el("bonus-cfg-w-churnRisk")) el("bonus-cfg-w-churnRisk").value = c.weights.churnRisk;
+        }
+        this._updateWeightTotal();
+        // Add listeners for weight total
+        ["recency","frequency","monetary","bonusResp","churnRisk"].forEach(function(k) {
+          var inp = el("bonus-cfg-w-" + k);
+          if (inp) inp.addEventListener("input", function() { BonusEngine._updateWeightTotal(); });
+        });
+      },
+
+      _updateWeightTotal() {
+        var sum = 0;
+        ["recency","frequency","monetary","bonusResp","churnRisk"].forEach(function(k) {
+          sum += parseFloat(document.getElementById("bonus-cfg-w-" + k)?.value || 0);
+        });
+        var el = document.getElementById("bonus-cfg-w-total");
+        if (el) { el.textContent = sum.toFixed(2); el.className = Math.abs(sum - 1) < 0.01 ? "text-emerald-600 font-semibold" : "text-red-600 font-semibold"; }
+      },
+
+      saveConfigFromUI() {
+        this.config.margin = parseFloat(document.getElementById("bonus-cfg-margin").value) || 0.05;
+        this.config.maxBonusPct = parseFloat(document.getElementById("bonus-cfg-maxpct").value) || 0.20;
+        this.config.riskAdjBase = parseFloat(document.getElementById("bonus-cfg-risk").value) || 0.10;
+        this.config.weights = {
+          recency: parseFloat(document.getElementById("bonus-cfg-w-recency").value) || 0.20,
+          frequency: parseFloat(document.getElementById("bonus-cfg-w-frequency").value) || 0.20,
+          monetary: parseFloat(document.getElementById("bonus-cfg-w-monetary").value) || 0.20,
+          bonusResp: parseFloat(document.getElementById("bonus-cfg-w-bonusResp").value) || 0.20,
+          churnRisk: parseFloat(document.getElementById("bonus-cfg-w-churnRisk").value) || 0.15
+        };
+        this.saveSettings();
+      },
+
+      resetConfig() {
+        this.config = { margin: 0.05, maxBonusPct: 0.20, riskAdjBase: 0.10, weights: { recency: 0.25, frequency: 0.20, monetary: 0.20, bonusResp: 0.20, churnRisk: 0.15 } };
+        this.populateConfigUI();
+        this.saveSettings();
+      }
+    };
+
     // ── Fraud Detection Panel ──────────────────────────────────
     const FraudPanel = {
       async refresh(btn) {
@@ -11351,7 +12118,7 @@ Total Players: ${s.total}`;
 
         // Restore last active tab (default to dashboard)
         const savedTab = localStorage.getItem('crmActiveTab') || 'dashboard';
-        const validTabs = ['dashboard','profitability','behavior','churn','analytics','players','callcenter','agents','fraud','settings'];
+        const validTabs = ['dashboard','profitability','behavior','churn','analytics','players','callcenter','agents','fraud','bonuses','settings'];
         // Clear stale tab keys (e.g. old 'voiceagent' tab that no longer exists)
         if (!validTabs.includes(savedTab)) localStorage.removeItem('crmActiveTab');
         switchTab(validTabs.includes(savedTab) ? savedTab : 'dashboard');
