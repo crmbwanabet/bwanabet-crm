@@ -11437,7 +11437,7 @@ Total Players: ${s.total}`;
         
 
     // ── Bonus Decision Engine (Constitution v2.0) ─────────────────
-    const BonusEngine = {
+    window.BonusEngine = {
       _initialized: false,
       config: { margin: 0.05, maxBonusPct: 0.20, riskAdjBase: 0.10, weights: { recency: 0.25, frequency: 0.20, monetary: 0.20, bonusResp: 0.20, churnRisk: 0.15 } },
       recommendations: [],
