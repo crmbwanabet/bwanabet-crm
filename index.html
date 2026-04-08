@@ -8626,7 +8626,7 @@ Total Players: ${s.total}`;
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
                   <span class="px-2 py-0.5 rounded text-xs font-medium ${statusColor}">${c.status}</span>
-                  <span class="text-sm font-medium text-slate-700 truncate max-w-xs">${c.campaign_id}</span>
+                  <span class="text-sm font-medium text-slate-700 truncate max-w-xs">${c.name || c.campaign_id}</span>
                 </div>
                 ${actionBtns}
               </div>
@@ -8745,7 +8745,7 @@ Total Players: ${s.total}`;
             const isPaused = c.status === 'paused';
             const pausedLabel = isPaused ? '<span class="ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded font-medium">Paused</span>' : '';
             return `<div class="mb-3">
-              <p class="text-xs font-medium text-slate-700 truncate mb-1">${c.campaign_id.replace(/_retry_\d+$/,' ↺ Retry')}${retryLabel}${pausedLabel}</p>
+              <p class="text-xs font-medium text-slate-700 truncate mb-1">${(c.name || c.campaign_id).replace(/_retry_\d+$/,' ↺ Retry')}${retryLabel}${pausedLabel}</p>
               <div class="grid grid-cols-3 gap-2 mb-2">
                 <div class="bg-slate-50 rounded-lg p-2 text-center">
                   <p class="text-lg font-bold text-slate-800">${c.completed}</p>
