@@ -2010,6 +2010,9 @@
             <button id="vaSubTab-overview" onclick="VA.switchSubTab('overview')" class="va-subtab active flex-1 px-3 py-2 rounded-lg text-sm font-semibold bg-slate-800 text-white whitespace-nowrap transition-all">
               <i data-lucide="layout-dashboard" class="h-4 w-4 inline mr-1"></i>Overview
             </button>
+            <button id="vaSubTab-inbound" onclick="VA.switchSubTab('inbound')" class="va-subtab flex-1 px-3 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 whitespace-nowrap transition-all">
+              <i data-lucide="phone-incoming" class="h-4 w-4 inline mr-1"></i>Inbound Calls
+            </button>
             <button id="vaSubTab-campaigns" onclick="VA.switchSubTab('campaigns')" class="va-subtab flex-1 px-3 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 whitespace-nowrap transition-all">
               <i data-lucide="radio" class="h-4 w-4 inline mr-1"></i>Campaigns
             </button>
@@ -2058,6 +2061,25 @@
                 <div class="p-8 text-center text-slate-400"><i data-lucide="phone" class="h-8 w-8 mx-auto mb-2 opacity-40"></i><p>No recent calls</p></div>
               </div>
             </div>
+          </div>
+
+          <div id="vaContent-inbound" class="hidden">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-lg font-bold text-slate-800">Inbound Calls</h3>
+                <p class="text-sm text-slate-500">Customers calling back after a missed campaign call.</p>
+              </div>
+              <button onclick="Inbound.render()" class="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-sm hover:bg-slate-700 flex items-center gap-1.5">
+                <i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh
+              </button>
+            </div>
+
+            <div id="inbound-tiles" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3"></div>
+            <div id="inbound-breakdown" class="text-sm text-slate-600 mb-4"></div>
+
+            <div id="inbound-filters" class="bg-white rounded-lg shadow p-3 flex flex-wrap gap-3 items-end mb-3"></div>
+
+            <div id="inbound-table-wrap" class="bg-white rounded-lg shadow overflow-hidden"></div>
           </div>
 
           <div id="vaContent-campaigns" class="hidden">
@@ -8148,6 +8170,7 @@ Total Players: ${s.total}`;
         document.querySelectorAll('[id^="vaContent-"]').forEach(el => el.classList.add('hidden'));
         document.getElementById('vaContent-' + tab)?.classList.remove('hidden');
         if (tab === 'scripts') this.loadScripts();
+        if (tab === 'inbound' && typeof Inbound !== 'undefined') Inbound.render();
         if (tab === 'monitor') {
           this.refreshMonitor();
           this.renderRecentCalls();
@@ -12013,6 +12036,358 @@ Total Players: ${s.total}`;
         this.populateConfigUI();
         this.saveSettings();
       }
+    };
+
+    // ── Inbound Calls Panel ────────────────────────────────────
+    const Inbound = {
+      state: {
+        outcome: '',
+        phone: '',
+        needsFollowUp: false,
+        dateFrom: '',
+        dateTo: '',
+      },
+
+      get apiBase() {
+        return (typeof VA !== 'undefined' && VA.directUrl) ? VA.directUrl : 'https://13.246.211.152:8080';
+      },
+
+      _fmtDuration(s) {
+        if (!s || s === 0) return '—';
+        const m = Math.floor(s / 60);
+        const sec = Math.round(s % 60);
+        return m ? `${m}m ${sec}s` : `${sec}s`;
+      },
+
+      _escapeHtml(s) {
+        return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      },
+
+      _outcomeBadge(outcome) {
+        const colors = {
+          take_action: 'bg-green-100 text-green-700',
+          callback: 'bg-amber-100 text-amber-700',
+          no_action: 'bg-slate-100 text-slate-600',
+          no_answer: 'bg-slate-100 text-slate-400',
+          blacklist_hard: 'bg-red-100 text-red-700',
+          blacklist_soft: 'bg-red-50 text-red-600',
+          failed: 'bg-slate-200 text-slate-500',
+        };
+        const cls = colors[outcome] || 'bg-slate-100 text-slate-600';
+        return `<span class="px-2 py-0.5 rounded text-xs font-medium ${cls}">${outcome || '—'}</span>`;
+      },
+
+      async render() {
+        await this.loadSummary();
+        this.renderFilters();
+        await this.loadList();
+        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+      },
+
+      async loadSummary() {
+        const tiles = document.getElementById('inbound-tiles');
+        const breakdown = document.getElementById('inbound-breakdown');
+        if (!tiles) return;
+        tiles.innerHTML = '<div class="col-span-5 text-slate-400 text-sm">Loading metrics…</div>';
+        try {
+          const res = await fetch(this.apiBase + '/api/inbound/summary');
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          tiles.innerHTML = [
+            this._tile('Today', data.today ?? 0, 'phone-incoming'),
+            this._tile('Last 7 days', data.last_7d ?? 0, 'calendar'),
+            this._tile('Last 30 days', data.last_30d ?? 0, 'calendar-days'),
+            this._tile('Avg duration', this._fmtDuration(data.avg_duration_seconds), 'timer'),
+            this._tile('Outcomes (7d)', Object.values(data.outcome_breakdown_7d || {}).reduce((a,b)=>a+b, 0), 'list'),
+          ].join('');
+          const parts = Object.entries(data.outcome_breakdown_7d || {})
+            .sort((a,b) => b[1] - a[1])
+            .map(([k,v]) => `<span class="inline-flex items-center gap-1 mr-4">${this._outcomeBadge(k)} <strong class="text-slate-700">${v}</strong></span>`)
+            .join('');
+          breakdown.innerHTML = parts ? `<div>Outcome breakdown (last 7d): ${parts}</div>` : '';
+        } catch (e) {
+          tiles.innerHTML = `<div class="col-span-5 text-red-500 text-sm">Error loading metrics: ${this._escapeHtml(e.message)}</div>`;
+          breakdown.innerHTML = '';
+        }
+      },
+
+      _tile(label, value, icon) {
+        return `
+          <div class="bg-white rounded-lg shadow p-4 flex items-start gap-3">
+            <div class="bg-slate-100 rounded p-2 text-slate-500">
+              <i data-lucide="${icon}" class="h-5 w-5"></i>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500 uppercase tracking-wide">${label}</div>
+              <div class="text-2xl font-semibold text-slate-800 mt-0.5">${value}</div>
+            </div>
+          </div>
+        `;
+      },
+
+      renderFilters() {
+        const el = document.getElementById('inbound-filters');
+        if (!el) return;
+        el.innerHTML = `
+          <label class="text-xs text-slate-500 flex flex-col gap-1">Outcome
+            <select id="inb-f-outcome" class="border rounded px-2 py-1 text-sm bg-white">
+              <option value="">All</option>
+              <option value="take_action">take_action</option>
+              <option value="callback">callback</option>
+              <option value="no_action">no_action</option>
+              <option value="no_answer">no_answer</option>
+              <option value="blacklist_hard">blacklist_hard</option>
+            </select>
+          </label>
+          <label class="text-xs text-slate-500 flex flex-col gap-1">Phone
+            <input id="inb-f-phone" type="text" placeholder="e.g. 260..." class="border rounded px-2 py-1 text-sm"/>
+          </label>
+          <label class="text-xs text-slate-500 flex flex-col gap-1">From
+            <input id="inb-f-from" type="date" class="border rounded px-2 py-1 text-sm"/>
+          </label>
+          <label class="text-xs text-slate-500 flex flex-col gap-1">To
+            <input id="inb-f-to" type="date" class="border rounded px-2 py-1 text-sm"/>
+          </label>
+          <label class="text-xs text-slate-500 flex items-center gap-1 mt-4">
+            <input id="inb-f-followup" type="checkbox" class="rounded"/>
+            Needs human follow-up
+          </label>
+          <button id="inb-f-apply" class="px-3 py-1.5 bg-slate-800 text-white rounded text-sm hover:bg-slate-700 mt-3">Apply</button>
+          <button id="inb-f-clear" class="px-3 py-1.5 bg-slate-200 text-slate-700 rounded text-sm hover:bg-slate-300 mt-3">Clear</button>
+        `;
+        document.getElementById('inb-f-outcome').value = this.state.outcome;
+        document.getElementById('inb-f-phone').value = this.state.phone;
+        document.getElementById('inb-f-from').value = this.state.dateFrom;
+        document.getElementById('inb-f-to').value = this.state.dateTo;
+        document.getElementById('inb-f-followup').checked = this.state.needsFollowUp;
+        document.getElementById('inb-f-apply').addEventListener('click', () => {
+          this.state.outcome = document.getElementById('inb-f-outcome').value;
+          this.state.phone = document.getElementById('inb-f-phone').value.trim();
+          this.state.dateFrom = document.getElementById('inb-f-from').value;
+          this.state.dateTo = document.getElementById('inb-f-to').value;
+          this.state.needsFollowUp = document.getElementById('inb-f-followup').checked;
+          this.loadList();
+        });
+        document.getElementById('inb-f-clear').addEventListener('click', () => {
+          this.state = { outcome: '', phone: '', needsFollowUp: false, dateFrom: '', dateTo: '' };
+          this.renderFilters();
+          this.loadList();
+        });
+      },
+
+      async loadList() {
+        const wrap = document.getElementById('inbound-table-wrap');
+        if (!wrap) return;
+        wrap.innerHTML = '<div class="p-6 text-slate-400 text-sm">Loading calls…</div>';
+        const qs = new URLSearchParams({ limit: '200' });
+        if (this.state.outcome) qs.set('outcome', this.state.outcome);
+        if (this.state.phone) qs.set('phone', this.state.phone);
+        if (this.state.needsFollowUp) qs.set('needs_follow_up', 'true');
+        if (this.state.dateFrom) qs.set('date_from', this.state.dateFrom);
+        if (this.state.dateTo) qs.set('date_to', this.state.dateTo);
+        try {
+          const res = await fetch(this.apiBase + '/api/inbound/list?' + qs.toString());
+          const data = await res.json();
+          if (data.error && !data.rows) throw new Error(data.error);
+          const rows = data.rows || [];
+          if (!rows.length) {
+            wrap.innerHTML = '<div class="p-6 text-slate-500 text-sm">No inbound calls match these filters.</div>';
+            return;
+          }
+          wrap.innerHTML = `
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b">
+                <tr>
+                  <th class="text-left px-3 py-2">When</th>
+                  <th class="text-left px-3 py-2">Phone</th>
+                  <th class="text-left px-3 py-2">Duration</th>
+                  <th class="text-left px-3 py-2">Outcome</th>
+                  <th class="text-left px-3 py-2">Resumed from</th>
+                  <th class="text-left px-3 py-2">Follow-up</th>
+                  <th class="text-left px-3 py-2">Summary</th>
+                </tr>
+              </thead>
+              <tbody>${rows.map(r => this._rowHtml(r)).join('')}</tbody>
+            </table>
+          `;
+        } catch (e) {
+          wrap.innerHTML = `<div class="p-6 text-red-500 text-sm">Error: ${this._escapeHtml(e.message)}</div>`;
+        }
+      },
+
+      _rowHtml(r) {
+        const when = r.created_at ? new Date(r.created_at).toLocaleString() : '';
+        const dur = this._fmtDuration(r.call_duration);
+        const badge = this._outcomeBadge(r.outcome);
+        const campaignName = r.campaigns?.name || '';
+        const fuIcon = r.actioned
+          ? '<span class="text-green-600" title="Actioned">✓</span>'
+          : (r.outcome === 'take_action' || r.outcome === 'callback'
+              ? '<span class="text-amber-600" title="Needs follow-up">⏳</span>'
+              : '<span class="text-slate-300">—</span>');
+        const sumShort = (r.summary || '').slice(0, 80);
+        return `
+          <tr class="border-t hover:bg-slate-50 cursor-pointer" onclick="Inbound.openDetail('${r.id}')">
+            <td class="px-3 py-2 whitespace-nowrap text-slate-700">${when}</td>
+            <td class="px-3 py-2 font-mono text-slate-700">${this._escapeHtml(r.phone_number || '')}</td>
+            <td class="px-3 py-2 text-slate-600">${dur}</td>
+            <td class="px-3 py-2">${badge}</td>
+            <td class="px-3 py-2 max-w-[200px] truncate text-slate-600" title="${this._escapeHtml(campaignName)}">${this._escapeHtml(campaignName)}</td>
+            <td class="px-3 py-2 text-center">${fuIcon}</td>
+            <td class="px-3 py-2 text-slate-600 max-w-[360px] truncate" title="${this._escapeHtml(r.summary || '')}">${this._escapeHtml(sumShort)}</td>
+          </tr>
+        `;
+      },
+
+      async openDetail(callId) {
+        let modal = document.getElementById('inbound-modal');
+        if (!modal) {
+          modal = document.createElement('div');
+          modal.id = 'inbound-modal';
+          modal.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4';
+          modal.style.display = 'none';
+          modal.innerHTML = `
+            <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+              <div class="p-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
+                <h2 class="text-lg font-semibold text-slate-800">Inbound call detail</h2>
+                <button onclick="Inbound.closeDetail()" class="text-slate-500 hover:text-slate-800 text-xl leading-none">×</button>
+              </div>
+              <div id="inbound-modal-body" class="p-4 space-y-4"></div>
+            </div>
+          `;
+          modal.addEventListener('click', () => Inbound.closeDetail());
+          document.body.appendChild(modal);
+        }
+        modal.style.display = 'flex';
+        const body = document.getElementById('inbound-modal-body');
+        body.innerHTML = '<div class="text-slate-400 text-sm">Loading…</div>';
+
+        try {
+          const res = await fetch(this.apiBase + '/api/inbound/call/' + encodeURIComponent(callId) + '/timeline');
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          const { call, prior_attempts, customer } = data;
+
+          let transcriptHtml = '<div class="text-slate-400 text-sm italic">No transcript stored.</div>';
+          if (call.full_transcript && Array.isArray(call.full_transcript) && call.full_transcript.length) {
+            transcriptHtml = '<div class="bg-slate-50 rounded border p-3 space-y-2 text-sm max-h-64 overflow-y-auto">' +
+              call.full_transcript.map(m => {
+                const role = m.role || '';
+                const color = role === 'agent' ? 'text-blue-700' : 'text-slate-700';
+                return `<div><span class="font-semibold ${color}">${this._escapeHtml(role)}:</span> ${this._escapeHtml(m.content || '')}</div>`;
+              }).join('') +
+              '</div>';
+          } else if (call.full_transcript && typeof call.full_transcript === 'string') {
+            transcriptHtml = `<pre class="whitespace-pre-wrap text-xs bg-slate-50 p-3 rounded border max-h-64 overflow-y-auto">${this._escapeHtml(call.full_transcript)}</pre>`;
+          }
+
+          const priorRows = (prior_attempts || []).map(p => `
+            <tr class="border-t">
+              <td class="px-2 py-1 text-xs text-slate-600 whitespace-nowrap">${new Date(p.created_at).toLocaleString()}</td>
+              <td class="px-2 py-1 text-xs">${this._escapeHtml(p.direction || '')}</td>
+              <td class="px-2 py-1 text-xs">${this._outcomeBadge(p.outcome)}</td>
+              <td class="px-2 py-1 text-xs text-slate-500 max-w-[320px] truncate" title="${this._escapeHtml(p.summary || '')}">${this._escapeHtml((p.summary || '').slice(0, 80))}</td>
+            </tr>
+          `).join('');
+
+          let custHtml = '<div class="text-slate-400 text-sm italic">No customer profile on file.</div>';
+          if (customer) {
+            const fmtNum = (n) => n == null ? '—' : Number(n).toLocaleString();
+            custHtml = `
+              <div class="grid grid-cols-3 gap-3 text-sm">
+                <div><div class="text-xs text-slate-500">Registered</div><div>${customer.registration_date ? new Date(customer.registration_date).toLocaleDateString() : '—'}</div></div>
+                <div><div class="text-xs text-slate-500">Last activity</div><div>${customer.last_activity ? new Date(customer.last_activity).toLocaleDateString() : '—'}</div></div>
+                <div><div class="text-xs text-slate-500">Deposits</div><div>${fmtNum(customer.deposit_amount)} (${fmtNum(customer.deposit_count)}x)</div></div>
+                <div><div class="text-xs text-slate-500">Sport bet</div><div>${fmtNum(customer.sport_bet_amount)} (${fmtNum(customer.sport_bet_count)}x)</div></div>
+                <div><div class="text-xs text-slate-500">Casino bet</div><div>${fmtNum(customer.casino_bet_amount)} (${fmtNum(customer.casino_bet_count)}x)</div></div>
+                <div><div class="text-xs text-slate-500">Withdrawals</div><div>${fmtNum(customer.withdrawal_amount)}</div></div>
+              </div>
+            `;
+          }
+
+          body.innerHTML = `
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <div class="text-xs text-slate-500 uppercase">Phone</div>
+                <div class="text-lg font-mono">${this._escapeHtml(call.phone_number || '')}</div>
+              </div>
+              <div>
+                <div class="text-xs text-slate-500 uppercase">Outcome</div>
+                <div class="mt-1">${this._outcomeBadge(call.outcome)}</div>
+              </div>
+              <div>
+                <div class="text-xs text-slate-500 uppercase">Started</div>
+                <div>${call.call_started_at ? new Date(call.call_started_at).toLocaleString() : '—'}</div>
+              </div>
+              <div>
+                <div class="text-xs text-slate-500 uppercase">Duration</div>
+                <div>${this._fmtDuration(call.call_duration)}</div>
+              </div>
+            </div>
+
+            <div>
+              <div class="text-xs text-slate-500 uppercase mb-1">Summary</div>
+              <div class="text-sm text-slate-700">${this._escapeHtml(call.summary || '—')}</div>
+            </div>
+
+            <div>
+              <div class="text-xs text-slate-500 uppercase mb-1">Transcript</div>
+              ${transcriptHtml}
+            </div>
+
+            <div>
+              <div class="text-xs text-slate-500 uppercase mb-1">Prior attempts to this number</div>
+              ${priorRows ? `<table class="w-full border rounded"><tbody>${priorRows}</tbody></table>` : '<div class="text-slate-400 text-sm italic">None.</div>'}
+            </div>
+
+            <div>
+              <div class="text-xs text-slate-500 uppercase mb-1">Customer profile</div>
+              ${custHtml}
+            </div>
+
+            <div class="pt-3 border-t">
+              <div class="text-xs text-slate-500 uppercase mb-1">Follow-up</div>
+              <div class="flex items-center gap-2 mb-2">
+                <button id="inb-fu-toggle" onclick="Inbound.toggleActioned('${call.id}', ${!call.actioned})"
+                        class="px-3 py-1.5 rounded text-sm ${call.actioned ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-blue-600 text-white hover:bg-blue-700'}">
+                  ${call.actioned ? 'Mark as needing follow-up' : 'Mark actioned'}
+                </button>
+                <span class="text-xs text-slate-500">${call.actioned_at ? 'Actioned at ' + new Date(call.actioned_at).toLocaleString() : 'Not yet actioned'}</span>
+              </div>
+              <label class="text-xs text-slate-500 uppercase">Notes</label>
+              <textarea id="inbound-note-field" class="w-full border rounded p-2 text-sm" rows="2" placeholder="Add a note…">${this._escapeHtml(call.action_notes || '')}</textarea>
+              <button onclick="Inbound.saveNote('${call.id}')" class="mt-1 px-3 py-1.5 bg-slate-800 text-white rounded text-sm hover:bg-slate-700">Save note</button>
+            </div>
+          `;
+          if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        } catch (e) {
+          body.innerHTML = `<div class="text-red-500 text-sm">Error: ${this._escapeHtml(e.message)}</div>`;
+        }
+      },
+
+      closeDetail() {
+        const m = document.getElementById('inbound-modal');
+        if (m) m.style.display = 'none';
+      },
+
+      async toggleActioned(callId, newValue) {
+        if (!App.db) { alert('Supabase client not ready'); return; }
+        const payload = { actioned: !!newValue };
+        if (newValue) payload.actioned_at = new Date().toISOString();
+        const { error } = await App.db.from('va_call_outcomes').update(payload).eq('id', callId);
+        if (error) { alert('Error: ' + error.message); return; }
+        this.closeDetail();
+        await this.loadList();
+      },
+
+      async saveNote(callId) {
+        if (!App.db) { alert('Supabase client not ready'); return; }
+        const val = document.getElementById('inbound-note-field').value;
+        const { error } = await App.db.from('va_call_outcomes').update({ action_notes: val }).eq('id', callId);
+        if (error) { alert('Error: ' + error.message); return; }
+        const btn = event?.target;
+        if (btn) { const orig = btn.innerHTML; btn.innerHTML = 'Saved ✓'; setTimeout(() => btn.innerHTML = orig, 1200); }
+      },
     };
 
     // ── Fraud Detection Panel ──────────────────────────────────
