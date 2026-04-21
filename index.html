@@ -12389,6 +12389,9 @@ Total Players: ${s.total}`;
         if (btn) { const orig = btn.innerHTML; btn.innerHTML = 'Saved ✓'; setTimeout(() => btn.innerHTML = orig, 1200); }
       },
     };
+    // Expose Inbound on window so inline onclick attributes can find it
+    // regardless of script scope quirks.
+    window.Inbound = Inbound;
 
     // ── Fraud Detection Panel ──────────────────────────────────
     const FraudPanel = {
