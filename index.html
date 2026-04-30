@@ -5393,8 +5393,9 @@ BEHAVIOUR RULES:
 
     // ============================================================
     // TELEGRAM INTEGRATION (Multi-subscriber via Supabase)
+    // Bot token lives server-side in the TELEGRAM_BOT_TOKEN env var.
+    // Browser dispatches via POST /api/telegram (same-origin only).
     // ============================================================
-    const TELEGRAM_BOT_TOKEN = '8565187554:AAGYGyH8v5jIRxdPEJXqEZ5IJKifA2xIEoQ';
 
     const TelegramManager = {
       subscribers: [],
@@ -5472,18 +5473,23 @@ BEHAVIOUR RULES:
       },
 
       async sendToAll(text) {
-        // Always reload fresh from Supabase
-        const { data: subs } = await App.db.from('telegram_subscribers').select('chat_id').eq('is_active', true);
-        if (!subs || subs.length === 0) { console.log('No Telegram subscribers'); return; }
-        const results = await Promise.allSettled(subs.map(s =>
-          fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: s.chat_id, text, parse_mode: 'HTML' })
-          })
-        ));
-        const sent = results.filter(r => r.status === 'fulfilled').length;
-        console.log(`Telegram: sent to ${sent}/${subs.length}`);
-        return sent;
+        try {
+          const r = await fetch('/api/telegram', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text }),
+          });
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) {
+            console.error('Telegram dispatch failed:', data);
+            return 0;
+          }
+          console.log(`Telegram: sent to ${data.sent || 0}/${data.total || 0}`);
+          return data.sent || 0;
+        } catch(e) {
+          console.error('Telegram dispatch error:', e);
+          return 0;
+        }
       },
 
       async testAll() {
