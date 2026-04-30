@@ -5679,7 +5679,9 @@ Total Players: ${s.total}`;
 
       exportPaymentsCSV() {
         const filter = document.getElementById('paymentStatusFilter')?.value || 'all';
-        let payments = this.payments;
+        // Affiliate-manager scope: only payments for agents the user can see
+        const visibleAgentIds = new Set(this.getFilteredAgents().map(a => a.id));
+        let payments = this.payments.filter(p => visibleAgentIds.has(p.agent_id));
         if (filter !== 'all') payments = payments.filter(p => p.status === filter);
         const headers = ['Agent','Promo Code','Amount','Method','Date','Status','Notes'];
         const rows = payments.map(p => [p.agents?.name||'-', p.agents?.promo_code||'-', p.amount, p.payment_method, p.payment_date||p.created_at?.split('T')[0], p.status, p.notes]);
@@ -5861,7 +5863,7 @@ Total Players: ${s.total}`;
           const planBadge = a.commission_plan === 'per_client' ? 'A' : a.commission_plan === 'loss_based' ? 'B' : 'C';
           return `<div class="flex items-center justify-between p-3 border-b hover:bg-slate-50">
             <div class="flex items-center gap-3"><span class="text-lg">${medal}</span>
-              <div><p class="font-medium text-sm">${a.name}</p><p class="text-xs text-slate-400">${a.promo_code} <span class="bg-slate-200 px-1 rounded text-[10px]">${planBadge}</span></p></div>
+              <div><p class="font-medium text-sm">${esc(a.name)}</p><p class="text-xs text-slate-400">${esc(a.promo_code)} <span class="bg-slate-200 px-1 rounded text-[10px]">${planBadge}</span></p></div>
             </div><span class="font-bold text-sm">${prefix}${a[key].toLocaleString()}</span></div>`;
         }).join('');
       },
@@ -5887,11 +5889,11 @@ Total Players: ${s.total}`;
         } else {
           const planLabels = { per_client: 'Plan A', loss_based: 'Plan B', nil: 'Nil' };
           tbody1.innerHTML = pending.map(a => `<tr class="border-t hover:bg-slate-50">
-            <td class="px-4 py-3 font-medium">${a.name}</td>
-            <td class="px-4 py-3 font-mono text-blue-600">${a.promo_code}</td>
-            <td class="px-4 py-3 text-sm">${a.phone || '-'}</td>
-            <td class="px-4 py-3 text-center"><span class="px-2 py-1 bg-slate-100 rounded text-xs">${planLabels[a.commission_plan] || '?'}</span></td>
-            <td class="px-4 py-3 text-sm">${a.created_at?.split('T')[0] || '-'}</td>
+            <td class="px-4 py-3 font-medium">${esc(a.name)}</td>
+            <td class="px-4 py-3 font-mono text-blue-600">${esc(a.promo_code)}</td>
+            <td class="px-4 py-3 text-sm">${esc(a.phone || '-')}</td>
+            <td class="px-4 py-3 text-center"><span class="px-2 py-1 bg-slate-100 rounded text-xs">${esc(planLabels[a.commission_plan] || '?')}</span></td>
+            <td class="px-4 py-3 text-sm">${esc(a.created_at?.split('T')[0] || '-')}</td>
             <td class="px-4 py-3 text-center">
               <button onclick="AgentManager.approveAgent('${a.id}')" class="px-3 py-1 bg-emerald-500 text-white rounded text-xs hover:bg-emerald-600 mr-1">Approve</button>
               <button onclick="AgentManager.rejectAgent('${a.id}')" class="px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">Reject</button>
@@ -5966,7 +5968,7 @@ Total Players: ${s.total}`;
         if (error) { alert('Error: ' + error.message); return; }
         if (agent) { agent.promo_code_change_request = null; agent.promo_code_change_status = 'rejected'; }
         this.renderApprovals(); this.updateApprovalsBadge();
-        TelegramManager.sendToAll(`❌ <b>Promo Code Change Rejected</b>\n\n👤 ${agent?.name || 'Unknown'}\n🔗 Kept: <code>${agent?.promo_code || '?'}</code>`);
+        TelegramManager.sendToAll(`❌ <b>Promo Code Change Rejected</b>\n\n👤 ${esc(agent?.name || 'Unknown')}\n🔗 Kept: <code>${esc(agent?.promo_code || '?')}</code>`);
         alert('Promo code change rejected.');
       },
 
@@ -6152,7 +6154,22 @@ Total Players: ${s.total}`;
           // Check if already exists
           if (this.agents.some(a => a.promo_code.toUpperCase() === code)) { skipped++; continue; }
 
-          let phone = String(row[3] || '').replace(/[=\s]/g, '').trim();
+          // Normalize phone to a canonical Zambian format: digits only, then prepend +260
+          // if missing the country code. Strips '=' (Excel formula leak), whitespace, and dashes.
+          let phone = String(row[3] || '').replace(/[^0-9+]/g, '').trim();
+          if (phone) {
+            if (phone.startsWith('+')) {
+              // Already has + prefix — keep as-is
+            } else if (phone.startsWith('260')) {
+              phone = '+' + phone;
+            } else if (phone.startsWith('0') && phone.length >= 9) {
+              // Local format like 0976801810 → +260976801810
+              phone = '+260' + phone.slice(1);
+            } else if (phone.length >= 9) {
+              // Bare 9-10 digit number — assume Zambian, add +260
+              phone = '+260' + phone;
+            }
+          }
           const nrc = String(row[4] || '').trim();
           const location = String(row[5] || '').trim();
           const recruiter = String(row[6] || '').trim();
@@ -6373,8 +6390,8 @@ Total Players: ${s.total}`;
         const select = document.getElementById('paymentAgentSelect');
         if (!select) return;
         select.innerHTML = '<option value="">-- Select Agent --</option>' +
-          this.agents.filter(a => a.status === 'active' && a.commission_plan !== 'nil').map(a =>
-            `<option value="${a.id}">${a.name} (${a.promo_code})</option>`
+          this.getFilteredAgents().filter(a => a.status === 'active' && a.commission_plan !== 'nil').map(a =>
+            `<option value="${esc(a.id)}">${esc(a.name)} (${esc(a.promo_code)})</option>`
           ).join('');
       },
 
@@ -6393,7 +6410,13 @@ Total Players: ${s.total}`;
         const date = document.getElementById('paymentDate')?.value;
         const notes = document.getElementById('paymentNotes')?.value.trim();
         if (!agentId) { alert('Select an agent'); return; }
-        if (!amount || amount <= 0) { alert('Enter a valid amount'); return; }
+        if (!amount || amount <= 0 || !Number.isFinite(amount)) { alert('Enter a valid amount'); return; }
+        // Overpayment guard: warn (don't block) — admin may have business reasons
+        const stats = this.getAgentStats(agentId);
+        if (amount > stats.balance) {
+          const proceed = confirm(`Amount K${amount.toLocaleString()} exceeds the agent's current balance of K${stats.balance.toLocaleString()}.\n\nProceed anyway?`);
+          if (!proceed) return;
+        }
         try {
           const { data, error } = await App.db.from('agent_payments').insert({
             agent_id: agentId, amount, payment_method: method,
@@ -6414,20 +6437,28 @@ Total Players: ${s.total}`;
         const tbody = document.getElementById('paymentsTableBody');
         if (!tbody) return;
         const filter = document.getElementById('paymentStatusFilter')?.value || 'all';
-        let filtered = filter === 'all' ? this.payments : this.payments.filter(p => p.status === filter);
+        // Affiliate-manager scope: only payments for agents the user can see
+        const visibleAgentIds = new Set(this.getFilteredAgents().map(a => a.id));
+        let filtered = this.payments.filter(p => visibleAgentIds.has(p.agent_id));
+        if (filter !== 'all') filtered = filtered.filter(p => p.status === filter);
         if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No payments</td></tr>'; return; }
-        const sc = { pending: 'orange', paid: 'emerald', cancelled: 'red' };
+        const statusClass = {
+          pending:   'bg-orange-100 text-orange-700',
+          paid:      'bg-emerald-100 text-emerald-700',
+          cancelled: 'bg-red-100 text-red-700',
+        };
         tbody.innerHTML = filtered.map(p => {
           const a = p.agents || this.agents.find(x => x.id === p.agent_id);
+          const cls = statusClass[p.status] || 'bg-slate-100 text-slate-700';
           return `<tr class="border-t hover:bg-slate-50">
-            <td class="px-4 py-3"><div class="font-medium text-sm">${a?.name || '?'}</div><div class="text-xs text-slate-400">${a?.promo_code || ''}</div></td>
-            <td class="px-4 py-3 font-bold text-sm">K${parseFloat(p.amount).toLocaleString()}</td>
-            <td class="px-4 py-3 text-xs capitalize">${p.payment_method || '-'}</td>
-            <td class="px-4 py-3 text-xs">${p.payment_date || '-'}</td>
-            <td class="px-4 py-3 text-center"><span class="px-2 py-0.5 bg-${sc[p.status]}-100 text-${sc[p.status]}-700 rounded text-xs capitalize">${p.status}</span></td>
+            <td class="px-4 py-3"><div class="font-medium text-sm">${esc(a?.name || '?')}</div><div class="text-xs text-slate-400">${esc(a?.promo_code || '')}</div></td>
+            <td class="px-4 py-3 font-bold text-sm">K${(parseFloat(p.amount) || 0).toLocaleString()}</td>
+            <td class="px-4 py-3 text-xs capitalize">${esc(p.payment_method || '-')}</td>
+            <td class="px-4 py-3 text-xs">${esc(p.payment_date || '-')}</td>
+            <td class="px-4 py-3 text-center"><span class="px-2 py-0.5 ${cls} rounded text-xs capitalize">${esc(p.status || '')}</span></td>
             <td class="px-4 py-3 text-center">${p.status === 'pending' ? `
-              <button onclick="AgentManager.markPaymentPaid('${p.id}')" class="text-emerald-600 hover:underline text-xs mr-1">Paid</button>
-              <button onclick="AgentManager.cancelPayment('${p.id}')" class="text-red-600 hover:underline text-xs">Cancel</button>` : '-'}</td></tr>`;
+              <button onclick="AgentManager.markPaymentPaid('${esc(p.id)}')" class="text-emerald-600 hover:underline text-xs mr-1">Paid</button>
+              <button onclick="AgentManager.cancelPayment('${esc(p.id)}')" class="text-red-600 hover:underline text-xs">Cancel</button>` : '-'}</td></tr>`;
         }).join('');
       },
 
@@ -6457,17 +6488,24 @@ Total Players: ${s.total}`;
       async loadTiers() {
         try {
           const { data, error } = await App.db.from('commission_tiers').select('*').order('tier_order');
-          if (!error && data && data.length > 0) {
-            this.tiers = data;
-          } else {
-            // Seed defaults
-            this.tiers = [...this.defaultTiers];
-            try {
-              await App.db.from('commission_tiers').insert(this.defaultTiers);
-              const { data: d2 } = await App.db.from('commission_tiers').select('*').order('tier_order');
-              if (d2) this.tiers = d2;
-            } catch(e2) { console.log('Tier seed error (table may not exist):', e2); }
+          if (error) {
+            // Read failed (network, RLS, etc.) — DO NOT seed, since the table may already
+            // contain rows that we just couldn't read. Inserting here would create duplicates.
+            console.log('Tiers load error (skipping seed):', error);
+            this.tiers = [...this.defaultTiers]; // local fallback only
+            return;
           }
+          if (data && data.length > 0) {
+            this.tiers = data;
+            return;
+          }
+          // Genuinely empty — safe to seed
+          this.tiers = [...this.defaultTiers];
+          try {
+            await App.db.from('commission_tiers').insert(this.defaultTiers);
+            const { data: d2 } = await App.db.from('commission_tiers').select('*').order('tier_order');
+            if (d2 && d2.length > 0) this.tiers = d2;
+          } catch(e2) { console.log('Tier seed error:', e2); }
         } catch(e) { console.log('Tiers load error:', e); this.tiers = [...this.defaultTiers]; }
       },
 
@@ -6568,6 +6606,28 @@ Total Players: ${s.total}`;
         });
 
         const statusEl = document.getElementById('tierSaveStatus');
+
+        // Validate monotonicity: each tier's min_active_clients must be > the previous tier's
+        const sortedTiers = [...this.tiers].sort((a, b) => a.tier_order - b.tier_order);
+        let prevThreshold = 0;
+        for (const tier of sortedTiers) {
+          const tierKey = String(tier.id || tier.tier_order);
+          const proposed = updates[tierKey]?.min_active_clients ?? tier.min_active_clients;
+          if (proposed < 1) {
+            statusEl.textContent = `❌ ${tier.tier_name} threshold must be at least 1`;
+            statusEl.className = 'text-sm mt-3 text-red-600'; statusEl.classList.remove('hidden');
+            setTimeout(() => statusEl.classList.add('hidden'), 4000);
+            return;
+          }
+          if (proposed <= prevThreshold) {
+            statusEl.textContent = `❌ ${tier.tier_name} threshold (${proposed}) must be greater than the previous tier (${prevThreshold})`;
+            statusEl.className = 'text-sm mt-3 text-red-600'; statusEl.classList.remove('hidden');
+            setTimeout(() => statusEl.classList.add('hidden'), 6000);
+            return;
+          }
+          prevThreshold = proposed;
+        }
+
         statusEl.textContent = '⏳ Saving...'; statusEl.className = 'text-sm mt-3 text-blue-600'; statusEl.classList.remove('hidden');
 
         try {
@@ -6620,8 +6680,8 @@ Total Players: ${s.total}`;
           const pc = planColors[a.commission_plan] || 'slate';
 
           return `<tr class="border-t hover:bg-slate-50">
-            <td class="px-4 py-3"><div class="font-medium text-sm">${a.name}</div><div class="text-xs text-slate-400 font-mono">${a.promo_code}</div></td>
-            <td class="px-4 py-3 text-center"><span class="px-2 py-0.5 bg-${pc}-100 text-${pc}-700 rounded text-[10px] font-bold">${planLabels[a.commission_plan]}</span></td>
+            <td class="px-4 py-3"><div class="font-medium text-sm">${esc(a.name)}</div><div class="text-xs text-slate-400 font-mono">${esc(a.promo_code)}</div></td>
+            <td class="px-4 py-3 text-center"><span class="px-2 py-0.5 bg-${pc}-100 text-${pc}-700 rounded text-[10px] font-bold">${esc(planLabels[a.commission_plan]||'')}</span></td>
             <td class="px-4 py-3 text-center font-bold text-lg">${activeClients}</td>
             <td class="px-4 py-3 text-center">${badge}</td>
             <td class="px-4 py-3 text-center font-medium text-sm">${rate}</td>
@@ -6633,19 +6693,22 @@ Total Players: ${s.total}`;
       renderTierPromotions() {
         const tbody = document.getElementById('tierPromotionsBody');
         if (!tbody) return;
-        if (this.tierPromotions.length === 0) {
+        // Affiliate-manager scope: only show promotions for agents the user recruited
+        const visibleAgentIds = new Set(this.getFilteredAgents().map(a => a.id));
+        const visiblePromotions = this.tierPromotions.filter(p => visibleAgentIds.has(p.agent_id));
+        if (visiblePromotions.length === 0) {
           tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">No promotions yet. Tier-ups are recorded when weekly data is uploaded.</td></tr>';
           return;
         }
         const canEdit = App.role === 'admin' || App.role === 'developer' || App.role === 'affiliate_manager';
         const statusColors = { pending: 'orange', paid: 'emerald', skipped: 'slate' };
-        tbody.innerHTML = this.tierPromotions.map(p => {
+        tbody.innerHTML = visiblePromotions.map(p => {
           const agent = this.agents.find(a => a.id === p.agent_id);
           const sc = statusColors[p.prize_status] || 'slate';
           return `<tr class="border-t hover:bg-slate-50">
-            <td class="px-4 py-3 text-sm">${p.promoted_at?.split('T')[0] || '-'}</td>
-            <td class="px-4 py-3"><div class="font-medium text-sm">${agent?.name || 'Unknown'}</div><div class="text-xs text-slate-400 font-mono">${agent?.promo_code || ''}</div></td>
-            <td class="px-4 py-3 text-center text-sm">${p.previous_tier || 'None'} → <span class="font-bold">${p.new_tier}</span></td>
+            <td class="px-4 py-3 text-sm">${esc(p.promoted_at?.split('T')[0] || '-')}</td>
+            <td class="px-4 py-3"><div class="font-medium text-sm">${esc(agent?.name || 'Unknown')}</div><div class="text-xs text-slate-400 font-mono">${esc(agent?.promo_code || '')}</div></td>
+            <td class="px-4 py-3 text-center text-sm">${esc(p.previous_tier || 'None')} → <span class="font-bold">${esc(p.new_tier || '')}</span></td>
             <td class="px-4 py-3 text-center">
               ${p.prize_status === 'pending' && canEdit ? `
                 <div class="flex items-center justify-center gap-1">
@@ -6656,8 +6719,8 @@ Total Players: ${s.total}`;
                 </div>
               ` : `<span class="font-bold">K${parseFloat(p.cash_prize || 0).toLocaleString()}</span>`}
             </td>
-            <td class="px-4 py-3 text-center"><span class="px-2 py-0.5 bg-${sc}-100 text-${sc}-700 rounded text-xs capitalize font-medium">${p.prize_status}</span></td>
-            <td class="px-4 py-3 text-xs text-slate-500 max-w-[150px] truncate" title="${p.notes || ''}">${p.notes || '-'}</td>
+            <td class="px-4 py-3 text-center"><span class="px-2 py-0.5 bg-${sc}-100 text-${sc}-700 rounded text-xs capitalize font-medium">${esc(p.prize_status||'')}</span></td>
+            <td class="px-4 py-3 text-xs text-slate-500 max-w-[150px] truncate" title="${esc(p.notes || '')}">${esc(p.notes || '-')}</td>
             <td class="px-4 py-3 text-center">
               ${p.prize_status === 'pending' && canEdit ? `
                 <div class="flex items-center justify-center gap-2">
@@ -6703,7 +6766,7 @@ Total Players: ${s.total}`;
         p.prize_status = 'paid'; p.paid_at = new Date().toISOString(); p.notes = notesUpdate;
         this.renderTierPromotions();
         if (agent) {
-          TelegramManager.sendToAll(`🎁 <b>Cash Prize Paid!</b>\n\n👤 ${agent.name} (${agent.promo_code})\n🏅 Tier: ${p.new_tier}\n💰 Prize: K${amount.toLocaleString()}${note ? '\n📝 ' + note : ''}`);
+          TelegramManager.sendToAll(`🎁 <b>Cash Prize Paid!</b>\n\n👤 ${esc(agent.name)} (${esc(agent.promo_code)})\n🏅 Tier: ${esc(p.new_tier)}\n💰 Prize: K${amount.toLocaleString()}${note ? '\n📝 ' + esc(note) : ''}`);
         }
       },
 
@@ -6745,7 +6808,7 @@ Total Players: ${s.total}`;
           }).select().single();
           if (!error && data) {
             this.tierPromotions.unshift(data);
-            TelegramManager.sendToAll(`🏅 <b>Agent Tier Up!</b>\n\n👤 ${agent.name} (${agent.promo_code})\n${currentTier.emoji} <b>${previousTier || 'None'} → ${currentTier.tier_name}</b>\n👥 Active clients: ${activeClients}\n🎁 Cash prize: K${currentTier.cash_prize.toLocaleString()}\n\n⏳ <i>Prize payment pending</i>`);
+            TelegramManager.sendToAll(`🏅 <b>Agent Tier Up!</b>\n\n👤 ${esc(agent.name)} (${esc(agent.promo_code)})\n${currentTier.emoji} <b>${esc(previousTier || 'None')} → ${esc(currentTier.tier_name)}</b>\n👥 Active clients: ${activeClients}\n🎁 Cash prize: K${currentTier.cash_prize.toLocaleString()}\n\n⏳ <i>Prize payment pending</i>`);
           }
         } catch(e) { console.error('Tier promotion error:', e); }
       },
@@ -10946,15 +11009,15 @@ Total Players: ${s.total}`;
         if (filtered.length === 0) { container.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">No agents found</div>'; return; }
         
         container.innerHTML = filtered.map(a => {
-          const initials = a.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+          const initials = (a.name || '').split(' ').map(n=>n[0]||'').join('').slice(0,2).toUpperCase();
           const selected = this.selectedAgentId === a.id;
-          return `<div onclick="ChatManager.selectAgent('${a.id}')" class="flex items-center gap-3 p-3 cursor-pointer transition-all ${selected ? 'bg-indigo-50 border-l-4 border-l-indigo-500' : 'hover:bg-slate-50'}">
-            <div class="w-9 h-9 rounded-full ${selected ? 'bg-indigo-600' : 'bg-slate-300'} flex items-center justify-center text-xs font-bold ${selected ? 'text-white' : 'text-slate-600'} flex-shrink-0">${initials}</div>
+          return `<div onclick="ChatManager.selectAgent('${esc(a.id)}')" class="flex items-center gap-3 p-3 cursor-pointer transition-all ${selected ? 'bg-indigo-50 border-l-4 border-l-indigo-500' : 'hover:bg-slate-50'}">
+            <div class="w-9 h-9 rounded-full ${selected ? 'bg-indigo-600' : 'bg-slate-300'} flex items-center justify-center text-xs font-bold ${selected ? 'text-white' : 'text-slate-600'} flex-shrink-0">${esc(initials)}</div>
             <div class="flex-1 min-w-0">
-              <p class="font-medium text-sm truncate ${selected ? 'text-indigo-700' : ''}">${a.name}</p>
-              <p class="text-xs text-slate-400 font-mono">${a.promo_code}</p>
+              <p class="font-medium text-sm truncate ${selected ? 'text-indigo-700' : ''}">${esc(a.name)}</p>
+              <p class="text-xs text-slate-400 font-mono">${esc(a.promo_code)}</p>
             </div>
-            <span id="chatBadge-${a.id}" class="hidden bg-red-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center font-bold flex-shrink-0">0</span>
+            <span id="chatBadge-${esc(a.id)}" class="hidden bg-red-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center font-bold flex-shrink-0">0</span>
           </div>`;
         }).join('');
       },
@@ -10967,10 +11030,10 @@ Total Players: ${s.total}`;
         if (!agent) return;
         
         // Update header
-        const initials = agent.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+        const initials = (agent.name || '').split(' ').map(n=>n[0]||'').join('').slice(0,2).toUpperCase();
         document.getElementById('chatHeaderInfo').innerHTML = `
-          <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-bold text-white">${initials}</div>
-          <div><p class="font-medium text-sm">${agent.name}</p><p class="text-xs text-slate-400 font-mono">${agent.promo_code} · ${agent.phone||'No phone'}</p></div>`;
+          <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-bold text-white">${esc(initials)}</div>
+          <div><p class="font-medium text-sm">${esc(agent.name)}</p><p class="text-xs text-slate-400 font-mono">${esc(agent.promo_code)} · ${esc(agent.phone||'No phone')}</p></div>`;
         
         document.getElementById('chatInputArea').classList.remove('hidden');
         this.renderConversationList();
@@ -11032,25 +11095,34 @@ Total Players: ${s.total}`;
         const input = document.getElementById('chatMessageInput');
         const text = input?.value.trim();
         if (!text || !this.selectedAgentId) return;
-        
+
+        // Verify the agent is still active before sending
+        const agent = AgentManager.agents.find(a => a.id === this.selectedAgentId);
+        if (!agent) { alert('Agent not found. Refresh and try again.'); return; }
+        if (agent.status === 'inactive') {
+          if (!confirm(`${agent.name} is deactivated. Send the message anyway?`)) return;
+        }
+
+        const originalText = text;
         input.value = '';
-        
+
         try {
           const { error } = await App.db.from('chat_messages').insert({
             agent_id: this.selectedAgentId,
             sender_type: 'crm',
             sender_id: App.user?.email || 'unknown',
             sender_name: App.userName || App.user?.email || 'CRM',
-            message: text,
+            message: originalText,
             is_read: false
           });
-          
+
           if (error) throw error;
           // Message will appear via real-time subscription, or reload
           await this.loadMessages(this.selectedAgentId);
         } catch(e) {
           console.error('Send message failed:', e);
-          alert('Failed to send message. Check chat_messages table exists.');
+          input.value = originalText; // restore so user can retry
+          alert('Failed to send message: ' + (e.message || 'Unknown error'));
         }
       },
 
