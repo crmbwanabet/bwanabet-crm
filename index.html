@@ -6160,9 +6160,11 @@ Total Players: ${s.total}`;
           // Check if already exists
           if (this.agents.some(a => a.promo_code.toUpperCase() === code)) { skipped++; continue; }
 
-          // Normalize phone to a canonical Zambian format: digits only, then prepend +260
-          // if missing the country code. Strips '=' (Excel formula leak), whitespace, and dashes.
-          let phone = String(row[3] || '').replace(/[^0-9+]/g, '').trim();
+          // Normalize phone to a canonical Zambian format.
+          // Some CSV rows have multiple numbers separated by / or , — take the first.
+          // Strips '=' (Excel formula leak), whitespace, dashes, dots, and stray punctuation.
+          let phoneRaw = String(row[3] || '').split(/[\/;,]/)[0];
+          let phone = phoneRaw.replace(/[^0-9+]/g, '').trim();
           if (phone) {
             if (phone.startsWith('+')) {
               // Already has + prefix — keep as-is
@@ -6175,11 +6177,16 @@ Total Players: ${s.total}`;
               // Bare 9-10 digit number — assume Zambian, add +260
               phone = '+260' + phone;
             }
+            // If the result is unreasonably long (> 15 digits, ITU max), drop it
+            if (phone.replace(/\D/g, '').length > 15) phone = null;
           }
           const nrc = String(row[4] || '').trim();
           const location = String(row[5] || '').trim();
           const recruiter = String(row[6] || '').trim();
-          const percent = parseFloat(row[8]) || 20;
+          // Validate percent is a real number (some rows have dates or other strings).
+          // Default to 20 if the value isn't a clean number.
+          const rawPercent = String(row[8] || '').trim();
+          const percent = /^\d+(\.\d+)?$/.test(rawPercent) ? parseFloat(rawPercent) : 20;
           const link = String(row[10] || '').trim();
           const source = String(row[2] || '').trim();
 
