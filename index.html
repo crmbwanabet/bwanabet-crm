@@ -3584,6 +3584,31 @@ BEHAVIOUR RULES:
       refreshIcons();
     }
 
+    // Lightweight toast for CRM-wide success/info messages (replaces alert() for non-blocking notifications)
+    function crmToast(msg, type = 'success') {
+      let container = document.getElementById('crmToastContainer');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'crmToastContainer';
+        container.setAttribute('role', 'status');
+        container.setAttribute('aria-live', 'polite');
+        container.style.cssText = 'position:fixed;top:1rem;right:1rem;z-index:9999;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none';
+        document.body.appendChild(container);
+      }
+      const colors = {
+        success: 'background:#059669;color:white',
+        error:   'background:#dc2626;color:white',
+        info:    'background:#2563eb;color:white',
+        warn:    'background:#d97706;color:white',
+      };
+      const el = document.createElement('div');
+      el.style.cssText = (colors[type] || colors.info) + ';padding:0.75rem 1rem;border-radius:0.5rem;font-size:0.875rem;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-width:24rem;pointer-events:auto;animation:fadeSlideIn .2s ease-out';
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => { el.style.transition = 'opacity .3s, transform .3s'; el.style.opacity = '0'; el.style.transform = 'translateY(-8px)'; }, 2700);
+      setTimeout(() => el.remove(), 3000);
+    }
+
     // Sanitize promo codes - replace Cyrillic lookalikes with Latin equivalents
     function sanitizePromoCode(code) {
       if (!code) return code;
@@ -5789,6 +5814,10 @@ Total Players: ${s.total}`;
 
       // Sub-tab Navigation
       switchSubTab(tab) {
+        // Tear down chat realtime subscription if leaving the chat sub-tab
+        if (this.currentSubTab === 'chat' && tab !== 'chat' && typeof ChatManager !== 'undefined') {
+          ChatManager.teardown?.();
+        }
         this.currentSubTab = tab;
         document.querySelectorAll('.agent-subtab').forEach(btn => {
           btn.classList.remove('bg-slate-800', 'text-white');
@@ -5869,7 +5898,7 @@ Total Players: ${s.total}`;
           const planBadge = a.commission_plan === 'per_client' ? 'A' : a.commission_plan === 'loss_based' ? 'B' : 'C';
           return `<div class="flex items-center justify-between p-3 border-b hover:bg-slate-50">
             <div class="flex items-center gap-3"><span class="text-lg">${medal}</span>
-              <div><p class="font-medium text-sm">${esc(a.name)}</p><p class="text-xs text-slate-400">${esc(a.promo_code)} <span class="bg-slate-200 px-1 rounded text-[10px]">${planBadge}</span></p></div>
+              <div class="min-w-0"><p class="font-medium text-sm truncate">${esc(a.name)}</p><p class="text-xs text-slate-400 truncate">${esc(a.promo_code)} <span class="bg-slate-200 px-1 rounded text-[10px]">${planBadge}</span></p></div>
             </div><span class="font-bold text-sm">${prefix}${a[key].toLocaleString()}</span></div>`;
         }).join('');
       },
@@ -5934,7 +5963,7 @@ Total Players: ${s.total}`;
         // Telegram notification
         const planLabels = { per_client: 'Plan A (K100/client)', loss_based: 'Plan B (20% losses)', nil: 'Nil' };
         TelegramManager.sendToAll(`✅ <b>Agent Approved</b>\n\n👤 ${esc(a?.name || 'Unknown')}\n🔗 Code: <code>${esc(a?.promo_code || '?')}</code>\n📋 ${esc(planLabels[a?.commission_plan] || '?')}\n📱 ${esc(a?.phone || '-')}`);
-        alert('Agent approved!');
+        crmToast('Agent approved');
       },
 
       async rejectAgent(agentId) {
@@ -5946,7 +5975,7 @@ Total Players: ${s.total}`;
         if (idx !== -1) { this.agents[idx].status = 'inactive'; }
         this.renderApprovals(); this.updateApprovalsBadge();
         TelegramManager.sendToAll(`❌ <b>Agent Rejected</b>\n\n👤 ${esc(a?.name || 'Unknown')}\n🔗 Code: <code>${esc(a?.promo_code || '?')}</code>`);
-        alert('Agent rejected.');
+        crmToast('Agent rejected', 'warn');
       },
 
       async approvePromoChange(agentId) {
@@ -5965,7 +5994,7 @@ Total Players: ${s.total}`;
         agent.promo_code = newCode; agent.promo_code_change_request = null; agent.promo_code_change_status = 'approved';
         this.renderApprovals(); this.updateApprovalsBadge(); this.renderAgentsTable();
         TelegramManager.sendToAll(`✅ <b>Promo Code Changed</b>\n\n👤 ${esc(agent.name)}\n🔗 Old: <code>${esc(oldCode)}</code> → New: <code>${esc(newCode)}</code>`);
-        alert('Promo code changed to ' + newCode);
+        crmToast('Promo code changed to ' + newCode);
       },
 
       async rejectPromoChange(agentId) {
@@ -5975,7 +6004,7 @@ Total Players: ${s.total}`;
         if (agent) { agent.promo_code_change_request = null; agent.promo_code_change_status = 'rejected'; }
         this.renderApprovals(); this.updateApprovalsBadge();
         TelegramManager.sendToAll(`❌ <b>Promo Code Change Rejected</b>\n\n👤 ${esc(agent?.name || 'Unknown')}\n🔗 Kept: <code>${esc(agent?.promo_code || '?')}</code>`);
-        alert('Promo code change rejected.');
+        crmToast('Promo code change rejected', 'warn');
       },
 
       // Agents Table
@@ -6048,8 +6077,8 @@ Total Players: ${s.total}`;
           this.agents.push(data);
           ['newAgentPromoCode','newAgentPassword','newAgentName','newAgentPhone','newAgentEmail','newAgentLocation','newAgentRecruiter'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
           this.renderAgentsTable(); this.populatePaymentAgentSelect(); this.renderOverview();
-          alert(`Agent "${name}" created!\nPromo: ${promoCode}\nPlan: ${plan}`);
-        } catch(e) { alert('Error: ' + (e.message || 'Unknown')); } finally {
+          crmToast(`Agent "${name}" (${promoCode}, ${plan}) created`);
+        } catch(e) { crmToast('Error: ' + (e.message || 'Unknown'), 'error'); } finally {
           btn.disabled = false; btn.innerHTML = '<i data-lucide="plus" class="h-4 w-4"></i> Create Agent'; refreshIcons();
         }
       },
@@ -6103,16 +6132,17 @@ Total Players: ${s.total}`;
         if (idx !== -1) this.agents[idx] = { ...this.agents[idx], ...update };
         document.getElementById('editAgentModal').style.display='none';
         this.renderAgentsTable(); this.renderOverview(); this.updateApprovalsBadge();
-        alert('Agent updated!');
+        crmToast('Agent updated');
       },
 
       async deleteAgent(agentId) {
         const a = this.agents.find(x => x.id === agentId);
         if (!a || !confirm(`Delete "${a.name}" (${a.promo_code})?`)) return;
         const { error } = await App.db.from('agents').delete().eq('id', agentId);
-        if (error) { alert('Error: ' + error.message); return; }
+        if (error) { crmToast('Error: ' + error.message, 'error'); return; }
         this.agents = this.agents.filter(x => x.id !== agentId);
         this.renderAgentsTable(); this.populatePaymentAgentSelect(); this.renderOverview();
+        crmToast(`Agent ${a.name} deleted`, 'warn');
       },
 
       // ====== UPLOAD: AGENT LIST ======
@@ -6442,8 +6472,8 @@ Total Players: ${s.total}`;
           document.getElementById('paymentAgentSelect').value = '';
           document.getElementById('paymentAgentBalance').textContent = 'K0';
           this.renderPaymentsTable(); this.renderOverview();
-          alert('Payment recorded!');
-        } catch(e) { alert('Error: ' + (e.message || 'Unknown')); }
+          crmToast('Payment recorded');
+        } catch(e) { crmToast('Error: ' + (e.message || 'Unknown'), 'error'); }
       },
 
       renderPaymentsTable() {
@@ -11001,6 +11031,13 @@ Total Players: ${s.total}`;
         }
         this.renderConversationList();
         this.loadUnreadCount();
+      },
+
+      teardown() {
+        // Called when leaving the chat sub-tab — drop any live realtime subscription
+        try { if (this.subscription) { this.subscription.unsubscribe(); this.subscription = null; } } catch (e) {}
+        this.selectedAgentId = null;
+        this.messages = [];
       },
 
       async ensureTable() {
