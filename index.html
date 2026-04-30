@@ -405,17 +405,17 @@
           <button class="tutorial-btn" onclick="showTutorial('dashboard')">?</button>
         </div>
         
-        <!-- Email Import Status -->
-        <div id="emailImportBanner" class="mb-6">
+        <!-- Data Import Status -->
+        <div id="importBanner" class="mb-6">
           <div class="bg-gradient-to-r from-slate-50 to-blue-50 border border-slate-200 rounded-xl p-4">
             <div class="flex items-center gap-3">
               <div class="p-2 bg-blue-100 rounded-lg"><i data-lucide="database" class="h-5 w-5 text-blue-600"></i></div>
               <div class="flex-1">
                 <h3 class="font-semibold text-slate-800 text-sm">Data Import</h3>
-                <div id="emailImportStatus" class="text-sm text-slate-500 mt-0.5">Checking...</div>
+                <div id="importStatus" class="text-sm text-slate-500 mt-0.5">Checking...</div>
               </div>
-              <button onclick="refreshEmailImportStatus()" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 flex items-center gap-1"><i data-lucide="refresh-cw" class="h-3 w-3"></i>Refresh</button>
-              <button onclick="viewEmailImports()" class="px-3 py-1.5 bg-slate-700 text-white text-xs font-medium rounded-lg hover:bg-slate-800 flex items-center gap-1"><i data-lucide="database" class="h-3 w-3"></i>View Imports</button>
+              <button onclick="refreshImportStatus()" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 flex items-center gap-1"><i data-lucide="refresh-cw" class="h-3 w-3"></i>Refresh</button>
+              <button onclick="viewImports()" class="px-3 py-1.5 bg-slate-700 text-white text-xs font-medium rounded-lg hover:bg-slate-800 flex items-center gap-1"><i data-lucide="database" class="h-3 w-3"></i>View Imports</button>
             </div>
           </div>
         </div>
@@ -3983,7 +3983,7 @@ BEHAVIOUR RULES:
       updateAllCharts();
       renderTable();
       runProactiveAnalysis();
-      refreshEmailImportStatus();
+      refreshImportStatus();
 
       showLoading(false);
     }
@@ -5653,11 +5653,10 @@ Total Players: ${s.total}`;
         App.agentFilter = mode;
         document.getElementById('filterBtnMine').className = 'px-4 py-2 text-xs font-semibold transition-all ' + (mode === 'mine' ? 'agent-filter-active' : 'agent-filter-inactive');
         document.getElementById('filterBtnAll').className = 'px-4 py-2 text-xs font-semibold transition-all ' + (mode === 'all' ? 'agent-filter-active' : 'agent-filter-inactive');
-        document.getElementById('agentFilterLabel').innerHTML = mode === 'mine' 
-          ? 'Showing: My agents recruited by <strong>' + (App.userName||'-') + '</strong>'
+        document.getElementById('agentFilterLabel').innerHTML = mode === 'mine'
+          ? 'Showing: My agents recruited by <strong>' + esc(App.userName||'-') + '</strong>'
           : 'Showing: <strong>All agents</strong> in the system';
         // Re-render current sub-tab
-        this._btnRestore(btn);
         this.switchSubTab(this.currentSubTab);
       },
 
@@ -5702,14 +5701,12 @@ Total Players: ${s.total}`;
       // ======== TEMPLATE DOWNLOADS ========
       downloadAgentTemplate() {
         const headers = ['Username','Agent Name','Telephone','NRC','Location','Recruiter Name','Date Registered','Percent','Code'];
-        const sample = ['john_doe','John Doe','+260971234567','123456/10/1','Lusaka','Jane Manager','2026-01-15','20','JOHN2026'];
-        this._downloadCSV('agent_list_template.csv', headers, [sample]);
+        this._downloadCSV('agent_list_template.csv', headers, []);
       },
 
       downloadActivityTemplate() {
         const headers = ['User ID','Phone Number','Agent Code','First Deposit Amount','Total Deposit Amount','Total Bet Sports','Total Bet Casino','Total Bet','Losses'];
-        const sample = ['USR001','+260971234567','JOHN2026','200','500','1000','200','1200','300'];
-        this._downloadCSV('player_activity_template.csv', headers, [sample]);
+        this._downloadCSV('player_activity_template.csv', headers, []);
       },
 
       // ======== TREND CALCULATIONS ========
@@ -5908,9 +5905,9 @@ Total Players: ${s.total}`;
           tbody2.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">No pending requests</td></tr>';
         } else {
           tbody2.innerHTML = changes.map(a => `<tr class="border-t hover:bg-slate-50">
-            <td class="px-4 py-3 font-medium">${a.name}</td>
-            <td class="px-4 py-3 font-mono">${a.promo_code}</td>
-            <td class="px-4 py-3 font-mono text-blue-600 font-bold">${a.promo_code_change_request}</td>
+            <td class="px-4 py-3 font-medium">${esc(a.name)}</td>
+            <td class="px-4 py-3 font-mono">${esc(a.promo_code)}</td>
+            <td class="px-4 py-3 font-mono text-blue-600 font-bold">${esc(a.promo_code_change_request)}</td>
             <td class="px-4 py-3 text-center">
               <button onclick="AgentManager.approvePromoChange('${a.id}')" class="px-3 py-1 bg-emerald-500 text-white rounded text-xs mr-1">Approve</button>
               <button onclick="AgentManager.rejectPromoChange('${a.id}')" class="px-3 py-1 bg-red-500 text-white rounded text-xs">Reject</button>
@@ -5928,7 +5925,7 @@ Total Players: ${s.total}`;
         this.renderApprovals(); this.updateApprovalsBadge(); this.renderOverview();
         // Telegram notification
         const planLabels = { per_client: 'Plan A (K100/client)', loss_based: 'Plan B (20% losses)', nil: 'Nil' };
-        TelegramManager.sendToAll(`✅ <b>Agent Approved</b>\n\n👤 ${a?.name || 'Unknown'}\n🔗 Code: <code>${a?.promo_code || '?'}</code>\n📋 ${planLabels[a?.commission_plan] || '?'}\n📱 ${a?.phone || '-'}`);
+        TelegramManager.sendToAll(`✅ <b>Agent Approved</b>\n\n👤 ${esc(a?.name || 'Unknown')}\n🔗 Code: <code>${esc(a?.promo_code || '?')}</code>\n📋 ${esc(planLabels[a?.commission_plan] || '?')}\n📱 ${esc(a?.phone || '-')}`);
         alert('Agent approved!');
       },
 
@@ -5940,7 +5937,7 @@ Total Players: ${s.total}`;
         const idx = this.agents.findIndex(x => x.id === agentId);
         if (idx !== -1) { this.agents[idx].status = 'inactive'; }
         this.renderApprovals(); this.updateApprovalsBadge();
-        TelegramManager.sendToAll(`❌ <b>Agent Rejected</b>\n\n👤 ${a?.name || 'Unknown'}\n🔗 Code: <code>${a?.promo_code || '?'}</code>`);
+        TelegramManager.sendToAll(`❌ <b>Agent Rejected</b>\n\n👤 ${esc(a?.name || 'Unknown')}\n🔗 Code: <code>${esc(a?.promo_code || '?')}</code>`);
         alert('Agent rejected.');
       },
 
@@ -5956,9 +5953,10 @@ Total Players: ${s.total}`;
           signup_link: 'https://bwanabet.com/en/auth/signup/' + newCode
         }).eq('id', agentId);
         if (error) { alert('Error: ' + error.message); return; }
+        const oldCode = agent.promo_code;
         agent.promo_code = newCode; agent.promo_code_change_request = null; agent.promo_code_change_status = 'approved';
         this.renderApprovals(); this.updateApprovalsBadge(); this.renderAgentsTable();
-        TelegramManager.sendToAll(`✅ <b>Promo Code Changed</b>\n\n👤 ${agent.name}\n🔗 Old: <code>${agent.promo_code}</code> → New: <code>${newCode}</code>`);
+        TelegramManager.sendToAll(`✅ <b>Promo Code Changed</b>\n\n👤 ${esc(agent.name)}\n🔗 Old: <code>${esc(oldCode)}</code> → New: <code>${esc(newCode)}</code>`);
         alert('Promo code changed to ' + newCode);
       },
 
@@ -6162,16 +6160,21 @@ Total Players: ${s.total}`;
           const link = String(row[10] || '').trim();
           const source = String(row[2] || '').trim();
 
-          // Determine plan from percent
-          const plan = percent === 0 ? 'nil' : 'per_client';
+          // Determine plan from percent:
+          //   percent = 0  → 'nil'         (tracking only, no commission)
+          //   percent > 0  → 'loss_based'  (Plan B — % of player losses)
+          // Plan A (per_client K100/client) cannot be inferred from CSV; admin must set it manually after import.
+          const plan = percent === 0 ? 'nil' : 'loss_based';
+          const commissionRate = plan === 'loss_based' ? percent : 0;
+          const perClientAmount = plan === 'per_client' ? 100 : 0;
 
           try {
             const { data, error } = await App.db.from('agents').insert({
               promo_code: code, password_hash: password, name,
               phone: phone || null, nrc: nrc || null, location: location || null,
               recruiter_name: recruiter || null, source: source || null,
-              commission_plan: plan, commission_rate: percent,
-              per_client_amount: plan === 'per_client' ? 100 : 0,
+              commission_plan: plan, commission_rate: commissionRate,
+              per_client_amount: perClientAmount,
               signup_link: link || ('https://bwanabet.com/en/auth/signup/' + code),
               status: 'active', is_active: true, self_registered: false
             }).select().single();
@@ -6576,12 +6579,10 @@ Total Players: ${s.total}`;
               Object.assign(tier, fields);
             }
           }
-          this._btnRestore(btn);
-        statusEl.textContent = '✅ Tier settings saved!'; statusEl.className = 'text-sm mt-3 text-emerald-600';
+          statusEl.textContent = '✅ Tier settings saved!'; statusEl.className = 'text-sm mt-3 text-emerald-600';
           this.renderAgentTierStatus();
         } catch(e) {
-          this._btnRestore(btn);
-        statusEl.textContent = '❌ Error: ' + (e.message || 'Unknown'); statusEl.className = 'text-sm mt-3 text-red-600';
+          statusEl.textContent = '❌ Error: ' + (e.message || 'Unknown'); statusEl.className = 'text-sm mt-3 text-red-600';
         }
         setTimeout(() => statusEl.classList.add('hidden'), 4000);
       },
@@ -6801,11 +6802,10 @@ Total Players: ${s.total}`;
         const password = document.getElementById('teamNewPassword')?.value;
         const role = document.getElementById('teamNewRole')?.value || 'affiliate_manager';
         
-        if (!name) { this._btnRestore(btn);
-        alert('Please enter a name'); return; }
+        if (!name) { alert('Please enter a name'); return; }
         if (!email) { alert('Please enter an email'); return; }
         if (!password || password.length < 6) { alert('Password must be at least 6 characters'); return; }
-        
+
         const btn = document.getElementById('teamAddBtn');
         const originalText = btn.innerHTML;
         btn.disabled = true;
@@ -7881,20 +7881,20 @@ Total Players: ${s.total}`;
 
 
     // ============================================================
-    // EMAIL IMPORT STATUS
+    // DATA IMPORT STATUS
     // ============================================================
     function runProactiveAnalysis() { return []; }
 
-    async function refreshEmailImportStatus() {
-      const el = document.getElementById('emailImportStatus');
+    async function refreshImportStatus() {
+      const el = document.getElementById('importStatus');
       if (!el) return;
       try {
         const vaUrl = localStorage.getItem('va_server_url') || 'https://13.246.211.152:8080/api';
-        const r = await fetch(`${vaUrl}/email-imports?limit=10`);
+        const r = await fetch(`${vaUrl}/data-imports?limit=10`);
         if (!r.ok) throw new Error('Failed');
         const imports = await r.json();
         if (!imports.length) {
-          el.innerHTML = '<span class="text-slate-400">No imports yet — waiting for emails with Excel attachments</span>';
+          el.innerHTML = '<span class="text-slate-400">No imports yet — waiting for uploads</span>';
           return;
         }
         const latest = imports[0];
@@ -7924,10 +7924,10 @@ Total Players: ${s.total}`;
       return Math.floor(s/86400) + 'd ago';
     }
 
-    async function viewEmailImports() {
+    async function viewImports() {
       const vaUrl = localStorage.getItem('va_server_url') || 'https://13.246.211.152:8080/api';
       try {
-        const r = await fetch(`${vaUrl}/email-imports?limit=50`);
+        const r = await fetch(`${vaUrl}/data-imports?limit=50`);
         if (!r.ok) throw new Error('Failed');
         const imports = await r.json();
         if (!imports.length) return alert('No data imports yet.');
@@ -7954,9 +7954,9 @@ Total Players: ${s.total}`;
         }).join('');
         const errorCount = imports.filter(i => i.status === 'error' || i.status === 'completed_with_errors').length;
         const errorSummary = errorCount > 0 ? `<span class="ml-3 px-2 py-1 bg-red-100 text-red-700 text-xs rounded-lg">${errorCount} with issues</span>` : '';
-        const html = `<div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" id="emailImportsModal" onclick="if(event.target===this)this.remove()">` +
+        const html = `<div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" id="importsModal" onclick="if(event.target===this)this.remove()">` +
           `<div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[85vh] overflow-hidden flex flex-col">` +
-          `<div class="p-4 border-b flex items-center justify-between"><h2 class="text-lg font-bold">Data Imports${errorSummary}</h2><button onclick="document.getElementById('emailImportsModal').remove()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="h-5 w-5"></i></button></div>` +
+          `<div class="p-4 border-b flex items-center justify-between"><h2 class="text-lg font-bold">Data Imports${errorSummary}</h2><button onclick="document.getElementById('importsModal').remove()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="h-5 w-5"></i></button></div>` +
           `<div class="overflow-auto flex-1"><table class="w-full text-left"><thead class="bg-slate-50 sticky top-0"><tr><th class="px-3 py-2 text-xs font-semibold text-slate-600">Status</th><th class="px-3 py-2 text-xs font-semibold text-slate-600">File</th><th class="px-3 py-2 text-xs font-semibold text-slate-600">Rows</th><th class="px-3 py-2 text-xs font-semibold text-slate-600">From</th><th class="px-3 py-2 text-xs font-semibold text-slate-600">Subject</th><th class="px-3 py-2 text-xs font-semibold text-slate-600">Date</th></tr></thead><tbody>${rows}</tbody></table></div>` +
           `</div></div>`;
         document.body.insertAdjacentHTML('beforeend', html);
@@ -7967,7 +7967,7 @@ Total Players: ${s.total}`;
     async function viewImportData(importId, filename) {
       const vaUrl = localStorage.getItem('va_server_url') || 'https://13.246.211.152:8080/api';
       try {
-        const r = await fetch(`${vaUrl}/email-imports/${importId}/data?limit=500`);
+        const r = await fetch(`${vaUrl}/data-imports/${importId}/data?limit=500`);
         if (!r.ok) throw new Error('Failed');
         const rows = await r.json();
         if (!rows.length) return alert('No data rows in this import.');
@@ -7979,7 +7979,7 @@ Total Players: ${s.total}`;
           return `<tr class="border-b hover:bg-slate-50">${cells}</tr>`;
         }).join('');
         // Remove the imports modal if open
-        document.getElementById('emailImportsModal')?.remove();
+        document.getElementById('importsModal')?.remove();
         const html = `<div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" id="emailDataModal" onclick="if(event.target===this)this.remove()">` +
           `<div class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[85vh] overflow-hidden flex flex-col">` +
           `<div class="p-4 border-b flex items-center justify-between"><h2 class="text-lg font-bold">${filename} <span class="text-sm font-normal text-slate-400">(${rows.length} rows)</span></h2><div class="flex gap-2"><button onclick="exportImportData('${importId}','${filename.replace(/'/g,"\\'")}')" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700">Export CSV</button><button onclick="document.getElementById('emailDataModal').remove()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="h-5 w-5"></i></button></div></div>` +
@@ -7992,7 +7992,7 @@ Total Players: ${s.total}`;
 
     async function exportImportData(importId, filename) {
       const vaUrl = localStorage.getItem('va_server_url') || 'https://13.246.211.152:8080/api';
-      const r = await fetch(`${vaUrl}/email-imports/${importId}/data?limit=5000`);
+      const r = await fetch(`${vaUrl}/data-imports/${importId}/data?limit=5000`);
       const rows = await r.json();
       if (!rows.length) return;
       const keys = [...new Set(rows.flatMap(r => Object.keys(r.data || {})))];
@@ -10864,8 +10864,7 @@ Total Players: ${s.total}`;
 
     function downloadPlayerTemplate() {
       const headers = ['ID', 'Phone', 'Registration Date', 'Last Activity', 'Sport Bet Amount', 'Sport Win Amount', 'Sport Bet Count', 'Sport Win Count', 'Casino Bet Amount', 'Casino Win Amount', 'Casino Bet Count', 'Casino Win Count', 'Deposit Amount', 'Deposit Count', 'Withdrawal Amount', 'Withdrawal Count', 'Bonus Amount', 'Status'];
-      const sample = ['PLAYER001', '+260971234567', '2024-01-15', '2024-06-20', '5000', '2000', '50', '20', '3000', '1500', '30', '10', '8000', '5', '3000', '2', '500', 'active'];
-      const csv = [headers.join(','), sample.join(',')].join('\n');
+      const csv = headers.join(',') + '\n';
       const blob = new Blob([csv], { type: 'text/csv' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -11022,7 +11021,7 @@ Total Players: ${s.total}`;
           if (isAgent) {
             return `<div class="chat-msg flex justify-start"><div class="max-w-[70%]"><div class="chat-bubble-theirs px-4 py-2.5"><p class="text-sm">${this.escapeHtml(m.message)}</p></div><p class="text-[10px] text-slate-400 mt-1 ml-1">${date} ${time}</p></div></div>`;
           } else {
-            return `<div class="chat-msg flex justify-end"><div class="max-w-[70%]"><div class="chat-bubble-mine px-4 py-2.5"><p class="text-sm">${this.escapeHtml(m.message)}</p></div><p class="text-[10px] text-slate-400 mt-1 mr-1 text-right">${isMine ? 'You' : m.sender_name||'CRM'} · ${date} ${time}</p></div></div>`;
+            return `<div class="chat-msg flex justify-end"><div class="max-w-[70%]"><div class="chat-bubble-mine px-4 py-2.5"><p class="text-sm">${this.escapeHtml(m.message)}</p></div><p class="text-[10px] text-slate-400 mt-1 mr-1 text-right">${isMine ? 'You' : this.escapeHtml(m.sender_name||'CRM')} · ${date} ${time}</p></div></div>`;
           }
         }).join('');
         
