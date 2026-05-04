@@ -2860,21 +2860,33 @@ BEHAVIOUR RULES:
             <div class="lg:col-span-2 bg-white rounded-xl shadow-sm overflow-hidden">
               <div class="bg-slate-800 text-white p-4 flex items-center justify-between flex-wrap gap-2">
                 <h3 class="font-bold flex items-center gap-2"><i data-lucide="users" class="h-4 w-4"></i> All Agents</h3>
-                <div class="flex gap-2">
+                <div class="flex gap-2 flex-wrap">
                   <button onclick="AgentManager.exportAgentsCSV()" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 rounded text-xs font-medium flex items-center gap-1"><i data-lucide="download" class="h-3.5 w-3.5"></i> CSV</button>
-                  <select id="agentPlanFilter" onchange="AgentManager.renderAgentsTable()" class="px-2 py-1 bg-slate-700 rounded text-sm">
+                  <select id="agentPlanFilter" onchange="AgentManager.renderAgentsTable()" class="px-2 py-1 bg-slate-700 rounded text-sm" title="Filter by commission plan">
                     <option value="all">All Plans</option>
                     <option value="per_client">Plan A</option>
                     <option value="loss_based">Plan B</option>
                     <option value="nil">Plan C</option>
                   </select>
-                  <input type="text" id="agentSearchInput" onkeyup="AgentManager.filterAgents()" placeholder="Search..." class="px-3 py-1 rounded text-sm text-black w-32">
+                  <select id="agentStatusFilter" onchange="AgentManager.renderAgentsTable()" class="px-2 py-1 bg-slate-700 rounded text-sm" title="Filter by account status">
+                    <option value="all">Any status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                  <select id="agentAccessFilter" onchange="AgentManager.renderAgentsTable()" class="px-2 py-1 bg-slate-700 rounded text-sm" title="Filter by portal access">
+                    <option value="all">Any access</option>
+                    <option value="enabled">🟢 Has access</option>
+                    <option value="disabled">🔴 No access</option>
+                  </select>
+                  <input type="text" id="agentSearchInput" onkeyup="AgentManager.renderAgentsTable()" placeholder="Search code/name/phone…" class="px-3 py-1 rounded text-sm text-black w-44">
                 </div>
               </div>
               <div class="overflow-x-auto max-h-[500px]">
                 <table class="w-full">
                   <thead class="bg-slate-50 sticky top-0">
                     <tr>
+                      <th class="px-3 py-3 text-center text-xs font-semibold text-slate-600" title="Portal access">Access</th>
                       <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600">Code</th>
                       <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600">Name</th>
                       <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600">Phone</th>
@@ -2887,7 +2899,7 @@ BEHAVIOUR RULES:
                     </tr>
                   </thead>
                   <tbody id="agentsTableBody">
-                    <tr><td colspan="9" class="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
+                    <tr><td colspan="10" class="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -2916,19 +2928,37 @@ BEHAVIOUR RULES:
                 </button>
                 <!-- Password Options -->
                 <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p class="text-xs font-bold text-amber-800 mb-2 flex items-center gap-1"><i data-lucide="key" class="h-3.5 w-3.5"></i> Password for New Agents</p>
-                  <div class="flex items-center gap-2 mb-2">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" id="uploadUseDefaultPw" checked onchange="document.getElementById('uploadCustomPw').disabled=this.checked; document.getElementById('uploadCustomPw').value='';" class="accent-amber-600">
-                      <span class="text-xs text-slate-700">Use default password: <code class="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-amber-800">123456</code></span>
+                  <p class="text-xs font-bold text-amber-800 mb-2 flex items-center gap-1"><i data-lucide="key" class="h-3.5 w-3.5"></i> Portal access on import</p>
+                  <div class="space-y-1.5 mb-2">
+                    <label class="flex items-start gap-2 cursor-pointer">
+                      <input type="radio" name="uploadPwMode" id="uploadPwModeNone" value="none" checked class="accent-amber-600 mt-0.5">
+                      <span class="text-xs text-slate-700"><strong>🔴 No password</strong> — agents are imported but can't log in until you set a password per-agent (recommended).</span>
+                    </label>
+                    <label class="flex items-start gap-2 cursor-pointer">
+                      <input type="radio" name="uploadPwMode" id="uploadPwModeDefault" value="default" class="accent-amber-600 mt-0.5">
+                      <span class="text-xs text-slate-700"><strong>🟡 Default</strong> — every new agent gets <code class="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-amber-800">123456</code>.</span>
+                    </label>
+                    <label class="flex items-start gap-2 cursor-pointer">
+                      <input type="radio" name="uploadPwMode" id="uploadPwModeCustom" value="custom" class="accent-amber-600 mt-0.5">
+                      <span class="text-xs text-slate-700"><strong>🟢 Custom</strong> — set a single password for everyone in this batch:</span>
                     </label>
                   </div>
                   <div class="relative">
-                    <input type="text" id="uploadCustomPw" placeholder="Or enter a custom password for all..." class="w-full px-3 py-2 border rounded-lg text-sm pr-10" disabled>
+                    <input type="text" id="uploadCustomPw" placeholder="Custom password (≥6 chars)" class="w-full px-3 py-2 border rounded-lg text-sm pr-10" disabled>
                     <button type="button" onclick="togglePwVis('uploadCustomPw', this)" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><i data-lucide="eye" class="h-4 w-4"></i></button>
                   </div>
-                  <p class="text-[10px] text-amber-600 mt-1.5">⚠️ Share this password with agents so they can log into the Agent Portal. Agents can change it after first login.</p>
+                  <p class="text-[10px] text-amber-600 mt-1.5">After import, find each agent in <strong>All Agents</strong>, click their row, and set a password to enable portal access.</p>
                 </div>
+                <script>
+                  (function(){
+                    const setMode = () => {
+                      const cust = document.querySelector('input[name="uploadPwMode"]:checked')?.value === 'custom';
+                      const el = document.getElementById('uploadCustomPw');
+                      if (el) { el.disabled = !cust; if (!cust) el.value = ''; }
+                    };
+                    document.querySelectorAll('input[name="uploadPwMode"]').forEach(r => r.addEventListener('change', setMode));
+                  })();
+                </script>
                 <div class="mt-3 p-3 bg-blue-50 rounded-lg">
                   <p class="text-xs font-medium text-blue-700 mb-1">Expected columns:</p>
                   <p class="text-xs text-blue-600">Username, Agent Name, Telephone, NRC, Location, Recruiter Name, Date Registered, Percent, Code</p>
@@ -3266,18 +3296,20 @@ BEHAVIOUR RULES:
                 <label class="block text-xs font-medium text-slate-700 mb-1">Recruiter</label>
                 <input type="text" id="editAgentRecruiter" class="w-full px-3 py-2 border rounded-lg text-sm">
               </div>
-              <div>
-                <label class="block text-xs font-medium text-slate-700 mb-1">Current Password</label>
+              <div class="md:col-span-2">
+                <div id="editAgentAccessBanner" class="mb-2 p-2 rounded-lg text-xs hidden"></div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">Portal Password</label>
                 <div class="relative">
-                  <input type="password" id="editAgentCurrentPw" class="w-full px-3 py-2 border rounded-lg bg-slate-50 text-sm font-mono pr-10" readonly>
-                  <button type="button" onclick="togglePwVis('editAgentCurrentPw', this)" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><i data-lucide="eye" class="h-4 w-4"></i></button>
-                </div>
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-slate-700 mb-1">New Password (blank = keep current)</label>
-                <div class="relative">
-                  <input type="password" id="editAgentPassword" class="w-full px-3 py-2 border rounded-lg text-sm pr-10" placeholder="Enter new password">
+                  <input type="password" id="editAgentPassword" class="w-full px-3 py-2 border rounded-lg text-sm pr-10" placeholder="Leave blank to keep current; type to change/set">
                   <button type="button" onclick="togglePwVis('editAgentPassword', this)" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><i data-lucide="eye" class="h-4 w-4"></i></button>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Setting a password grants the agent portal access. Clearing it (type a single space) revokes access.</p>
+                <div class="mt-2">
+                  <label class="block text-[11px] text-slate-500 mb-1">Current value (read-only)</label>
+                  <div class="relative">
+                    <input type="password" id="editAgentCurrentPw" class="w-full px-3 py-2 border rounded-lg bg-slate-50 text-sm font-mono pr-10" readonly>
+                    <button type="button" onclick="togglePwVis('editAgentCurrentPw', this)" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><i data-lucide="eye" class="h-4 w-4"></i></button>
+                  </div>
                 </div>
               </div>
               <div>
@@ -6020,13 +6052,38 @@ Total Players: ${s.total}`;
       },
 
       // Agents Table
+      // An agent has portal access if they have any non-empty password set.
+      hasPortalAccess(agent) {
+        return !!(agent && agent.password_hash && String(agent.password_hash).length > 0);
+      },
+
       renderAgentsTable() {
         const tbody = document.getElementById('agentsTableBody');
         if (!tbody) return;
-        const planFilter = document.getElementById('agentPlanFilter')?.value || 'all';
-        let filtered = this.getFilteredAgents().filter(a => a.status !== 'pending');
-        if (planFilter !== 'all') filtered = filtered.filter(a => a.commission_plan === planFilter);
-        if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-slate-400">No agents found</td></tr>'; return; }
+        const planFilter   = document.getElementById('agentPlanFilter')?.value   || 'all';
+        const statusFilter = document.getElementById('agentStatusFilter')?.value || 'all';
+        const accessFilter = document.getElementById('agentAccessFilter')?.value || 'all';
+        const search       = (document.getElementById('agentSearchInput')?.value || '').toLowerCase().trim();
+
+        let filtered = this.getFilteredAgents();
+        // Default: hide pending unless explicitly filtered for it
+        if (statusFilter === 'all') filtered = filtered.filter(a => a.status !== 'pending');
+        else filtered = filtered.filter(a => a.status === statusFilter);
+        if (planFilter !== 'all')   filtered = filtered.filter(a => a.commission_plan === planFilter);
+        if (accessFilter === 'enabled')  filtered = filtered.filter(a => this.hasPortalAccess(a));
+        if (accessFilter === 'disabled') filtered = filtered.filter(a => !this.hasPortalAccess(a));
+        if (search) {
+          filtered = filtered.filter(a => {
+            const hay = [a.promo_code, a.name, a.phone, a.email, a.location, a.recruiter_name]
+              .filter(Boolean).join(' ').toLowerCase();
+            return hay.includes(search);
+          });
+        }
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="10" class="px-4 py-8 text-center text-slate-400">No agents match these filters</td></tr>';
+          return;
+        }
         const planLabels = { per_client: '<span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px]">A</span>', loss_based: '<span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[10px]">B</span>', nil: '<span class="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[10px]">NIL</span>' };
         const statusColors = { active: 'emerald', inactive: 'red', pending: 'orange' };
         tbody.innerHTML = filtered.map(a => {
@@ -6035,7 +6092,12 @@ Total Players: ${s.total}`;
           const activeClients = this.getAgentLatestWeekClients(a.id);
           const tier = this.getAgentTier(activeClients);
           const tierBadge = this.getTierBadge(tier);
-          return `<tr class="border-t hover:bg-slate-50">
+          const hasAccess = this.hasPortalAccess(a);
+          const accessDot = hasAccess
+            ? '<span title="Portal access enabled — agent can log in" class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500" aria-label="has portal access"></span>'
+            : '<span title="No portal access — manager must set a password" class="inline-block w-2.5 h-2.5 rounded-full bg-red-400 ring-2 ring-red-200" aria-label="no portal access"></span>';
+          return `<tr data-agent-id="${esc(a.id)}" onclick="AgentManager.editAgent('${esc(a.id)}')" class="border-t hover:bg-slate-50 cursor-pointer">
+            <td class="px-3 py-3 text-center">${accessDot}</td>
             <td class="px-3 py-3 font-mono font-bold text-blue-600 text-sm">${esc(a.promo_code)}</td>
             <td class="px-3 py-3 text-sm">${esc(a.name)}</td>
             <td class="px-3 py-3 text-xs text-slate-600">${esc(a.phone || '-')}</td>
@@ -6043,19 +6105,12 @@ Total Players: ${s.total}`;
             <td class="px-3 py-3 text-center">${tierBadge}</td>
             <td class="px-3 py-3 text-center text-sm">${stats.totalClients}</td>
             <td class="px-3 py-3 text-center text-sm font-medium ${stats.balance > 0 ? 'text-orange-600' : ''}">K${stats.balance.toLocaleString()}</td>
-            <td class="px-3 py-3 text-center"><span class="px-2 py-0.5 bg-${sc}-100 text-${sc}-700 rounded text-xs">${a.status}</span></td>
-            <td class="px-3 py-3 text-center">
-              <button onclick="AgentManager.editAgent('${a.id}')" class="text-blue-600 hover:underline text-xs mr-1">Edit</button>
-              <button onclick="AgentManager.deleteAgent('${a.id}')" class="text-red-600 hover:underline text-xs">Del</button>
+            <td class="px-3 py-3 text-center"><span class="px-2 py-0.5 bg-${sc}-100 text-${sc}-700 rounded text-xs">${esc(a.status)}</span></td>
+            <td class="px-3 py-3 text-center" onclick="event.stopPropagation()">
+              <button onclick="AgentManager.editAgent('${esc(a.id)}')" class="text-blue-600 hover:underline text-xs mr-1">Edit</button>
+              <button onclick="AgentManager.deleteAgent('${esc(a.id)}')" class="text-red-600 hover:underline text-xs">Del</button>
             </td></tr>`;
         }).join('');
-      },
-
-      filterAgents() {
-        const search = document.getElementById('agentSearchInput')?.value.toLowerCase() || '';
-        document.querySelectorAll('#agentsTableBody tr').forEach(row => {
-          row.style.display = row.textContent.toLowerCase().includes(search) ? '' : 'none';
-        });
       },
 
       // Add Agent
@@ -6101,7 +6156,7 @@ Total Players: ${s.total}`;
         if (!a) return;
         document.getElementById('editAgentId').value = a.id;
         document.getElementById('editAgentPromoCode').value = a.promo_code;
-        document.getElementById('editAgentName').value = a.name;
+        document.getElementById('editAgentName').value = a.name || '';
         document.getElementById('editAgentPhone').value = a.phone || '';
         document.getElementById('editAgentEmail').value = a.email || '';
         document.getElementById('editAgentPlan').value = a.commission_plan || 'per_client';
@@ -6111,6 +6166,21 @@ Total Players: ${s.total}`;
         document.getElementById('editAgentCurrentPw').value = a.password_hash || '';
         document.getElementById('editAgentCurrentPw').type = 'password';
         document.getElementById('editAgentStatus').value = a.status || 'active';
+
+        // Portal-access banner reflecting current state
+        const banner = document.getElementById('editAgentAccessBanner');
+        const hasAccess = this.hasPortalAccess(a);
+        banner.classList.remove('hidden', 'bg-emerald-50', 'border-emerald-200', 'text-emerald-700', 'bg-red-50', 'border-red-200', 'text-red-700');
+        banner.className = banner.className + ' border';
+        if (hasAccess) {
+          banner.className = 'mb-2 p-2 rounded-lg text-xs border bg-emerald-50 border-emerald-200 text-emerald-700';
+          banner.textContent = '🟢 Portal access ENABLED — agent can sign in with this promo code and password.';
+        } else {
+          banner.className = 'mb-2 p-2 rounded-lg text-xs border bg-red-50 border-red-200 text-red-700';
+          banner.textContent = '🔴 No portal access — set a password (≥ 6 chars) below to grant access.';
+        }
+        banner.classList.remove('hidden');
+
         document.getElementById('editAgentModal').style.display='flex';
         refreshIcons();
       },
@@ -6123,7 +6193,7 @@ Total Players: ${s.total}`;
         const plan = document.getElementById('editAgentPlan').value;
         const location = document.getElementById('editAgentLocation').value.trim();
         const recruiter = document.getElementById('editAgentRecruiter').value.trim();
-        const password = document.getElementById('editAgentPassword').value;
+        const passwordRaw = document.getElementById('editAgentPassword').value;
         const status = document.getElementById('editAgentStatus').value;
 
         if (!name) { alert('Name is required'); return; }
@@ -6131,7 +6201,17 @@ Total Players: ${s.total}`;
           commission_rate: plan === 'loss_based' ? 20 : 0, per_client_amount: plan === 'per_client' ? 100 : 0,
           location: location || null, recruiter_name: recruiter || null,
           status, is_active: status === 'active' };
-        if (password && password.length >= 6) update.password_hash = password;
+        // Password handling — three states:
+        //   blank          = no change
+        //   single space   = revoke access (set password_hash null)
+        //   ≥6 chars       = set new password
+        if (passwordRaw === ' ') {
+          if (!confirm('Revoke this agent\'s portal access? They will not be able to log in until you set a new password.')) return;
+          update.password_hash = null;
+        } else if (passwordRaw.length > 0) {
+          if (passwordRaw.trim().length < 6) { alert('Password must be at least 6 characters (or a single space to revoke access).'); return; }
+          update.password_hash = passwordRaw;
+        }
         // Track commission plan change for 30-day lock
         const oldAgent = this.agents.find(a => a.id === agentId);
         if (oldAgent && oldAgent.commission_plan !== plan) {
@@ -6144,7 +6224,12 @@ Total Players: ${s.total}`;
         if (idx !== -1) this.agents[idx] = { ...this.agents[idx], ...update };
         document.getElementById('editAgentModal').style.display='none';
         this.renderAgentsTable(); this.renderOverview(); this.updateApprovalsBadge();
-        crmToast('Agent updated');
+        // Tell the manager what changed re: portal access
+        if ('password_hash' in update) {
+          crmToast(update.password_hash ? `Agent updated — portal access enabled` : `Agent updated — portal access revoked`, update.password_hash ? 'success' : 'warn');
+        } else {
+          crmToast('Agent updated');
+        }
       },
 
       async deleteAgent(agentId) {
@@ -6182,11 +6267,21 @@ Total Players: ${s.total}`;
         const btn = document.getElementById('processAgentListBtn');
         btn.disabled = true; btn.innerHTML = '<svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Importing...';
 
-        // Determine password
-        const useDefault = document.getElementById('uploadUseDefaultPw')?.checked !== false;
-        const customPw = document.getElementById('uploadCustomPw')?.value.trim();
-        const password = (useDefault || !customPw) ? '123456' : customPw;
-        if (password.length < 6) { alert('Password must be at least 6 characters'); btn.disabled = false; btn.innerHTML = '<i data-lucide="check-circle" class="h-4 w-4"></i> Import Agents'; refreshIcons(); return; }
+        // Determine portal access on import: 'none' | 'default' | 'custom'
+        const pwMode = document.querySelector('input[name="uploadPwMode"]:checked')?.value || 'none';
+        let password;
+        if (pwMode === 'none') {
+          password = null; // no portal access — manager will set per agent
+        } else if (pwMode === 'default') {
+          password = '123456';
+        } else {
+          password = document.getElementById('uploadCustomPw')?.value.trim() || '';
+          if (password.length < 6) {
+            alert('Custom password must be at least 6 characters.');
+            btn.disabled = false; btn.innerHTML = '<i data-lucide="check-circle" class="h-4 w-4"></i> Import Agents'; refreshIcons();
+            return;
+          }
+        }
 
         let created = 0, skipped = 0, errors = [];
         const rows = this.agentListFileData;
@@ -6258,15 +6353,20 @@ Total Players: ${s.total}`;
 
         await this.loadAgents();
         this.renderAgentsTable(); this.renderOverview(); this.populatePaymentAgentSelect();
-        let msg = `Import complete!\n\nCreated: ${created}\nSkipped (existing/empty): ${skipped}\nPassword for new agents: ${password}`;
-        if (errors.length) msg += `\n\nErrors:\n${errors.slice(0, 5).join('\n')}`;
+        const accessLine = pwMode === 'none'
+          ? 'Portal access: NOT set — open All Agents and click each row to assign a password.'
+          : `Portal access: ENABLED with password "${password}" — share with agents.`;
+        let msg = `Import complete!\n\nCreated: ${created}\nSkipped (existing/empty): ${skipped}\n\n${accessLine}`;
+        if (errors.length) msg += `\n\nErrors (first 5):\n${errors.slice(0, 5).join('\n')}`;
         alert(msg);
 
         document.getElementById('agentListFile').value = '';
         document.getElementById('agentListFileName').textContent = '';
-        document.getElementById('uploadUseDefaultPw').checked = true;
-        document.getElementById('uploadCustomPw').value = '';
-        document.getElementById('uploadCustomPw').disabled = true;
+        // Reset password mode to 'none' (the safer default)
+        const noneRadio = document.getElementById('uploadPwModeNone');
+        if (noneRadio) noneRadio.checked = true;
+        const customPwEl = document.getElementById('uploadCustomPw');
+        if (customPwEl) { customPwEl.value = ''; customPwEl.disabled = true; }
         this.agentListFileData = null;
         btn.disabled = true; btn.innerHTML = '<i data-lucide="check-circle" class="h-4 w-4"></i> Import Agents'; refreshIcons();
       },
