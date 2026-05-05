@@ -6461,6 +6461,7 @@ Total Players: ${s.total}`;
           user_id: r['User ID'] || r.user_id,
           phone: r['Phone Number'] || r.phone,
           first_deposit: r['First Deposit Amount'] || r.first_deposit || 0,
+          total_deposit: r['Total Deposit Amount'] || r.total_deposit || 0,
           sports_bet: r['Total Bet Sports'] || r.sports_bet || 0,
           casino_bet: r['Total Bet Casino'] || r.casino_bet || 0,
           total_losses: r['Losses'] || r.total_losses || 0,
@@ -6615,16 +6616,18 @@ Total Players: ${s.total}`;
 
         try {
           // Upsert per-player activity rows from pre-analysed matches
+          let actFailures = 0;
+          let wdFailures = 0;
           for (const { row, agent } of matched) {
-            const firstDeposit = parseFloat(row['First Deposit Amount'] || row['first_deposit'] || 0);
-            const totalDeposit = parseFloat(row['Total Deposit Amount'] || row['total_deposit'] || 0);
-            const betSports = parseFloat(row['Total Bet Sports'] || row['total_bet_sports'] || 0);
-            const betCasino = parseFloat(row['Total Bet Casino'] || row['total_bet_casino'] || 0);
-            const totalBet = parseFloat(row['Total Bet'] || row['total_bet'] || 0);
-            const losses = parseFloat(row['Losses'] || row['losses'] || 0);
-            const qualifiesPerClient = totalDeposit >= 100 && (betSports >= 100 || betCasino >= 100);
-            const userId = String(row['User ID'] || row['user_id'] || '');
-            const phone = String(row['Phone Number'] || row['phone_number'] || '');
+            const deposit = Number(row.first_deposit) || 0;
+            const totalDeposit = Number(row.total_deposit) || 0;
+            const sports = Number(row.sports_bet) || 0;
+            const casino = Number(row.casino_bet) || 0;
+            const totalBet = sports + casino;
+            const totalLosses = Number(row.total_losses) || 0;
+            const userId = row.user_id;
+            const phone = row.phone || null;
+            const qualifies = deposit >= 100 && (sports >= 100 || casino >= 100);
             const { error: actErr } = await App.db.from('agent_player_activity').upsert({
               agent_id: agent.id,
               agent_code: agent.promo_code,
@@ -6632,15 +6635,15 @@ Total Players: ${s.total}`;
               week_end_date: weekEnd,
               user_id: userId,
               phone_number: phone,
-              first_deposit: firstDeposit,
+              first_deposit: deposit,
               total_deposit: totalDeposit,
-              total_bet_sports: betSports,
-              total_bet_casino: betCasino,
+              total_bet_sports: sports,
+              total_bet_casino: casino,
               total_bet: totalBet,
-              losses: losses,
-              qualifies_per_client: qualifiesPerClient,
+              losses: totalLosses,
+              qualifies_per_client: qualifies,
             }, { onConflict: 'agent_id,user_id,week_start_date' });
-            if (actErr) console.warn('player activity upsert failed', actErr);
+            if (actErr) { console.warn('player activity upsert failed', actErr); actFailures++; }
           }
 
           // Upsert per-agent weekly summaries from pre-computed weeklyByAgent
@@ -6670,7 +6673,7 @@ Total Players: ${s.total}`;
               total_earnings: totalEarnings,
               plan_at_import: agent ? agent.commission_plan : wd.plan,
             }, { onConflict: 'agent_id,week_start_date' });
-            if (wdErr) console.warn('weekly data upsert failed', wdErr);
+            if (wdErr) { console.warn('weekly data upsert failed', wdErr); wdFailures++; }
             else {
               savedSummaries++;
               // Check for tier promotions
@@ -6718,9 +6721,12 @@ Total Players: ${s.total}`;
           const summary = window.PreviewLogic.summarizePerPlan(weeklyByAgent);
           const totalAgents = summary.A.qualifyingAgentsCount + summary.B.qualifyingAgentsCount;
           const totalQualifying = summary.A.totalQualifyingClients + summary.B.totalQualifyingClients;
+          const failureNote = (actFailures || wdFailures)
+            ? ` Warning: ${actFailures} player rows and ${wdFailures} agent summaries failed to save.`
+            : '';
           showNotification(
-            `Imported ${totalQualifying} qualifying clients across ${totalAgents} agents. Pay period ${weekStart} is now current.`,
-            'success'
+            `Imported ${totalQualifying} qualifying clients across ${totalAgents} agents.${failureNote} Pay period ${weekStart} is now current.`,
+            (actFailures || wdFailures) ? 'error' : 'success'
           );
 
           // Navigate to Overview subtab and refresh data
