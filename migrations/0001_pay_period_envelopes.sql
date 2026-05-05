@@ -2,7 +2,8 @@
 -- Adds week_start_date + recorded_by to agent_payments
 -- Adds plan_at_import to agent_weekly_data (backfilled from agents.commission_plan)
 -- Hardens FK on agent_weekly_data.agent_id to ON DELETE RESTRICT
--- Idempotent: safe to re-run; uses IF NOT EXISTS guards.
+-- Idempotent: additive operations use IF NOT EXISTS; the FK rewrite is guarded by
+-- a conditional DO block that only fires when the current delete_rule is CASCADE.
 
 BEGIN;
 
@@ -25,7 +26,10 @@ CREATE INDEX IF NOT EXISTS idx_agent_payments_agent_week
 ALTER TABLE public.agent_weekly_data
   ADD COLUMN IF NOT EXISTS plan_at_import text;
 
--- 5. agent_weekly_data: backfill plan_at_import from current agents.commission_plan
+-- 5. agent_weekly_data: backfill plan_at_import from current agents.commission_plan.
+--    Note: any orphaned wd row (agent_id with no matching agents.id) keeps NULL and
+--    will trip the NOT NULL enforcement at step 6. To diagnose, run:
+--      SELECT COUNT(*) FROM agent_weekly_data WHERE plan_at_import IS NULL;
 UPDATE public.agent_weekly_data wd
 SET plan_at_import = a.commission_plan
 FROM public.agents a
@@ -41,11 +45,31 @@ ALTER TABLE public.agent_weekly_data
 ALTER TABLE public.agent_payments
   ALTER COLUMN week_start_date DROP DEFAULT;
 
--- 8. Harden FK: agent_weekly_data.agent_id was ON DELETE CASCADE; change to ON DELETE RESTRICT
---    so deleting an agent is blocked while weekly records exist (prevents silent data loss).
-ALTER TABLE public.agent_weekly_data DROP CONSTRAINT agent_weekly_data_agent_id_fkey;
-ALTER TABLE public.agent_weekly_data
-  ADD CONSTRAINT agent_weekly_data_agent_id_fkey
-  FOREIGN KEY (agent_id) REFERENCES public.agents(id) ON DELETE RESTRICT;
+-- 8. Harden FK on agent_weekly_data.agent_id to ON DELETE RESTRICT.
+--    Constraint name 'agent_weekly_data_agent_id_fkey' is the Postgres auto-generated
+--    default and was verified against baseline. The DO block makes this idempotent:
+--    the rewrite only fires when the current rule is CASCADE; replays on a DB that
+--    already has RESTRICT (or where the FK was never created with CASCADE) are no-ops.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.referential_constraints rc
+    JOIN information_schema.table_constraints tc
+      ON rc.constraint_name = tc.constraint_name
+    WHERE tc.table_name = 'agent_weekly_data'
+      AND tc.constraint_type = 'FOREIGN KEY'
+      AND tc.constraint_name = 'agent_weekly_data_agent_id_fkey'
+      AND rc.delete_rule = 'CASCADE'
+  ) THEN
+    ALTER TABLE public.agent_weekly_data
+      DROP CONSTRAINT agent_weekly_data_agent_id_fkey;
+
+    ALTER TABLE public.agent_weekly_data
+      ADD CONSTRAINT agent_weekly_data_agent_id_fkey
+      FOREIGN KEY (agent_id) REFERENCES public.agents(id)
+      ON DELETE RESTRICT;
+  END IF;
+END $$;
 
 COMMIT;
