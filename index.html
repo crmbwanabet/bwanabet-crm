@@ -3162,6 +3162,115 @@ BEHAVIOUR RULES:
       </div>
     </div>
 
+    <!-- Mark Paid (single) — opened from Overview row [Mark Paid] -->
+    <div id="markPaidModal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
+        <div class="bg-emerald-700 text-white px-5 py-4 rounded-t-2xl flex items-center justify-between">
+          <h3 class="font-semibold flex items-center gap-2">
+            <i data-lucide="banknote" class="h-5 w-5"></i>
+            Mark Paid
+          </h3>
+          <button onclick="document.getElementById('markPaidModal').classList.add('hidden')" class="text-emerald-200 hover:text-white">
+            <i data-lucide="x" class="h-5 w-5"></i>
+          </button>
+        </div>
+        <div class="p-5 space-y-3 overflow-y-auto">
+          <div class="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+            <div><span class="text-slate-500">Agent:</span> <span class="font-semibold" id="markPaidAgent">—</span></div>
+            <div><span class="text-slate-500">Week:</span> <span class="font-semibold" id="markPaidWeek">—</span></div>
+            <div><span class="text-slate-500">Earnings:</span> <span id="markPaidEarnings">K0</span></div>
+            <div><span class="text-slate-500">Already paid:</span> <span id="markPaidAlready">K0</span></div>
+            <div><span class="text-slate-500">Withdrawable:</span> <span class="font-semibold text-emerald-700" id="markPaidOutstanding">K0</span></div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Amount (K)</label>
+            <input id="markPaidAmount" type="number" step="0.01" class="w-full px-3 py-2 border rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Method</label>
+            <select id="markPaidMethod" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+              <option value="mobile_money">Mobile Money</option>
+              <option value="bank_transfer">Bank Transfer</option>
+              <option value="cash">Cash</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Date</label>
+            <input id="markPaidDate" type="date" class="w-full px-3 py-2 border rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Notes</label>
+            <textarea id="markPaidNotes" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Optional…"></textarea>
+          </div>
+        </div>
+        <div class="border-t px-5 py-3 flex items-center justify-between bg-slate-50 rounded-b-2xl">
+          <button onclick="document.getElementById('markPaidModal').classList.add('hidden')" class="px-4 py-2 text-slate-700 hover:bg-slate-200 rounded-lg text-sm">Cancel</button>
+          <button onclick="AgentManager.confirmMarkPaid()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm flex items-center gap-2">
+            <i data-lucide="check" class="h-4 w-4"></i> Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pay All Matching — batch mode -->
+    <div id="payAllMatchingModal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
+        <div class="bg-emerald-800 text-white px-5 py-4 rounded-t-2xl flex items-center justify-between">
+          <h3 class="font-semibold flex items-center gap-2">
+            <i data-lucide="banknote" class="h-5 w-5"></i>
+            Pay All Matching
+          </h3>
+          <button onclick="document.getElementById('payAllMatchingModal').classList.add('hidden')" class="text-emerald-200 hover:text-white">
+            <i data-lucide="x" class="h-5 w-5"></i>
+          </button>
+        </div>
+        <div class="p-5 space-y-3 overflow-y-auto">
+          <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800 flex items-start gap-2">
+            <i data-lucide="alert-triangle" class="h-4 w-4 flex-shrink-0 mt-0.5"></i>
+            <div>
+              <div>This will record <strong><span id="payAllCount">0</span></strong> payments totaling <strong>K<span id="payAllTotal">0</span></strong>.</div>
+              <div class="text-xs mt-1">Only rows currently visible in the agents-to-pay table are included.</div>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Amount strategy</label>
+            <select id="payAllStrategy" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+              <option value="full">Full outstanding (default)</option>
+              <option value="custom">Custom amount per agent (same value)</option>
+            </select>
+          </div>
+          <div id="payAllCustomBlock" class="hidden">
+            <label class="block text-xs font-medium text-slate-700 mb-1">Custom amount per agent (K)</label>
+            <input id="payAllCustomAmount" type="number" step="0.01" class="w-full px-3 py-2 border rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Method (applied to all)</label>
+            <select id="payAllMethod" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+              <option value="mobile_money">Mobile Money</option>
+              <option value="bank_transfer">Bank Transfer</option>
+              <option value="cash">Cash</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Date (applied to all)</label>
+            <input id="payAllDate" type="date" class="w-full px-3 py-2 border rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Notes (applied to all)</label>
+            <textarea id="payAllNotes" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Optional…"></textarea>
+          </div>
+        </div>
+        <div class="border-t px-5 py-3 flex items-center justify-between bg-slate-50 rounded-b-2xl">
+          <button onclick="document.getElementById('payAllMatchingModal').classList.add('hidden')" class="px-4 py-2 text-slate-700 hover:bg-slate-200 rounded-lg text-sm">Cancel</button>
+          <button onclick="AgentManager.confirmPayAllMatching()" class="px-4 py-2 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 text-sm flex items-center gap-2">
+            <i data-lucide="check" class="h-4 w-4"></i> Confirm batch payment
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- AI Widget -->
     <button id="aiWidgetBtn" class="ai-widget-btn" onclick="AIAgent.toggle()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
@@ -5712,6 +5821,10 @@ Total Players: ${s.total}`;
           this.populatePaymentAgentSelect();
           this.updateApprovalsBadge();
         } catch(e) { console.error('AgentManager init error:', e); }
+        document.getElementById('payAllStrategy')?.addEventListener('change', (e) => {
+          const block = document.getElementById('payAllCustomBlock');
+          if (block) block.classList.toggle('hidden', e.target.value !== 'custom');
+        });
       },
 
       async loadAgents() {
