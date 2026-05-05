@@ -6601,152 +6601,135 @@ Total Players: ${s.total}`;
       },
 
       async confirmPlayerActivityUpload() {
-        if (!this.playerActivityFileData || this.playerActivityFileData.length === 0) { alert('No data'); return; }
-        const weekStart = document.getElementById('uploadWeekStart')?.value;
-        const weekEnd = document.getElementById('uploadWeekEnd')?.value;
-        if (!weekStart || !weekEnd) { alert('Select week start and end dates'); return; }
+        const s = this.previewState;
+        if (!s) {
+          showNotification('No preview data — start over from the Upload tab', 'error');
+          return;
+        }
+        const { weeklyByAgent, matched } = s.analysis;
+        const weekStart = s.weekStart;
+        const weekEnd = s.weekEnd;
 
-        const btn = document.getElementById('processActivityBtn');
-        btn.disabled = true; btn.innerHTML = '<svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Processing...';
+        const btn = document.getElementById('confirmPlayerActivityBtn');
+        if (btn) { btn.disabled = true; }
 
-        // Group by agent code
-        const agentData = {};
-        let processedRows = 0, skippedRows = 0;
-
-        for (const row of this.playerActivityFileData) {
-          // Map columns flexibly
-          const agentCodeRaw = sanitizePromoCode(String(row['Agent Code'] || row['agent_code'] || row['AgentCode'] || '').trim());
-          if (!agentCodeRaw) { skippedRows++; continue; }
-
-          // Try matching: raw code, with 'A' prefix, or uppercase
-          let agent = this.agents.find(a => a.promo_code.toUpperCase() === agentCodeRaw.toUpperCase());
-          if (!agent) agent = this.agents.find(a => a.promo_code.toUpperCase() === ('A' + agentCodeRaw).toUpperCase());
-          const agentCode = agent ? agent.promo_code : agentCodeRaw;
-          if (!agent) { skippedRows++; continue; }
-
-          const userId = String(row['User ID'] || row['user_id'] || '');
-          const phone = String(row['Phone Number'] || row['phone_number'] || '');
-          const firstDeposit = parseFloat(row['First Deposit Amount'] || row['first_deposit'] || 0);
-          const totalDeposit = parseFloat(row['Total Deposit Amount'] || row['total_deposit'] || 0);
-          const betSports = parseFloat(row['Total Bet Sports'] || row['total_bet_sports'] || 0);
-          const betCasino = parseFloat(row['Total Bet Casino'] || row['total_bet_casino'] || 0);
-          const totalBet = parseFloat(row['Total Bet'] || row['total_bet'] || 0);
-          const losses = parseFloat(row['Losses'] || row['losses'] || 0);
-
-          // Calculate qualification for Plan A
-          const qualifiesPerClient = totalDeposit >= 100 && (betSports >= 100 || betCasino >= 100);
-
-          // Calculate commission based on agent's plan and tier
-          let commission = 0;
-          if (agent.commission_plan === 'per_client' && qualifiesPerClient) {
-            // Count how many qualifying clients this agent has so far this week (including this one)
-            const agentQC = (agentData[agent.id]?.qualifyingClients || 0) + 1;
-            const tier = this.getAgentTier(agentQC);
-            commission = tier ? tier.per_client_amount : (parseFloat(agent.per_client_amount) || 100);
-          } else if (agent.commission_plan === 'loss_based') {
-            // For loss-based, tier is determined at weekly summary level
-            commission = losses * ((parseFloat(agent.commission_rate) || 20) / 100);
-          }
-          // nil = 0 commission
-
-          // Save player activity
-          try {
-            await App.db.from('agent_player_activity').upsert({
-              agent_id: agent.id, agent_code: agentCode, week_start_date: weekStart, week_end_date: weekEnd,
-              user_id: userId, phone_number: phone, first_deposit: firstDeposit, total_deposit: totalDeposit,
-              total_bet_sports: betSports, total_bet_casino: betCasino, total_bet: totalBet, losses: losses,
-              qualifies_per_client: qualifiesPerClient, commission_earned: commission
+        try {
+          // Upsert per-player activity rows from pre-analysed matches
+          for (const { row, agent } of matched) {
+            const firstDeposit = parseFloat(row['First Deposit Amount'] || row['first_deposit'] || 0);
+            const totalDeposit = parseFloat(row['Total Deposit Amount'] || row['total_deposit'] || 0);
+            const betSports = parseFloat(row['Total Bet Sports'] || row['total_bet_sports'] || 0);
+            const betCasino = parseFloat(row['Total Bet Casino'] || row['total_bet_casino'] || 0);
+            const totalBet = parseFloat(row['Total Bet'] || row['total_bet'] || 0);
+            const losses = parseFloat(row['Losses'] || row['losses'] || 0);
+            const qualifiesPerClient = totalDeposit >= 100 && (betSports >= 100 || betCasino >= 100);
+            const userId = String(row['User ID'] || row['user_id'] || '');
+            const phone = String(row['Phone Number'] || row['phone_number'] || '');
+            const { error: actErr } = await App.db.from('agent_player_activity').upsert({
+              agent_id: agent.id,
+              agent_code: agent.promo_code,
+              week_start_date: weekStart,
+              week_end_date: weekEnd,
+              user_id: userId,
+              phone_number: phone,
+              first_deposit: firstDeposit,
+              total_deposit: totalDeposit,
+              total_bet_sports: betSports,
+              total_bet_casino: betCasino,
+              total_bet: totalBet,
+              losses: losses,
+              qualifies_per_client: qualifiesPerClient,
             }, { onConflict: 'agent_id,user_id,week_start_date' });
-          } catch(e) { console.error('Error saving activity:', e); }
-
-          // Aggregate
-          if (!agentData[agent.id]) {
-            agentData[agent.id] = { agent, totalClients: 0, qualifyingClients: 0, totalDeposits: 0, totalBetSports: 0, totalBetCasino: 0, totalLosses: 0, perClientEarnings: 0, lossBasedEarnings: 0 };
-          }
-          const ad = agentData[agent.id];
-          ad.totalClients++;
-          if (qualifiesPerClient) ad.qualifyingClients++;
-          ad.totalDeposits += totalDeposit;
-          ad.totalBetSports += betSports;
-          ad.totalBetCasino += betCasino;
-          ad.totalLosses += losses;
-          if (agent.commission_plan === 'per_client' && qualifiesPerClient) ad.perClientEarnings += commission;
-          if (agent.commission_plan === 'loss_based') ad.lossBasedEarnings += commission;
-          processedRows++;
-        }
-
-        // Save weekly summaries (recalculate using tier rates)
-        let savedSummaries = 0;
-        for (const [agentId, ad] of Object.entries(agentData)) {
-          // Determine tier based on qualifying clients this week
-          const tier = this.getAgentTier(ad.qualifyingClients);
-
-          // Recalculate with tier rates
-          if (ad.agent.commission_plan === 'per_client') {
-            const perClientRate = tier ? tier.per_client_amount : (parseFloat(ad.agent.per_client_amount) || 100);
-            ad.perClientEarnings = ad.qualifyingClients * perClientRate;
-          } else if (ad.agent.commission_plan === 'loss_based') {
-            const lossRate = tier ? tier.loss_based_rate : (parseFloat(ad.agent.commission_rate) || 20);
-            ad.lossBasedEarnings = ad.totalLosses * (lossRate / 100);
+            if (actErr) console.warn('player activity upsert failed', actErr);
           }
 
-          const totalEarnings = ad.perClientEarnings + ad.lossBasedEarnings;
-          try {
-            await App.db.from('agent_weekly_data').upsert({
-              agent_id: agentId, week_start_date: weekStart, week_end_date: weekEnd,
-              total_clients: ad.totalClients, qualifying_clients: ad.qualifyingClients,
-              total_deposits: ad.totalDeposits, total_bet_sports: ad.totalBetSports,
-              total_bet_casino: ad.totalBetCasino, total_losses: ad.totalLosses,
-              commission_plan: ad.agent.commission_plan,
-              per_client_earnings: ad.perClientEarnings, loss_based_earnings: ad.lossBasedEarnings,
-              total_earnings: totalEarnings
+          // Upsert per-agent weekly summaries from pre-computed weeklyByAgent
+          let savedSummaries = 0;
+          for (const wd of weeklyByAgent) {
+            const agent = this.agents.find(a => a.id === wd.agent_id);
+            const tier = this.getAgentTier(wd.qualifying_clients);
+            let perClientEarnings = 0, lossBasedEarnings = 0;
+            if (wd.plan === 'per_client') {
+              const perClientRate = tier ? tier.per_client_amount : (agent ? parseFloat(agent.per_client_amount) || 100 : 100);
+              perClientEarnings = wd.qualifying_clients * perClientRate;
+            } else if (wd.plan === 'loss_based') {
+              const lossRate = tier ? tier.loss_based_rate : (agent ? parseFloat(agent.commission_rate) || 20 : 20);
+              lossBasedEarnings = wd.total_losses * (lossRate / 100);
+            }
+            const totalEarnings = perClientEarnings + lossBasedEarnings;
+            const { error: wdErr } = await App.db.from('agent_weekly_data').upsert({
+              agent_id: wd.agent_id,
+              week_start_date: weekStart,
+              week_end_date: weekEnd,
+              total_clients: wd.total_clients,
+              qualifying_clients: wd.qualifying_clients,
+              total_losses: wd.total_losses,
+              commission_plan: wd.plan,
+              per_client_earnings: perClientEarnings,
+              loss_based_earnings: lossBasedEarnings,
+              total_earnings: totalEarnings,
+              plan_at_import: agent ? agent.commission_plan : wd.plan,
             }, { onConflict: 'agent_id,week_start_date' });
-            savedSummaries++;
-
-            // Check for tier promotions
-            await this.checkTierPromotions(agentId, ad.qualifyingClients);
-          } catch(e) { console.error('Error saving summary:', e); }
-        }
-
-        await this.loadWeeklyData();
-        await this.loadTierPromotions();
-        this.renderOverview();
-
-        // Build results summary
-        let msg = `Upload Complete!\n\nPlayers processed: ${processedRows}\nSkipped: ${skippedRows}\nAgents with data: ${savedSummaries}\n\n--- Commission Breakdown ---\n`;
-        for (const [agentId, ad] of Object.entries(agentData)) {
-          const total = ad.perClientEarnings + ad.lossBasedEarnings;
-          const tier = this.getAgentTier(ad.qualifyingClients);
-          const tierLabel = tier ? ` [${tier.emoji}${tier.tier_name}]` : '';
-          if (ad.agent.commission_plan === 'per_client') {
-            const rate = tier ? tier.per_client_amount : 100;
-            msg += `${ad.agent.promo_code}${tierLabel}: ${ad.qualifyingClients}/${ad.totalClients} × K${rate} → K${total}\n`;
-          } else if (ad.agent.commission_plan === 'loss_based') {
-            const rate = tier ? tier.loss_based_rate : 20;
-            msg += `${ad.agent.promo_code}${tierLabel}: K${ad.totalLosses} × ${rate}% → K${Math.round(total)}\n`;
-          } else {
-            msg += `${ad.agent.promo_code}: ${ad.totalClients} clients (nil)\n`;
+            if (wdErr) console.warn('weekly data upsert failed', wdErr);
+            else {
+              savedSummaries++;
+              // Check for tier promotions
+              await this.checkTierPromotions(wd.agent_id, wd.qualifying_clients);
+            }
           }
-        }
-        alert(msg);
 
-        // Telegram notification for weekly upload
-        let tgMsg = `📊 <b>Weekly Data Uploaded</b>\n\n📅 ${weekStart} to ${weekEnd}\n👥 Players: ${processedRows}\n🏢 Agents: ${savedSummaries}\n\n<b>Commission:</b>\n`;
-        let totalCommission = 0;
-        for (const [aid, d] of Object.entries(agentData)) {
-          const t = d.perClientEarnings + d.lossBasedEarnings; totalCommission += t;
-          const tier = this.getAgentTier(d.qualifyingClients);
-          const te = tier ? tier.emoji : '';
-          if (d.agent.commission_plan === 'per_client') tgMsg += `• ${te}${d.agent.promo_code}: ${d.qualifyingClients}/${d.totalClients} → K${t}\n`;
-          else if (d.agent.commission_plan === 'loss_based') { const r = tier ? tier.loss_based_rate : 20; tgMsg += `• ${te}${d.agent.promo_code}: ${r}% of K${Math.round(d.totalLosses)} → K${Math.round(t)}\n`; }
-        }
-        tgMsg += `\n💰 <b>Total: K${Math.round(totalCommission)}</b>`;
-        TelegramManager.sendToAll(tgMsg);
+          await this.loadWeeklyData();
+          await this.loadTierPromotions();
+          this.renderOverview();
 
-        document.getElementById('playerActivityFile').value = '';
-        document.getElementById('playerActivityFileName').textContent = '';
-        this.playerActivityFileData = null;
-        btn.disabled = true; btn.innerHTML = '<i data-lucide="check-circle" class="h-4 w-4"></i> Process & Calculate Commission'; refreshIcons();
+          // Telegram notification for weekly upload
+          let tgMsg = `📊 <b>Weekly Data Uploaded</b>\n\n📅 ${weekStart} to ${weekEnd}\n👥 Players: ${matched.length}\n🏢 Agents: ${savedSummaries}\n\n<b>Commission:</b>\n`;
+          let totalCommission = 0;
+          for (const wd of weeklyByAgent) {
+            const agent = this.agents.find(a => a.id === wd.agent_id);
+            const tier = this.getAgentTier(wd.qualifying_clients);
+            const te = tier ? tier.emoji : '';
+            const promoCode = agent ? agent.promo_code : wd.agent_id;
+            let perClientEarnings = 0, lossBasedEarnings = 0;
+            if (wd.plan === 'per_client') {
+              const perClientRate = tier ? tier.per_client_amount : (agent ? parseFloat(agent.per_client_amount) || 100 : 100);
+              perClientEarnings = wd.qualifying_clients * perClientRate;
+              tgMsg += `• ${te}${promoCode}: ${wd.qualifying_clients}/${wd.total_clients} → K${perClientEarnings}\n`;
+            } else if (wd.plan === 'loss_based') {
+              const lossRate = tier ? tier.loss_based_rate : (agent ? parseFloat(agent.commission_rate) || 20 : 20);
+              lossBasedEarnings = wd.total_losses * (lossRate / 100);
+              tgMsg += `• ${te}${promoCode}: ${lossRate}% of K${Math.round(wd.total_losses)} → K${Math.round(lossBasedEarnings)}\n`;
+            }
+            totalCommission += perClientEarnings + lossBasedEarnings;
+          }
+          tgMsg += `\n💰 <b>Total: K${Math.round(totalCommission)}</b>`;
+          TelegramManager.sendToAll(tgMsg);
+
+          // Close modal + reset inputs + clear preview state
+          document.getElementById('playerActivityPreviewModal').classList.add('hidden');
+          this.playerActivityFileData = null;
+          const fileInput = document.getElementById('playerActivityFile');
+          if (fileInput) fileInput.value = '';
+          const fileNameEl = document.getElementById('playerActivityFileName');
+          if (fileNameEl) fileNameEl.textContent = '';
+          this.previewState = null;
+
+          // Compute summary for notification
+          const summary = window.PreviewLogic.summarizePerPlan(weeklyByAgent);
+          const totalAgents = summary.A.qualifyingAgentsCount + summary.B.qualifyingAgentsCount;
+          const totalQualifying = summary.A.totalQualifyingClients + summary.B.totalQualifyingClients;
+          showNotification(
+            `Imported ${totalQualifying} qualifying clients across ${totalAgents} agents. Pay period ${weekStart} is now current.`,
+            'success'
+          );
+
+          // Navigate to Overview subtab and refresh data
+          this.switchSubTab('overview');
+        } catch (err) {
+          console.error('confirmPlayerActivityUpload failed', err);
+          showNotification(`Import failed: ${err.message || err}`, 'error');
+          if (btn) { btn.disabled = false; }
+        }
       },
 
       // Payments
