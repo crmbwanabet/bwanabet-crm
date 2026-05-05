@@ -6043,40 +6043,215 @@ Total Players: ${s.total}`;
         return { totalClients, qualifyingClients, totalLosses, totalEarnings, totalPaid, balance };
       },
 
-      // Overview
+      // Overview (pay-period dashboard) — Plan 2 redesign
+      currentOverviewView: 'current', // 'current' | 'all_unpaid'
+
+      setOverviewView(view) {
+        this.currentOverviewView = (view === 'all_unpaid') ? 'all_unpaid' : 'current';
+        this.renderOverview();
+      },
+
+      _scopeWeeklyForAllUnpaid(weeks) {
+        // Cap input to most recent 26 distinct weeks for performance.
+        const distinctSorted = Array.from(new Set(weeks.map(w => w.week_start_date).filter(Boolean))).sort().reverse();
+        const recent = new Set(distinctSorted.slice(0, 26));
+        return weeks.filter(w => recent.has(w.week_start_date));
+      },
+
       renderOverview() {
-        const allFiltered = this.getFilteredAgents();
-        const active = allFiltered.filter(a => a.status === 'active');
-        const pending = allFiltered.filter(a => a.status === 'pending');
-        const planA = active.filter(a => a.commission_plan === 'per_client');
-        const planB = active.filter(a => a.commission_plan === 'loss_based');
-        const planC = active.filter(a => a.commission_plan === 'nil');
+        const O = window.OverviewLogic;
+        if (!O) return; // module not loaded yet
 
-        let totalClients = 0, totalLosses = 0, pendingPayments = 0;
-        const lb = [];
-        active.forEach(agent => {
-          const stats = this.getAgentStats(agent.id);
-          totalClients += stats.totalClients;
-          totalLosses += stats.totalLosses;
-          if (stats.balance > 0) pendingPayments += stats.balance;
-          lb.push({ ...agent, ...stats });
-        });
+        const visibleAgents = this.getFilteredAgents().filter(a => a.status !== 'inactive');
+        const visibleAgentIds = new Set(visibleAgents.map(a => a.id));
+        const weeklyAll = (this.weeklyData || []).filter(w => visibleAgentIds.has(w.agent_id));
+        const paymentsAll = (this.payments || []).filter(p => visibleAgentIds.has(p.agent_id));
 
-        document.getElementById('agent-total-count').textContent = active.length;
-        document.getElementById('agent-pending-count').textContent = pending.length;
-        document.getElementById('agent-total-signups').textContent = totalClients;
-        document.getElementById('agent-total-losses').textContent = 'K' + totalLosses.toLocaleString();
-        document.getElementById('agent-pending-payments').textContent = 'K' + pendingPayments.toLocaleString();
-        document.getElementById('agent-plan-a-count').textContent = planA.length;
-        document.getElementById('agent-plan-b-count').textContent = planB.length;
-        document.getElementById('agent-plan-c-count').textContent = planC.length;
+        const view = this.currentOverviewView;
+        const currentWeek = O.findCurrentPeriod(weeklyAll);
 
-        this.renderLeaderboard('signups', [...lb].sort((a, b) => b.totalClients - a.totalClients).slice(0, 10));
-        this.renderLeaderboard('deposits', [...lb].sort((a, b) => b.totalLosses - a.totalLosses).slice(0, 10));
-        this.renderLeaderboard('earnings', [...lb].sort((a, b) => b.totalEarnings - a.totalEarnings).slice(0, 10));
-        
-        // Render trends and chart
-        this.renderTrends();
+        // Build aggregation
+        let agg, headerLabel, headerMeta;
+        if (view === 'all_unpaid') {
+          const scoped = this._scopeWeeklyForAllUnpaid(weeklyAll);
+          agg = O.aggregateAllUnpaidWeeks(scoped, visibleAgents, paymentsAll);
+          headerLabel = `All unpaid weeks (${agg.weeksRepresented} week${agg.weeksRepresented === 1 ? '' : 's'})`;
+          headerMeta = '';
+        } else {
+          if (!currentWeek) {
+            this._showOverviewEmpty('no_uploads');
+            return;
+          }
+          const weekScoped = weeklyAll.filter(w => w.week_start_date === currentWeek);
+          const paymentsForWeek = paymentsAll.filter(p => p.week_start_date === currentWeek);
+          agg = O.aggregateCurrentPeriod(weekScoped, visibleAgents, paymentsForWeek, currentWeek);
+          headerLabel = `Pay Period: ${currentWeek}`;
+          // Pull most recent uploaded_at if your weekly_data row carries it; otherwise leave blank.
+          headerMeta = '';
+        }
+
+        // Header strip
+        const labelEl = document.getElementById('overviewPeriodLabel');
+        const metaEl  = document.getElementById('overviewPeriodMeta');
+        if (labelEl) labelEl.textContent = headerLabel;
+        if (metaEl)  metaEl.textContent  = headerMeta;
+        const sel = document.getElementById('overviewViewSelect');
+        if (sel && sel.value !== view) sel.value = view;
+
+        // Plan cards
+        this._renderPlanCards(agg.perPlan);
+
+        // Totals strip
+        const totalsAmt = document.getElementById('overviewTotalsAmount');
+        const totalsPending = document.getElementById('overviewTotalsPending');
+        const payAllBtn = document.getElementById('overviewPayAllBtn');
+        if (totalsAmt) totalsAmt.textContent = 'K' + Math.round(agg.totals.totalWithdrawable).toLocaleString();
+        if (totalsPending) totalsPending.textContent = agg.totals.agentsPending;
+        if (payAllBtn) payAllBtn.disabled = (agg.totals.agentsPending === 0);
+
+        // Agents-to-pay table (with filters/sort applied)
+        this._renderAgentsToPay(agg.rows);
+
+        if (typeof refreshIcons === 'function') refreshIcons();
+      },
+
+      _renderPlanCards(perPlan) {
+        const card = (label, sub, data, payable, planLetter) => {
+          const isC = planLetter === 'C';
+          const pct = data.agentsCount > 0
+            ? Math.round((data.qualifyingAgentsCount / data.agentsCount) * 100)
+            : 0;
+          return `
+            <div class="bg-white rounded-xl px-4 py-3" style="border:1px solid #e2e8f0;">
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">${label}</div>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-700">${planLetter}</span>
+              </div>
+              <div class="text-xs text-slate-500 mb-2">${sub}</div>
+              <div class="space-y-1 text-sm">
+                <div><strong>${data.qualifyingAgentsCount}</strong> of ${data.agentsCount} qualifying ${data.agentsCount > 0 ? `(${pct}%)` : ''}</div>
+                <div><strong>${data.totalQualifyingClients}</strong> qualifying clients</div>
+                ${planLetter === 'B' ? `<div><strong>K${Math.round(data.totalLosses).toLocaleString()}</strong> in player losses</div>` : ''}
+              </div>
+              <div class="mt-2 pt-2 border-t text-sm">
+                ${isC
+                  ? `<span class="text-slate-400 italic">— not payable —</span>`
+                  : `<span class="font-bold text-emerald-700">K${Math.round(payable).toLocaleString()} payable</span>`}
+              </div>
+            </div>
+          `;
+        };
+        const el = document.getElementById('overviewPlanCards');
+        if (!el) return;
+        el.innerHTML = [
+          card('Plan A · Per-Client K100', 'Per qualifying client',  perPlan.A, perPlan.A.totalWithdrawable, 'A'),
+          card('Plan B · Loss-Based 20%', '20% of player losses',    perPlan.B, perPlan.B.totalWithdrawable, 'B'),
+          card('Plan C · Tracking only',  'No commission',           perPlan.C, 0,                          'C'),
+        ].join('');
+      },
+
+      _renderAgentsToPay(rows) {
+        const planFilter   = document.getElementById('overviewPlanFilter')?.value || 'all';
+        const statusFilter = document.getElementById('overviewStatusFilter')?.value || 'pending';
+        const search       = (document.getElementById('overviewSearchInput')?.value || '').toLowerCase().trim();
+        const sortKey      = document.getElementById('overviewSortSelect')?.value || 'amount_desc';
+
+        let filtered = rows.slice();
+        if (planFilter !== 'all') {
+          const letter = planFilter === 'per_client' ? 'A' : planFilter === 'loss_based' ? 'B' : 'C';
+          filtered = filtered.filter(r => r.plan === letter);
+        }
+        if (statusFilter !== 'all') {
+          filtered = filtered.filter(r => r.status === statusFilter);
+        }
+        if (search) {
+          filtered = filtered.filter(r =>
+            (r.name || '').toLowerCase().includes(search) ||
+            (r.promo_code || '').toLowerCase().includes(search)
+          );
+        }
+
+        // Sort
+        const sorters = {
+          amount_desc:     (a, b) => b.withdrawable - a.withdrawable,
+          amount_asc:      (a, b) => a.withdrawable - b.withdrawable,
+          name_asc:        (a, b) => (a.name || '').localeCompare(b.name || ''),
+          qualifying_desc: (a, b) => b.qualifying - a.qualifying,
+        };
+        filtered.sort(sorters[sortKey] || sorters.amount_desc);
+
+        const rowCountEl = document.getElementById('overviewRowCount');
+        if (rowCountEl) rowCountEl.textContent = `${filtered.length} row${filtered.length === 1 ? '' : 's'}`;
+
+        // Stash the filtered subset so Pay-All-Matching uses exactly what's visible
+        this._lastOverviewVisibleRows = filtered;
+
+        const tbody = document.getElementById('overviewTableBody');
+        const empty = document.getElementById('overviewEmptyState');
+        if (!tbody) return;
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = '';
+          if (empty) {
+            const cause = (rows.length === 0) ? 'no_data' : 'all_filtered';
+            this._showOverviewEmpty(cause);
+          }
+          return;
+        }
+        if (empty) empty.classList.add('hidden');
+
+        const statusBadge = {
+          paid:           'bg-emerald-100 text-emerald-700',
+          partially_paid: 'bg-amber-100 text-amber-800',
+          pending:        'bg-orange-100 text-orange-700',
+          no_qualifiers:  'bg-slate-100 text-slate-600',
+        };
+        const statusLabel = {
+          paid: 'Paid', partially_paid: 'Partial', pending: 'Pending', no_qualifiers: 'No qualifiers',
+        };
+
+        tbody.innerHTML = filtered.map(r => {
+          const cls = statusBadge[r.status] || 'bg-slate-100 text-slate-600';
+          const lbl = statusLabel[r.status] || r.status;
+          const action = (r.withdrawable > 0)
+            ? `<button onclick="AgentManager.openMarkPaidModal('${esc(r.agent_id)}','${esc(r.week_start_date)}')" class="px-3 py-1 bg-emerald-600 text-white rounded text-xs hover:bg-emerald-700">Mark Paid</button>`
+            : '—';
+          return `<tr class="border-t hover:bg-slate-50">
+            <td class="px-3 py-2"><div class="font-medium">${esc(r.name)}</div><div class="text-xs text-slate-400">${esc(r.promo_code)}${r.week_start_date && this.currentOverviewView === 'all_unpaid' ? ` · ${esc(r.week_start_date)}` : ''}</div></td>
+            <td class="px-3 py-2 text-center"><span class="px-2 py-0.5 bg-slate-100 rounded text-xs font-bold">${esc(r.plan)}</span></td>
+            <td class="px-3 py-2 text-right">${r.qualifying} / ${r.total_clients}</td>
+            <td class="px-3 py-2 text-right">K${Math.round(r.earnings).toLocaleString()}</td>
+            <td class="px-3 py-2 text-right font-semibold text-emerald-700">K${Math.round(r.withdrawable).toLocaleString()}</td>
+            <td class="px-3 py-2 text-center"><span class="px-2 py-0.5 ${cls} rounded text-xs">${lbl}</span></td>
+            <td class="px-3 py-2 text-center">${action}</td>
+          </tr>`;
+        }).join('');
+      },
+
+      _showOverviewEmpty(cause) {
+        const tbody = document.getElementById('overviewTableBody');
+        const empty = document.getElementById('overviewEmptyState');
+        if (tbody) tbody.innerHTML = '';
+        if (!empty) return;
+        empty.classList.remove('hidden');
+        const messages = {
+          no_uploads:    `No upload yet. <button onclick="AgentManager.switchSubTab('upload')" class="text-emerald-600 hover:underline">Open the Upload tab</button> to import a pay period.`,
+          no_data:       `No agents have weekly data for this view.`,
+          all_filtered:  `All matching agents are settled or filtered out. Switch the Status filter to <em>All</em> to see paid receipts.`,
+        };
+        empty.innerHTML = messages[cause] || 'No data.';
+
+        // Also clear plan cards / totals so the empty state isn't misleading
+        const cards = document.getElementById('overviewPlanCards');
+        if (cards) cards.innerHTML = '';
+        const totalsAmt = document.getElementById('overviewTotalsAmount');
+        const totalsPending = document.getElementById('overviewTotalsPending');
+        const payAllBtn = document.getElementById('overviewPayAllBtn');
+        if (totalsAmt) totalsAmt.textContent = 'K0';
+        if (totalsPending) totalsPending.textContent = '0';
+        if (payAllBtn) payAllBtn.disabled = true;
+        const rowCountEl = document.getElementById('overviewRowCount');
+        if (rowCountEl) rowCountEl.textContent = '0 rows';
       },
 
       renderLeaderboard(type, data) {
