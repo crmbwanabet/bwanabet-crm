@@ -45,7 +45,81 @@ const OverviewLogic = (() => {
   //     rows:    [ { agent_id, name, promo_code, plan, qualifying, total_clients, earnings, paid, withdrawable, status } ],
   //     totals:  { totalEarnings, totalPaid, totalWithdrawable, agentsPending } }
   function aggregateCurrentPeriod(weeklyData, agents, payments, weekStartISO) {
-    throw new Error('not implemented');
+    const agentsById = new Map((agents || []).map(a => [a.id, a]));
+    const emptyPlan = () => ({
+      agentsCount: 0,
+      qualifyingAgentsCount: 0,
+      totalClients: 0,
+      totalQualifyingClients: 0,
+      totalLosses: 0,
+      totalEarnings: 0,
+      totalPaid: 0,
+      totalWithdrawable: 0,
+    });
+    const perPlan = { A: emptyPlan(), B: emptyPlan(), C: emptyPlan() };
+    const rows = [];
+    let totalEarnings = 0, totalPaid = 0, totalWithdrawable = 0, agentsPending = 0;
+
+    for (const wd of (weeklyData || [])) {
+      if (wd.week_start_date !== weekStartISO) continue;
+      const agent = agentsById.get(wd.agent_id);
+      const plan = agent ? PLAN_KEY[agent.commission_plan] : '?';
+      const earnings = Number(wd.total_earnings) || 0;
+      const paid = (() => {
+        let s = 0;
+        for (const p of (payments || [])) {
+          if (p.status !== 'paid') continue;
+          if (p.agent_id !== wd.agent_id) continue;
+          if (p.week_start_date !== weekStartISO) continue;
+          s += Number(p.amount) || 0;
+        }
+        return s;
+      })();
+      const withdrawable = earnings - paid > 0 ? earnings - paid : 0;
+      let status;
+      if (earnings === 0) status = 'no_qualifiers';
+      else if (paid <= 0) status = 'pending';
+      else if (paid >= earnings) status = 'paid';
+      else status = 'partially_paid';
+
+      const row = {
+        agent_id: wd.agent_id,
+        name: agent ? agent.name : '(unknown)',
+        promo_code: agent ? agent.promo_code : '',
+        plan,
+        week_start_date: wd.week_start_date,
+        qualifying: Number(wd.qualifying_clients) || 0,
+        total_clients: Number(wd.total_clients) || 0,
+        earnings,
+        paid,
+        withdrawable,
+        status,
+      };
+      rows.push(row);
+
+      totalEarnings += earnings;
+      totalPaid += paid;
+      totalWithdrawable += withdrawable;
+      if (withdrawable > 0) agentsPending += 1;
+
+      if (plan === 'A' || plan === 'B' || plan === 'C') {
+        const bucket = perPlan[plan];
+        bucket.agentsCount += 1;
+        if (row.qualifying > 0) bucket.qualifyingAgentsCount += 1;
+        bucket.totalClients += row.total_clients;
+        bucket.totalQualifyingClients += row.qualifying;
+        bucket.totalLosses += Number(wd.total_losses) || 0;
+        bucket.totalEarnings += earnings;
+        bucket.totalPaid += paid;
+        bucket.totalWithdrawable += withdrawable;
+      }
+    }
+
+    return {
+      perPlan,
+      rows,
+      totals: { totalEarnings, totalPaid, totalWithdrawable, agentsPending },
+    };
   }
 
   // Aggregates everything for the "All Unpaid Weeks" view.
