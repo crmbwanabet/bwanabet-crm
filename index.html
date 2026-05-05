@@ -6254,6 +6254,72 @@ Total Players: ${s.total}`;
         if (rowCountEl) rowCountEl.textContent = '0 rows';
       },
 
+      openMarkPaidModal(agentId, weekStart) {
+        const agent = this.agents.find(a => a.id === agentId);
+        if (!agent) { crmToast('Unknown agent', 'error'); return; }
+        const wd = (this.weeklyData || []).find(w => w.agent_id === agentId && w.week_start_date === weekStart);
+        if (!wd) { crmToast('No weekly data for that period', 'error'); return; }
+        const earnings = Number(wd.total_earnings) || 0;
+        const paid = (this.payments || []).filter(p =>
+          p.status === 'paid' && p.agent_id === agentId && p.week_start_date === weekStart
+        ).reduce((s, p) => s + (Number(p.amount) || 0), 0);
+        const outstanding = Math.max(0, earnings - paid);
+
+        document.getElementById('markPaidAgent').textContent = `${agent.name} (${agent.promo_code})`;
+        document.getElementById('markPaidWeek').textContent = weekStart;
+        document.getElementById('markPaidEarnings').textContent = 'K' + earnings.toLocaleString();
+        document.getElementById('markPaidAlready').textContent = 'K' + paid.toLocaleString();
+        document.getElementById('markPaidOutstanding').textContent = 'K' + outstanding.toLocaleString();
+        document.getElementById('markPaidAmount').value = outstanding.toFixed(2);
+        document.getElementById('markPaidDate').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('markPaidMethod').value = 'mobile_money';
+        document.getElementById('markPaidNotes').value = '';
+
+        this._markPaidContext = { agentId, weekStart, earnings, alreadyPaid: paid };
+        document.getElementById('markPaidModal').classList.remove('hidden');
+        if (typeof refreshIcons === 'function') refreshIcons();
+      },
+
+      async confirmMarkPaid() {
+        const ctx = this._markPaidContext;
+        if (!ctx) return;
+        const amount = parseFloat(document.getElementById('markPaidAmount').value);
+        const method = document.getElementById('markPaidMethod').value;
+        const date   = document.getElementById('markPaidDate').value;
+        const notes  = document.getElementById('markPaidNotes').value.trim();
+        if (!amount || amount <= 0 || !Number.isFinite(amount)) {
+          crmToast('Enter a valid amount', 'error');
+          return;
+        }
+        if (!date) {
+          crmToast('Pick a date', 'error');
+          return;
+        }
+        const recordedBy = (typeof App !== 'undefined' && App.user && App.user.email) || 'manager';
+        try {
+          const { data, error } = await App.db.from('agent_payments').insert({
+            agent_id: ctx.agentId,
+            amount,
+            payment_method: method,
+            payment_date: date,
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+            notes: notes || null,
+            week_start_date: ctx.weekStart,
+            recorded_by: recordedBy,
+          }).select('*, agents(name, promo_code)').single();
+          if (error) throw error;
+          this.payments.unshift(data);
+          document.getElementById('markPaidModal').classList.add('hidden');
+          this._markPaidContext = null;
+          this.renderOverview();
+          if (typeof this.renderPaymentsTable === 'function') this.renderPaymentsTable();
+          crmToast('Payment recorded');
+        } catch (e) {
+          crmToast('Error: ' + (e.message || 'Unknown'), 'error');
+        }
+      },
+
       renderLeaderboard(type, data) {
         const container = document.getElementById('leaderboard-' + type);
         if (!container || data.length === 0) { if (container) container.innerHTML = '<div class="p-4 text-center text-slate-400">No data yet</div>'; return; }
