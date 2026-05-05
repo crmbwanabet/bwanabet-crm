@@ -299,3 +299,22 @@ test('aggregateAllUnpaidWeeks: per-plan totals span multiple agents and weeks', 
   assert.equal(r.perPlan.B.totalWithdrawable, 200);
   assert.equal(r.weeksRepresented, 2);
 });
+
+test('aggregateCurrentPeriod: agent without commission_plan falls back to "?"', () => {
+  const weekly = [
+    { agent_id: 'a1', week_start_date: '2026-04-27', total_clients: 1, qualifying_clients: 1, total_losses: 0, total_earnings: 100 },
+  ];
+  const agents = [{ id: 'a1', name: 'NoPlan', promo_code: 'X' }];
+  const r = aggregateCurrentPeriod(weekly, agents, [], '2026-04-27');
+  assert.equal(r.rows[0].plan, '?');
+  assert.equal(r.rows[0].name, 'NoPlan');
+  // The '?' bucket isn't tracked in perPlan, but rows still surface for the renderer.
+});
+
+test('aggregateAllUnpaidWeeks: orphan paid payment (no weekly_data row) is ignored', () => {
+  const pays = [{ agent_id: 'a1', week_start_date: '2026-03-01', amount: 50, status: 'paid' }];
+  const r = aggregateAllUnpaidWeeks([], sampleAgentsForAggregate, pays);
+  assert.equal(r.rows.length, 0);
+  assert.equal(r.totals.totalPaid, 0);
+  assert.equal(r.weeksRepresented, 0);
+});

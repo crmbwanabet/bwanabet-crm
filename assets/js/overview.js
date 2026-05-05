@@ -5,6 +5,13 @@
 const OverviewLogic = (() => {
   const PLAN_KEY = { per_client: 'A', loss_based: 'B', nil: 'C' };
 
+  // Withdrawable arithmetic: never negative. Single source of truth so a future
+  // policy change (hold-back, rounding) lives in one place.
+  function _withdrawableOf(earnings, paidSum) {
+    const w = (Number(earnings) || 0) - (Number(paidSum) || 0);
+    return w > 0 ? w : 0;
+  }
+
   // Returns the most recent week_start_date in weeklyData (ISO string),
   // or null if weeklyData is empty.
   function findCurrentPeriod(weeklyData) {
@@ -30,8 +37,7 @@ const OverviewLogic = (() => {
       if (p.week_start_date !== weeklyRow.week_start_date) continue;
       paidSum += Number(p.amount) || 0;
     }
-    const w = earnings - paidSum;
-    return w > 0 ? w : 0;
+    return _withdrawableOf(earnings, paidSum);
   }
 
   // Aggregates everything for the "Current Period" view.
@@ -42,7 +48,8 @@ const OverviewLogic = (() => {
   //   weekStartISO:  the week being aggregated (must match weeklyData rows)
   // Returns:
   //   { perPlan: { A: {...}, B: {...}, C: {...} },
-  //     rows:    [ { agent_id, name, promo_code, plan, qualifying, total_clients, earnings, paid, withdrawable, status } ],
+  //     rows:    [ { agent_id, name, promo_code, plan, week_start_date,
+  //                 qualifying, total_clients, earnings, paid, withdrawable, status } ],
   //     totals:  { totalEarnings, totalPaid, totalWithdrawable, agentsPending } }
   function aggregateCurrentPeriod(weeklyData, agents, payments, weekStartISO) {
     const agentsById = new Map((agents || []).map(a => [a.id, a]));
@@ -60,22 +67,22 @@ const OverviewLogic = (() => {
     const rows = [];
     let totalEarnings = 0, totalPaid = 0, totalWithdrawable = 0, agentsPending = 0;
 
+    // O(N+M) index of paid amounts keyed by agent_id|week, scoped to the target week.
+    const paidByKey = new Map();
+    for (const p of (payments || [])) {
+      if (p.status !== 'paid') continue;
+      if (p.week_start_date !== weekStartISO) continue;
+      const key = p.agent_id + '|' + p.week_start_date;
+      paidByKey.set(key, (paidByKey.get(key) || 0) + (Number(p.amount) || 0));
+    }
+
     for (const wd of (weeklyData || [])) {
       if (wd.week_start_date !== weekStartISO) continue;
       const agent = agentsById.get(wd.agent_id);
-      const plan = agent ? PLAN_KEY[agent.commission_plan] : '?';
+      const plan = (agent && PLAN_KEY[agent.commission_plan]) || '?';
       const earnings = Number(wd.total_earnings) || 0;
-      const paid = (() => {
-        let s = 0;
-        for (const p of (payments || [])) {
-          if (p.status !== 'paid') continue;
-          if (p.agent_id !== wd.agent_id) continue;
-          if (p.week_start_date !== weekStartISO) continue;
-          s += Number(p.amount) || 0;
-        }
-        return s;
-      })();
-      const withdrawable = earnings - paid > 0 ? earnings - paid : 0;
+      const paid = paidByKey.get(wd.agent_id + '|' + weekStartISO) || 0;
+      const withdrawable = _withdrawableOf(earnings, paid);
       let status;
       if (earnings === 0) status = 'no_qualifiers';
       else if (paid <= 0) status = 'pending';
@@ -161,15 +168,13 @@ const OverviewLogic = (() => {
       const earnings = Number(wd.total_earnings) || 0;
       const key = wd.agent_id + '|' + wd.week_start_date;
       const paid = paidByKey.get(key) || 0;
-      const withdrawable = earnings - paid > 0 ? earnings - paid : 0;
+      const withdrawable = _withdrawableOf(earnings, paid);
       if (withdrawable <= 0) continue; // filter out fully-paid + zero-earnings rows
 
       const agent = agentsById.get(wd.agent_id);
-      const plan = agent ? PLAN_KEY[agent.commission_plan] : '?';
-      let status;
-      if (paid <= 0) status = 'pending';
-      else if (paid >= earnings) status = 'paid'; // shouldn't reach here since withdrawable > 0
-      else status = 'partially_paid';
+      const plan = (agent && PLAN_KEY[agent.commission_plan]) || '?';
+      // withdrawable > 0 by guard above, so 'paid' is impossible here.
+      const status = paid > 0 ? 'partially_paid' : 'pending';
 
       const row = {
         agent_id: wd.agent_id,
