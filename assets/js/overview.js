@@ -22,7 +22,16 @@ const OverviewLogic = (() => {
   // weeklyRow: { agent_id, week_start_date, total_earnings }
   // payments:  array of { agent_id, week_start_date, amount, status } (only status='paid' counts).
   function computeWithdrawable(weeklyRow, payments) {
-    throw new Error('not implemented');
+    const earnings = Number(weeklyRow.total_earnings) || 0;
+    let paidSum = 0;
+    for (const p of (payments || [])) {
+      if (p.status !== 'paid') continue;
+      if (p.agent_id !== weeklyRow.agent_id) continue;
+      if (p.week_start_date !== weeklyRow.week_start_date) continue;
+      paidSum += Number(p.amount) || 0;
+    }
+    const w = earnings - paidSum;
+    return w > 0 ? w : 0;
   }
 
   // Aggregates everything for the "Current Period" view.
