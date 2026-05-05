@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "description": "BwanaBet manager CRM — vanilla JS single-file app",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "test": "node --test \"tests/*.test.js\""
   }
