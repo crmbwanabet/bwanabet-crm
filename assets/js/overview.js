@@ -8,7 +8,14 @@ const OverviewLogic = (() => {
   // Returns the most recent week_start_date in weeklyData (ISO string),
   // or null if weeklyData is empty.
   function findCurrentPeriod(weeklyData) {
-    throw new Error('not implemented');
+    if (!Array.isArray(weeklyData) || weeklyData.length === 0) return null;
+    let max = null;
+    for (const row of weeklyData) {
+      const d = row && row.week_start_date;
+      if (!d) continue;
+      if (max === null || d > max) max = d;
+    }
+    return max;
   }
 
   // Returns max(0, total_earnings - sum(amount of paid payments for (agent, week))).
