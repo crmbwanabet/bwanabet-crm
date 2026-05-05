@@ -17,6 +17,7 @@
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/js/preview.js"></script>
+  <script src="assets/js/overview.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
@@ -2627,384 +2628,108 @@ BEHAVIOUR RULES:
 
         <!-- OVERVIEW SUB-TAB -->
         <div id="agentContent-overview">
-          <!-- Trend Dashboard (Week-over-Week) -->
-          <div id="trendDashboard" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <div class="bg-white rounded-xl p-4" style="border:1px solid #e2e8f0;">
-              <p class="text-xs text-slate-400 uppercase tracking-wider mb-1" data-translate="clientsThisWeek">Clients This Week</p>
-              <div class="flex items-center gap-2"><span class="text-2xl font-extrabold" id="trend-clients-val">0</span><span id="trend-clients-change" class="text-xs font-bold trend-flat">—</span></div>
+
+          <!-- HEADER STRIP: pay period + view toggle -->
+          <div class="bg-white rounded-xl px-4 py-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-3" style="border:1px solid #e2e8f0;">
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+              <i data-lucide="calendar-clock" class="h-4 w-4 text-slate-500 flex-shrink-0"></i>
+              <span class="text-xs text-slate-500 uppercase tracking-wider">Pay Period:</span>
+              <span id="overviewPeriodLabel" class="text-sm font-semibold text-slate-800 truncate">—</span>
+              <span id="overviewPeriodMeta" class="text-xs text-slate-400 hidden sm:inline truncate"></span>
             </div>
-            <div class="bg-white rounded-xl p-4" style="border:1px solid #e2e8f0;">
-              <p class="text-xs text-slate-400 uppercase tracking-wider mb-1" data-translate="lossesThisWeek">Losses This Week</p>
-              <div class="flex items-center gap-2"><span class="text-2xl font-extrabold" id="trend-losses-val">K0</span><span id="trend-losses-change" class="text-xs font-bold trend-flat">—</span></div>
-            </div>
-            <div class="bg-white rounded-xl p-4" style="border:1px solid #e2e8f0;">
-              <p class="text-xs text-slate-400 uppercase tracking-wider mb-1" data-translate="earningsThisWeek">Earnings This Week</p>
-              <div class="flex items-center gap-2"><span class="text-2xl font-extrabold" id="trend-earnings-val">K0</span><span id="trend-earnings-change" class="text-xs font-bold trend-flat">—</span></div>
-            </div>
-            <div class="bg-white rounded-xl p-4" style="border:1px solid #e2e8f0;">
-              <p class="text-xs text-slate-400 uppercase tracking-wider mb-1" data-translate="newAgents30d">New Agents (30d)</p>
-              <div class="flex items-center gap-2"><span class="text-2xl font-extrabold" id="trend-newagents-val">0</span><span class="text-xs text-slate-400" data-translate="registered">registered</span></div>
+            <div class="flex items-center gap-2">
+              <label class="text-xs text-slate-500" for="overviewViewSelect">View:</label>
+              <select id="overviewViewSelect" onchange="AgentManager.setOverviewView(this.value)" class="px-2 py-1 border rounded-lg text-sm bg-white">
+                <option value="current">Current Period</option>
+                <option value="all_unpaid">All Unpaid Weeks</option>
+              </select>
             </div>
           </div>
 
-          <!-- Mini Chart -->
-          <div class="bg-white rounded-xl overflow-hidden mb-5" style="border:1px solid #e2e8f0;">
-            <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-              <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="trending-up" class="h-4 w-4 text-emerald-500"></i> <span data-translate="weeklyTrend">Weekly Trend (Last 8 Weeks)</span></h3>
-              <button onclick="AgentManager.exportOverviewCSV()" class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium hover:bg-emerald-200 flex items-center gap-1"><i data-lucide="download" class="h-3.5 w-3.5"></i> <span data-translate="export">Export</span></button>
-            </div>
-            <div class="p-4" style="height:200px;"><canvas id="overviewTrendChart"></canvas></div>
+          <!-- PER-PLAN CARDS -->
+          <div id="overviewPlanCards" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <!-- populated by JS: 3 cards (Plan A / B / C) -->
           </div>
 
-          <!-- Key Metrics Row -->
-          <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
-            <div class="bg-white rounded-xl p-4 flex items-center gap-3" style="border: 1px solid #e2e8f0;">
-              <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
-                <i data-lucide="users" class="h-5 w-5 text-slate-600"></i>
-              </div>
-              <div>
-                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider" data-translate="agentsLabel">Agents</p>
-                <p class="text-xl font-extrabold text-slate-800 leading-tight" id="agent-total-count">0</p>
-              </div>
-            </div>
-            <div class="bg-white rounded-xl p-4 flex items-center gap-3" style="border: 1px solid #fde68a;">
-              <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
-                <i data-lucide="clock" class="h-5 w-5 text-amber-500"></i>
-              </div>
-              <div>
-                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider" data-translate="pending">Pending</p>
-                <p class="text-xl font-extrabold text-amber-600 leading-tight" id="agent-pending-count">0</p>
+          <!-- TOTALS STRIP -->
+          <div id="overviewTotals" class="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="text-xs text-emerald-700 uppercase tracking-wider">Total to pay out this period</div>
+              <div class="flex items-baseline gap-2 mt-0.5 flex-wrap">
+                <span id="overviewTotalsAmount" class="text-2xl font-extrabold text-emerald-800">K0</span>
+                <span class="text-sm text-emerald-700">·</span>
+                <span class="text-sm text-emerald-700"><span id="overviewTotalsPending">0</span> agents pending</span>
               </div>
             </div>
-            <div class="bg-white rounded-xl p-4 flex items-center gap-3" style="border: 1px solid #a7f3d0;">
-              <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                <i data-lucide="user-plus" class="h-5 w-5 text-emerald-500"></i>
-              </div>
-              <div>
-                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider" data-translate="signups">Signups</p>
-                <p class="text-xl font-extrabold text-emerald-600 leading-tight" id="agent-total-signups">0</p>
-              </div>
-            </div>
-            <div class="bg-white rounded-xl p-4 flex items-center gap-3" style="border: 1px solid #e2e8f0;">
-              <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
-                <i data-lucide="trending-down" class="h-5 w-5 text-red-400"></i>
-              </div>
-              <div>
-                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider" data-translate="losses">Losses</p>
-                <p class="text-xl font-extrabold text-slate-800 leading-tight" id="agent-total-losses">K0</p>
-              </div>
-            </div>
-            <div class="bg-white rounded-xl p-4 flex items-center gap-3" style="border: 1px solid #fecaca;">
-              <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
-                <i data-lucide="banknote" class="h-5 w-5 text-red-500"></i>
-              </div>
-              <div>
-                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider" data-translate="owed">Owed</p>
-                <p class="text-xl font-extrabold text-red-600 leading-tight" id="agent-pending-payments">K0</p>
-              </div>
+            <div class="flex flex-wrap gap-2">
+              <button id="overviewPayAllBtn" onclick="AgentManager.openPayAllMatchingModal()" class="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                <i data-lucide="banknote" class="h-4 w-4"></i>
+                Pay all matching filters
+              </button>
+              <button onclick="AgentManager.exportOverviewAgentsCSV()" class="px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-sm flex items-center gap-2">
+                <i data-lucide="download" class="h-4 w-4"></i>
+                Export CSV
+              </button>
             </div>
           </div>
 
-          <!-- Commission Plans -->
-          <div class="bg-white rounded-xl overflow-hidden mb-5" style="border: 1px solid #e2e8f0;">
-            <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-              <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="pie-chart" class="h-4 w-4 text-slate-400"></i> <span data-translate="commissionPlans">Commission Plans</span></h3>
+          <!-- AGENTS-TO-PAY TABLE -->
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden" style="border:1px solid #e2e8f0;">
+            <div class="bg-slate-800 text-white px-4 py-3 flex items-center justify-between">
+              <h3 class="font-semibold text-sm flex items-center gap-2">
+                <i data-lucide="list-checks" class="h-4 w-4"></i>
+                Agents to pay
+              </h3>
+              <span id="overviewRowCount" class="text-xs text-slate-300">0 rows</span>
             </div>
-            <div class="grid grid-cols-3 divide-x divide-slate-100">
-              <div class="p-4 text-center">
-                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold uppercase tracking-wider mb-2" data-translate="planA">Plan A</div>
-                <p class="text-2xl font-extrabold text-slate-800" id="agent-plan-a-count">0</p>
-                <p class="text-xs text-slate-400 mt-0.5" data-translate="planAdesc">Per-Client · K100</p>
-              </div>
-              <div class="p-4 text-center">
-                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple-50 text-purple-600 text-[10px] font-bold uppercase tracking-wider mb-2" data-translate="planB">Plan B</div>
-                <p class="text-2xl font-extrabold text-slate-800" id="agent-plan-b-count">0</p>
-                <p class="text-xs text-slate-400 mt-0.5" data-translate="planBdesc">Loss-Based · 20%</p>
-              </div>
-              <div class="p-4 text-center">
-                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-2" data-translate="planC">Plan C</div>
-                <p class="text-2xl font-extrabold text-slate-800" id="agent-plan-c-count">0</p>
-                <p class="text-xs text-slate-400 mt-0.5" data-translate="planCdesc">Nil · Tracking Only</p>
-              </div>
-            </div>
-          </div>
 
-          <!-- Leaderboards -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-white rounded-xl overflow-hidden" style="border: 1px solid #e2e8f0;">
-              <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-                <div class="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center"><i data-lucide="trophy" class="h-3.5 w-3.5 text-emerald-600"></i></div>
-                <h3 class="text-sm font-bold text-slate-700" data-translate="topByClients">Top by Clients</h3>
-              </div>
-              <div id="leaderboard-signups" class="max-h-[280px] overflow-y-auto"><div class="p-6 text-center text-sm text-slate-300" data-translate="noDataYet">No data yet</div></div>
+            <!-- FILTER ROW -->
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 p-3 bg-slate-50 border-b border-slate-200">
+              <select id="overviewPlanFilter" onchange="AgentManager.renderOverview()" class="px-2 py-2 border rounded-lg text-sm bg-white">
+                <option value="all">All plans</option>
+                <option value="per_client">Plan A · Per-Client</option>
+                <option value="loss_based">Plan B · Loss-Based</option>
+                <option value="nil">Plan C · Tracking</option>
+              </select>
+              <select id="overviewStatusFilter" onchange="AgentManager.renderOverview()" class="px-2 py-2 border rounded-lg text-sm bg-white">
+                <option value="pending">Status: Pending</option>
+                <option value="all">Status: All</option>
+                <option value="paid">Status: Paid</option>
+                <option value="partially_paid">Status: Partial</option>
+                <option value="no_qualifiers">Status: No qualifiers</option>
+              </select>
+              <input id="overviewSearchInput" type="search" placeholder="Search agent or code…" oninput="AgentManager.renderOverview()" class="px-3 py-2 border rounded-lg text-sm">
+              <select id="overviewSortSelect" onchange="AgentManager.renderOverview()" class="px-2 py-2 border rounded-lg text-sm bg-white">
+                <option value="amount_desc">Sort: Amount desc</option>
+                <option value="amount_asc">Sort: Amount asc</option>
+                <option value="name_asc">Sort: Name A→Z</option>
+                <option value="qualifying_desc">Sort: Qualifying desc</option>
+              </select>
             </div>
-            <div class="bg-white rounded-xl overflow-hidden" style="border: 1px solid #e2e8f0;">
-              <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-                <div class="w-6 h-6 rounded-md bg-purple-100 flex items-center justify-center"><i data-lucide="trophy" class="h-3.5 w-3.5 text-purple-600"></i></div>
-                <h3 class="text-sm font-bold text-slate-700" data-translate="topByLosses">Top by Losses</h3>
-              </div>
-              <div id="leaderboard-deposits" class="max-h-[280px] overflow-y-auto"><div class="p-6 text-center text-sm text-slate-300" data-translate="noDataYet">No data yet</div></div>
-            </div>
-            <div class="bg-white rounded-xl overflow-hidden" style="border: 1px solid #e2e8f0;">
-              <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-                <div class="w-6 h-6 rounded-md bg-yellow-100 flex items-center justify-center"><i data-lucide="trophy" class="h-3.5 w-3.5 text-yellow-600"></i></div>
-                <h3 class="text-sm font-bold text-slate-700" data-translate="topEarners">Top Earners</h3>
-              </div>
-              <div id="leaderboard-earnings" class="max-h-[280px] overflow-y-auto"><div class="p-6 text-center text-sm text-slate-300" data-translate="noDataYet">No data yet</div></div>
-            </div>
-          </div>
-        </div>
 
-        <!-- APPROVALS SUB-TAB -->
-        <div id="agentContent-approvals" class="hidden">
-          <!-- Pending Agent Registrations -->
-          <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-            <div class="bg-orange-600 text-white p-4">
-              <h3 class="font-bold flex items-center gap-2"><i data-lucide="user-check" class="h-4 w-4"></i> <span data-translate="pendingAgentRegistrations">Pending Agent Registrations</span></h3>
-            </div>
-            <div class="overflow-x-auto max-h-[400px]">
-              <table class="w-full">
-                <thead class="bg-slate-50 sticky top-0">
+            <!-- TABLE -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-xs">
                   <tr>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600" data-translate="name">Name</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600" data-translate="promoCode">Promo Code</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600" data-translate="phone">Phone</th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600" data-translate="plan">Plan</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600" data-translate="date">Date</th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600" data-translate="actions">Actions</th>
+                    <th class="px-3 py-2 text-left font-semibold text-slate-600">Agent</th>
+                    <th class="px-3 py-2 text-center font-semibold text-slate-600">Plan</th>
+                    <th class="px-3 py-2 text-right font-semibold text-slate-600">Qualifying</th>
+                    <th class="px-3 py-2 text-right font-semibold text-slate-600">Earnings</th>
+                    <th class="px-3 py-2 text-right font-semibold text-slate-600">Withdrawable</th>
+                    <th class="px-3 py-2 text-center font-semibold text-slate-600">Status</th>
+                    <th class="px-3 py-2 text-center font-semibold text-slate-600">Action</th>
                   </tr>
                 </thead>
-                <tbody id="pendingAgentsTable">
-                  <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400" data-translate="noPendingRegistrations">No pending registrations</td></tr>
+                <tbody id="overviewTableBody">
+                  <!-- populated by JS -->
                 </tbody>
               </table>
             </div>
-          </div>
-          <!-- Promo Code Change Requests -->
-          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="bg-blue-700 text-white p-4">
-              <h3 class="font-bold flex items-center gap-2"><i data-lucide="edit" class="h-4 w-4"></i> <span data-translate="promoCodeAliasRequests">Promo Code Alias Requests</span></h3>
-              <p class="text-xs text-blue-100 mt-1" data-translate="promoAliasDesc">Approving keeps the original promo code AND activates the new alias. Both codes will work for login and signup links.</p>
-            </div>
-            <div class="overflow-x-auto max-h-[400px]">
-              <table class="w-full">
-                <thead class="bg-slate-50 sticky top-0">
-                  <tr>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600" data-translate="agent">Agent</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600" data-translate="originalKept">Original (kept)</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600" data-translate="requestedAlias">Requested Alias</th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600" data-translate="actions">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="promoChangeTable">
-                  <tr><td colspan="4" class="px-4 py-8 text-center text-slate-400" data-translate="noPendingRequests">No pending requests</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
 
-        <!-- MANAGE AGENTS SUB-TAB -->
-        <div id="agentContent-agents" class="hidden">
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Add Agent Form -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div class="bg-blue-800 text-white p-4">
-                <h3 class="font-bold flex items-center gap-2"><i data-lucide="user-plus" class="h-4 w-4"></i> <span data-translate="addNewAgent">Add New Agent</span></h3>
-              </div>
-              <div class="p-4 space-y-3">
-                <div>
-                  <label class="block text-xs font-medium text-slate-700 mb-1">Promo Code *</label>
-                  <input type="text" id="newAgentPromoCode" placeholder="e.g. JOHN2024" class="w-full px-3 py-2 border rounded-lg text-sm uppercase">
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-slate-700 mb-1">Password *</label>
-                  <div class="relative">
-                    <input type="password" id="newAgentPassword" placeholder="Min 6 characters" class="w-full px-3 py-2 border rounded-lg text-sm pr-10">
-                    <button type="button" onclick="togglePwVis('newAgentPassword', this)" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><i data-lucide="eye" class="h-4 w-4"></i></button>
-                  </div>
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-slate-700 mb-1">Full Name *</label>
-                  <input type="text" id="newAgentName" placeholder="Agent's full name" class="w-full px-3 py-2 border rounded-lg text-sm">
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-slate-700 mb-1">Phone</label>
-                  <input type="text" id="newAgentPhone" placeholder="+260..." class="w-full px-3 py-2 border rounded-lg text-sm">
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-slate-700 mb-1">Email</label>
-                  <input type="email" id="newAgentEmail" placeholder="agent@example.com" class="w-full px-3 py-2 border rounded-lg text-sm">
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-slate-700 mb-1"><span data-translate="commissionPlan">Commission Plan</span> *</label>
-                  <select id="newAgentPlan" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
-                    <option value="per_client" data-translate="planAFull">Plan A: K100 per qualifying client</option>
-                    <option value="loss_based" data-translate="planBFull">Plan B: 20% of player losses</option>
-                    <option value="nil" data-translate="planCFull">Plan C: Nil (tracking only)</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-slate-700 mb-1">Location</label>
-                  <input type="text" id="newAgentLocation" placeholder="City/Area" class="w-full px-3 py-2 border rounded-lg text-sm">
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-slate-700 mb-1">Recruiter</label>
-                  <input type="text" id="newAgentRecruiter" placeholder="Recruiter name" class="w-full px-3 py-2 border rounded-lg text-sm">
-                </div>
-                <button onclick="AgentManager.addAgent()" id="addAgentBtn" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex items-center justify-center gap-2">
-                  <i data-lucide="plus" class="h-4 w-4"></i> Create Agent
-                </button>
-              </div>
-            </div>
-            <!-- Agents List -->
-            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm overflow-hidden">
-              <div class="bg-slate-800 text-white p-4 flex items-center justify-between flex-wrap gap-2">
-                <h3 class="font-bold flex items-center gap-2"><i data-lucide="users" class="h-4 w-4"></i> <span data-translate="allAgents">All Agents</span></h3>
-                <div class="flex gap-2 flex-wrap">
-                  <button onclick="AgentManager.exportAgentsCSV()" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 rounded text-xs font-medium flex items-center gap-1"><i data-lucide="download" class="h-3.5 w-3.5"></i> CSV</button>
-                  <select id="agentPlanFilter" onchange="AgentManager.renderAgentsTable()" class="px-2 py-1 bg-slate-700 rounded text-sm" title="Filter by commission plan">
-                    <option value="all" data-translate="allPlans">All Plans</option>
-                    <option value="per_client" data-translate="planA">Plan A</option>
-                    <option value="loss_based" data-translate="planB">Plan B</option>
-                    <option value="nil" data-translate="planC">Plan C</option>
-                  </select>
-                  <select id="agentStatusFilter" onchange="AgentManager.renderAgentsTable()" class="px-2 py-1 bg-slate-700 rounded text-sm" title="Filter by account status">
-                    <option value="all" data-translate="anyStatus">Any status</option>
-                    <option value="active" data-translate="active">Active</option>
-                    <option value="inactive" data-translate="inactive">Inactive</option>
-                    <option value="pending" data-translate="pending">Pending</option>
-                  </select>
-                  <select id="agentAccessFilter" onchange="AgentManager.renderAgentsTable()" class="px-2 py-1 bg-slate-700 rounded text-sm" title="Filter by portal access">
-                    <option value="all" data-translate="anyAccess">Any access</option>
-                    <option value="enabled" data-translate="hasAccess">🟢 Has access</option>
-                    <option value="disabled" data-translate="noAccess">🔴 No access</option>
-                  </select>
-                  <input type="text" id="agentSearchInput" onkeyup="AgentManager.renderAgentsTable()" placeholder="Search code/name/phone…" data-translate-placeholder="searchCodeNamePhone" class="px-3 py-1 rounded text-sm text-black w-44">
-                </div>
-              </div>
-              <div class="overflow-x-auto max-h-[500px]">
-                <table class="w-full">
-                  <thead class="bg-slate-50 sticky top-0">
-                    <tr>
-                      <th class="px-3 py-3 text-center text-xs font-semibold text-slate-600" title="Portal access" data-translate="access">Access</th>
-                      <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600" data-translate="code">Code</th>
-                      <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600" data-translate="name">Name</th>
-                      <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600" data-translate="phone">Phone</th>
-                      <th class="px-3 py-3 text-center text-xs font-semibold text-slate-600" data-translate="plan">Plan</th>
-                      <th class="px-3 py-3 text-center text-xs font-semibold text-slate-600" data-translate="tier">Tier</th>
-                      <th class="px-3 py-3 text-center text-xs font-semibold text-slate-600" data-translate="clients">Clients</th>
-                      <th class="px-3 py-3 text-center text-xs font-semibold text-slate-600" data-translate="balance">Balance</th>
-                      <th class="px-3 py-3 text-center text-xs font-semibold text-slate-600" data-translate="status">Status</th>
-                      <th class="px-3 py-3 text-center text-xs font-semibold text-slate-600" data-translate="actions">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="agentsTableBody">
-                    <tr><td colspan="10" class="px-4 py-8 text-center text-slate-400" data-translate="loading">Loading...</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- UPLOAD SUB-TAB -->
-        <div id="agentContent-upload" class="hidden">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Upload Agent List -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div class="bg-blue-700 text-white p-4">
-                <h3 class="font-bold flex items-center gap-2"><i data-lucide="users" class="h-4 w-4"></i> <span data-translate="uploadAgentList">Upload Agent List</span></h3>
-              </div>
-              <div class="p-6">
-                <div class="border-2 border-dashed border-blue-300 rounded-xl p-6 text-center mb-4 bg-blue-50">
-                  <i data-lucide="file-spreadsheet" class="h-10 w-10 text-blue-400 mx-auto mb-2"></i>
-                  <p class="text-slate-600 mb-2 text-sm">Upload Excel with agent details</p>
-                  <input type="file" id="agentListFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="AgentManager.handleAgentListFile(event)">
-                  <button onclick="document.getElementById('agentListFile').click()" class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm">Select File</button>
-                  <p id="agentListFileName" class="text-xs text-slate-500 mt-2"></p>
-                </div>
-                <button onclick="AgentManager.processAgentListUpload()" id="processAgentListBtn" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm flex items-center justify-center gap-2" disabled>
-                  <i data-lucide="check-circle" class="h-4 w-4"></i> Import Agents
-                </button>
-                <!-- Password Options -->
-                <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p class="text-xs font-bold text-amber-800 mb-2 flex items-center gap-1"><i data-lucide="key" class="h-3.5 w-3.5"></i> Portal access on import</p>
-                  <div class="space-y-1.5 mb-2">
-                    <label class="flex items-start gap-2 cursor-pointer">
-                      <input type="radio" name="uploadPwMode" id="uploadPwModeNone" value="none" checked class="accent-amber-600 mt-0.5">
-                      <span class="text-xs text-slate-700"><strong>🔴 No password</strong> — agents are imported but can't log in until you set a password per-agent (recommended).</span>
-                    </label>
-                    <label class="flex items-start gap-2 cursor-pointer">
-                      <input type="radio" name="uploadPwMode" id="uploadPwModeDefault" value="default" class="accent-amber-600 mt-0.5">
-                      <span class="text-xs text-slate-700"><strong>🟡 Default</strong> — every new agent gets <code class="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-amber-800">123456</code>.</span>
-                    </label>
-                    <label class="flex items-start gap-2 cursor-pointer">
-                      <input type="radio" name="uploadPwMode" id="uploadPwModeCustom" value="custom" class="accent-amber-600 mt-0.5">
-                      <span class="text-xs text-slate-700"><strong>🟢 Custom</strong> — set a single password for everyone in this batch:</span>
-                    </label>
-                  </div>
-                  <div class="relative">
-                    <input type="text" id="uploadCustomPw" placeholder="Custom password (≥6 chars)" class="w-full px-3 py-2 border rounded-lg text-sm pr-10" disabled>
-                    <button type="button" onclick="togglePwVis('uploadCustomPw', this)" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><i data-lucide="eye" class="h-4 w-4"></i></button>
-                  </div>
-                  <p class="text-[10px] text-amber-600 mt-1.5">After import, find each agent in <strong>All Agents</strong>, click their row, and set a password to enable portal access.</p>
-                </div>
-                <script>
-                  (function(){
-                    const setMode = () => {
-                      const cust = document.querySelector('input[name="uploadPwMode"]:checked')?.value === 'custom';
-                      const el = document.getElementById('uploadCustomPw');
-                      if (el) { el.disabled = !cust; if (!cust) el.value = ''; }
-                    };
-                    document.querySelectorAll('input[name="uploadPwMode"]').forEach(r => r.addEventListener('change', setMode));
-                  })();
-                </script>
-                <div class="mt-3 p-3 bg-blue-50 rounded-lg">
-                  <p class="text-xs font-medium text-blue-700 mb-1">Expected columns:</p>
-                  <p class="text-xs text-blue-600">Username, Agent Name, Telephone, NRC, Location, Recruiter Name, Date Registered, Percent, Code</p>
-                  <button onclick="AgentManager.downloadAgentTemplate()" class="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 flex items-center gap-1"><i data-lucide="download" class="h-3.5 w-3.5"></i> Download Template</button>
-                </div>
-              </div>
-            </div>
-            <!-- Upload Player Activity -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div class="bg-emerald-700 text-white p-4">
-                <h3 class="font-bold flex items-center gap-2"><i data-lucide="activity" class="h-4 w-4"></i> <span data-translate="uploadPlayerActivity">Upload Player Activity</span></h3>
-              </div>
-              <div class="p-6">
-                <div class="border-2 border-dashed border-emerald-300 rounded-xl p-6 text-center mb-4 bg-emerald-50">
-                  <i data-lucide="file-spreadsheet" class="h-10 w-10 text-emerald-400 mx-auto mb-2"></i>
-                  <p class="text-slate-600 mb-2 text-sm">Upload weekly player activity data</p>
-                  <input type="file" id="playerActivityFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="AgentManager.handlePlayerActivityFile(event)">
-                  <button onclick="document.getElementById('playerActivityFile').click()" class="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 text-sm">Select File</button>
-                  <p id="playerActivityFileName" class="text-xs text-slate-500 mt-2"></p>
-                </div>
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                  <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">Week Start</label>
-                    <input type="date" id="uploadWeekStart" class="w-full px-3 py-2 border rounded-lg text-sm">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">Week End</label>
-                    <input type="date" id="uploadWeekEnd" class="w-full px-3 py-2 border rounded-lg text-sm">
-                  </div>
-                </div>
-                <button onclick="AgentManager.previewPlayerActivityUpload()" id="processActivityBtn" class="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm flex items-center justify-center gap-2" disabled>
-                  <i data-lucide="check-circle" class="h-4 w-4"></i> Preview Upload
-                </button>
-                <div class="mt-3 p-3 bg-emerald-50 rounded-lg">
-                  <p class="text-xs font-medium text-emerald-700 mb-1">Expected sheet: "BWANABET" with columns:</p>
-                  <p class="text-xs text-emerald-600">User ID, Phone Number, Agent Code, First Deposit Amount, Total Deposit Amount, Total Bet Sports, Total Bet Casino, Total Bet, Losses</p>
-                  <div class="mt-2 p-2 bg-white rounded border">
-                    <p class="text-xs font-medium text-slate-700">Commission Rules:</p>
-                    <p class="text-xs text-slate-600"><strong>Plan A:</strong> K100 per client with deposit ≥K100 AND (sports bet ≥K100 OR casino bet ≥K100)</p>
-                    <p class="text-xs text-slate-600"><strong>Plan B:</strong> 20% of total player losses</p>
-                    <p class="text-xs text-slate-600"><strong>Plan C:</strong> No commission (tracking only)</p>
-                  </div>
-                  <button onclick="AgentManager.downloadActivityTemplate()" class="mt-2 px-3 py-1.5 bg-emerald-600 text-white rounded text-xs font-medium hover:bg-emerald-700 flex items-center gap-1"><i data-lucide="download" class="h-3.5 w-3.5"></i> Download Template</button>
-                </div>
-              </div>
+            <!-- EMPTY STATE -->
+            <div id="overviewEmptyState" class="hidden p-8 text-center text-slate-500 text-sm">
+              <!-- populated by JS depending on cause -->
             </div>
           </div>
         </div>
