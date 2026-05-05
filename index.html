@@ -6320,6 +6320,87 @@ Total Players: ${s.total}`;
         }
       },
 
+      openPayAllMatchingModal() {
+        const visible = this._lastOverviewVisibleRows || [];
+        const payable = visible.filter(r => r.withdrawable > 0);
+        if (payable.length === 0) {
+          crmToast('No pending rows in current view', 'error');
+          return;
+        }
+        const total = payable.reduce((s, r) => s + r.withdrawable, 0);
+        document.getElementById('payAllCount').textContent = payable.length;
+        document.getElementById('payAllTotal').textContent = Math.round(total).toLocaleString();
+        document.getElementById('payAllStrategy').value = 'full';
+        document.getElementById('payAllCustomBlock').classList.add('hidden');
+        document.getElementById('payAllCustomAmount').value = '';
+        document.getElementById('payAllMethod').value = 'mobile_money';
+        document.getElementById('payAllDate').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('payAllNotes').value = '';
+        this._payAllContext = { rows: payable };
+        document.getElementById('payAllMatchingModal').classList.remove('hidden');
+        if (typeof refreshIcons === 'function') refreshIcons();
+      },
+
+      async confirmPayAllMatching() {
+        const ctx = this._payAllContext;
+        if (!ctx) return;
+        const strategy = document.getElementById('payAllStrategy').value;
+        const customAmount = parseFloat(document.getElementById('payAllCustomAmount').value);
+        const method = document.getElementById('payAllMethod').value;
+        const date   = document.getElementById('payAllDate').value;
+        const notes  = document.getElementById('payAllNotes').value.trim();
+        if (!date) { crmToast('Pick a date', 'error'); return; }
+        if (strategy === 'custom' && (!Number.isFinite(customAmount) || customAmount <= 0)) {
+          crmToast('Enter a valid custom amount', 'error');
+          return;
+        }
+        const recordedBy = (typeof App !== 'undefined' && App.user && App.user.email) || 'manager';
+        const inserts = ctx.rows.map(r => ({
+          agent_id: r.agent_id,
+          amount: strategy === 'custom' ? customAmount : r.withdrawable,
+          payment_method: method,
+          payment_date: date,
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+          notes: notes || null,
+          week_start_date: r.week_start_date,
+          recorded_by: recordedBy,
+        }));
+        try {
+          const { data, error } = await App.db.from('agent_payments').insert(inserts).select('*, agents(name, promo_code)');
+          if (error) throw error;
+          if (Array.isArray(data)) for (const row of data) this.payments.unshift(row);
+          document.getElementById('payAllMatchingModal').classList.add('hidden');
+          this._payAllContext = null;
+          this.renderOverview();
+          if (typeof this.renderPaymentsTable === 'function') this.renderPaymentsTable();
+          crmToast(`Recorded ${inserts.length} payment${inserts.length === 1 ? '' : 's'}`);
+        } catch (e) {
+          crmToast('Error: ' + (e.message || 'Unknown'), 'error');
+        }
+      },
+
+      exportOverviewAgentsCSV() {
+        const rows = this._lastOverviewVisibleRows || [];
+        if (rows.length === 0) { crmToast('Nothing to export', 'error'); return; }
+        const header = ['agent_name', 'promo_code', 'plan', 'week_start_date', 'qualifying', 'total_clients', 'earnings', 'paid', 'withdrawable', 'status'];
+        const fieldMap = { agent_name: 'name' };
+        const csv = [header.join(',')].concat(
+          rows.map(r => header.map(h => {
+            const v = r[fieldMap[h] || h] ?? '';
+            const s = String(v).replace(/"/g, '""');
+            return /[,"\n]/.test(s) ? `"${s}"` : s;
+          }).join(','))
+        ).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `overview-agents-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+
       renderLeaderboard(type, data) {
         const container = document.getElementById('leaderboard-' + type);
         if (!container || data.length === 0) { if (container) container.innerHTML = '<div class="p-4 text-center text-slate-400">No data yet</div>'; return; }
