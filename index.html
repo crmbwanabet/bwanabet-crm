@@ -3684,6 +3684,11 @@ BEHAVIOUR RULES:
       setTimeout(() => el.remove(), 3000);
     }
 
+    function escapeHtml(s) {
+      if (s == null) return '';
+      return String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+
     // Sanitize promo codes - replace Cyrillic lookalikes with Latin equivalents
     function sanitizePromoCode(code) {
       if (!code) return code;
@@ -6481,6 +6486,108 @@ Total Players: ${s.total}`;
         };
 
         this._renderPreviewModal();
+      },
+
+      _renderPreviewModal() {
+        const s = this.previewState;
+        if (!s) return;
+        const a = s.analysis;
+
+        document.getElementById('previewMeta').innerHTML = `
+          <div><span class="text-slate-500">File:</span> <span class="font-medium">${escapeHtml(s.fileName)}</span></div>
+          <div><span class="text-slate-500">Week start:</span> <span class="font-medium">${escapeHtml(s.weekStart)}</span></div>
+          <div><span class="text-slate-500">Rows parsed:</span> <span class="font-medium">${s.rows.length}</span></div>
+        `;
+
+        const skippedByReason = {};
+        for (const row of a.skipped) {
+          skippedByReason[row.reason] = (skippedByReason[row.reason] || 0) + 1;
+        }
+        const skippedDetail = Object.entries(skippedByReason)
+          .map(([reason, n]) => `${n} ${reason.replace(/_/g, ' ')}`)
+          .join(', ') || 'none';
+        document.getElementById('previewMatchSummary').innerHTML = `
+          <div class="flex items-center gap-2 text-emerald-700">
+            <i data-lucide="check" class="h-4 w-4"></i>
+            <span><strong>${a.matched.length}</strong> player rows matched to known agents</span>
+          </div>
+          ${a.skipped.length > 0 ? `
+            <div class="flex items-center gap-2 text-amber-700 mt-1">
+              <i data-lucide="alert-circle" class="h-4 w-4"></i>
+              <span><strong>${a.skipped.length}</strong> rows skipped — ${escapeHtml(skippedDetail)}</span>
+            </div>
+          ` : ''}
+        `;
+
+        const planCard = (label, data, payable) => `
+          <div class="rounded-xl border bg-white px-4 py-3">
+            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">${label}</div>
+            <div class="mt-2 text-sm text-slate-700 space-y-1">
+              <div><strong>${data.qualifyingAgentsCount}</strong> of ${data.agentsCount} agents qualifying</div>
+              <div><strong>${data.totalQualifyingClients}</strong> qualifying clients</div>
+              <div class="font-semibold text-emerald-700">K${payable.toLocaleString()} payable</div>
+            </div>
+          </div>
+        `;
+        document.getElementById('previewPerPlan').innerHTML = `
+          ${planCard('Plan A · Per-Client K100', a.perPlan.A, a.perPlan.A.totalEarnings)}
+          ${planCard('Plan B · Loss-Based 20%', a.perPlan.B, a.perPlan.B.totalEarnings)}
+          ${planCard('Plan C · Tracking Only', a.perPlan.C, 0)}
+        `;
+
+        const conflictsBox = document.getElementById('previewConflicts');
+        const conflictsList = document.getElementById('previewConflictsList');
+        if (s.conflicts.length === 0) {
+          conflictsBox.classList.add('hidden');
+          conflictsList.innerHTML = '';
+        } else {
+          conflictsBox.classList.remove('hidden');
+          conflictsList.innerHTML = s.conflicts.map(c => {
+            const tag = c.status === 'match' ? '✓ Still matches'
+                      : c.status === 'underpaid' ? `+ K${(c.newEarnings - c.paid).toFixed(2)} extra owed`
+                      : `⚠ Overpaid by K${(c.paid - c.newEarnings).toFixed(2)}`;
+            const colour = c.status === 'overpaid' ? 'text-red-700' : c.status === 'underpaid' ? 'text-amber-800' : 'text-slate-600';
+            return `<div class="${colour}">• ${escapeHtml(c.agent_name)} — paid K${c.paid.toFixed(2)}; new earnings K${c.newEarnings.toFixed(2)}. ${tag}</div>`;
+          }).join('');
+        }
+
+        const futureWarn = document.getElementById('previewFutureDateWarning');
+        const today = new Date().toISOString().slice(0, 10);
+        if (s.weekStart > today) futureWarn.classList.remove('hidden');
+        else futureWarn.classList.add('hidden');
+
+        const overpaidCount = s.conflicts.filter(c => c.status === 'overpaid').length;
+        const isFuture = s.weekStart > today;
+        const gatesBox = document.getElementById('previewGates');
+        const gates = [];
+        if (overpaidCount > 0) {
+          gates.push(`
+            <label class="flex items-start gap-2 text-sm text-slate-700">
+              <input type="checkbox" class="preview-gate mt-0.5" data-gate="overpaid" onchange="AgentManager._refreshConfirmButton()">
+              <span>I understand <strong>${overpaidCount}</strong> agent${overpaidCount === 1 ? ' will be' : 's will be'} overpaid — proceed anyway</span>
+            </label>
+          `);
+        }
+        if (isFuture) {
+          gates.push(`
+            <label class="flex items-start gap-2 text-sm text-slate-700">
+              <input type="checkbox" class="preview-gate mt-0.5" data-gate="future" onchange="AgentManager._refreshConfirmButton()">
+              <span>The week start date is intentionally in the future</span>
+            </label>
+          `);
+        }
+        gatesBox.innerHTML = gates.join('');
+
+        this._refreshConfirmButton();
+        document.getElementById('playerActivityPreviewModal').classList.remove('hidden');
+        if (typeof refreshIcons === 'function') refreshIcons();
+      },
+
+      _refreshConfirmButton() {
+        const btn = document.getElementById('confirmPlayerActivityBtn');
+        const gates = document.querySelectorAll('.preview-gate');
+        const allChecked = Array.from(gates).every(g => g.checked);
+        btn.disabled = !allChecked;
       },
 
       async confirmPlayerActivityUpload() {
