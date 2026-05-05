@@ -106,7 +106,34 @@ const PreviewLogic = (() => {
   //   { agent_id, agent_name, paid: number, newEarnings: number, status: 'match'|'underpaid'|'overpaid' }
   // Only rows where there's a paid payment AND a new earnings calc are returned (no-op cases skipped).
   function detectReuploadConflicts(weeklyByAgent, paidPayments, weekStartISO, agents) {
-    throw new Error('not implemented');
+    const agentsById = new Map(agents.map(a => [a.id, a]));
+    const paidByAgent = new Map();
+    for (const p of paidPayments) {
+      if (p.status !== 'paid') continue;
+      if (p.week_start_date !== weekStartISO) continue;
+      const prev = paidByAgent.get(p.agent_id) || 0;
+      paidByAgent.set(p.agent_id, prev + (Number(p.amount) || 0));
+    }
+
+    const conflicts = [];
+    for (const wd of weeklyByAgent) {
+      const paid = paidByAgent.get(wd.agent_id);
+      if (paid === undefined) continue;
+      const newEarnings = Number(wd.total_earnings) || 0;
+      let status;
+      if (Math.abs(paid - newEarnings) < 0.005) status = 'match';
+      else if (newEarnings > paid) status = 'underpaid';
+      else status = 'overpaid';
+      const agent = agentsById.get(wd.agent_id);
+      conflicts.push({
+        agent_id: wd.agent_id,
+        agent_name: agent ? agent.name : '(unknown)',
+        paid,
+        newEarnings,
+        status,
+      });
+    }
+    return conflicts;
   }
 
   return { summarizePerPlan, analyzeUpload, detectReuploadConflicts };
