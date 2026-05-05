@@ -3,6 +3,11 @@
 // Loaded into the browser as window.PreviewLogic and into Node tests as module.exports.
 
 const PreviewLogic = (() => {
+  // Business rules — single source of truth for commission math and float tolerances.
+  const PLAN_A_RATE = 100;        // ZMW per qualifying client
+  const PLAN_B_RATE = 0.20;       // 20% of losses
+  const MATCH_TOLERANCE = 0.005;  // treat |paid - newEarnings| < half-ngwe as float match
+
   // Aggregates parsed rows into per-plan totals.
   // weeklyByAgent: array of { agent_id, plan, total_clients, qualifying_clients, total_losses, total_earnings }
   // Returns: { A: {...}, B: {...}, C: {...} } where each value is { agentsCount, qualifyingAgentsCount, totalClients, totalQualifyingClients, totalLosses, totalEarnings }
@@ -39,8 +44,6 @@ const PreviewLogic = (() => {
   //   perPlan: result of summarizePerPlan(weeklyByAgent)
   // Pure: no DB calls.
   function analyzeUpload(rows, agents, weekStartISO) {
-    const PLAN_A_RATE = 100;
-    const PLAN_B_RATE = 0.20;
     const codeIndex = new Map();
     for (const a of agents) {
       if (a.promo_code) codeIndex.set(a.promo_code.toUpperCase().trim(), a);
@@ -49,6 +52,7 @@ const PreviewLogic = (() => {
     const matched = [];
     const skipped = [];
     const perAgent = new Map();
+    const seen = new Set();  // tracks 'agent_id:user_id' to dedupe within this upload
 
     for (const row of rows) {
       const code = (row.agent_code || '').toUpperCase().trim();
@@ -62,6 +66,17 @@ const PreviewLogic = (() => {
         continue;
       }
       matched.push({ row, agent });
+
+      const userId = row.user_id != null ? String(row.user_id) : '';
+      const seenKey = agent.id + ' ' + userId;
+      if (userId && seen.has(seenKey)) {
+        // Already counted this player for this agent in this upload
+        skipped.push({ row, reason: 'duplicate_user_id' });
+        // Roll back the matched entry we just pushed
+        matched.pop();
+        continue;
+      }
+      if (userId) seen.add(seenKey);
 
       const deposit = Number(row.first_deposit) || 0;
       const sports = Number(row.sports_bet) || 0;
@@ -121,7 +136,7 @@ const PreviewLogic = (() => {
       if (paid === undefined) continue;
       const newEarnings = Number(wd.total_earnings) || 0;
       let status;
-      if (Math.abs(paid - newEarnings) < 0.005) status = 'match';
+      if (Math.abs(paid - newEarnings) < MATCH_TOLERANCE) status = 'match';
       else if (newEarnings > paid) status = 'underpaid';
       else status = 'overpaid';
       const agent = agentsById.get(wd.agent_id);

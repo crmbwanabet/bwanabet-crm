@@ -164,3 +164,36 @@ test('detectReuploadConflicts: multiple paid rows for same week are summed', () 
   assert.equal(result[0].paid, 400);
   assert.equal(result[0].status, 'match');
 });
+
+test('analyzeUpload: duplicate user_id for same agent is deduplicated', () => {
+  const rows = [
+    { agent_code: 'A100', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 50 },
+    { agent_code: 'A100', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 50 }, // duplicate
+    { agent_code: 'A100', user_id: 'u2', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 30 },
+  ];
+  const result = analyzeUpload(rows, sampleAgents, '2026-04-27');
+  assert.equal(result.matched.length, 2);
+  assert.equal(result.skipped.length, 1);
+  assert.equal(result.skipped[0].reason, 'duplicate_user_id');
+  const aliceWeekly = result.weeklyByAgent.find(r => r.agent_id === 'agent-a');
+  assert.equal(aliceWeekly.total_clients, 2);
+  assert.equal(aliceWeekly.qualifying_clients, 2);
+  assert.equal(aliceWeekly.total_earnings, 200);
+});
+
+test('analyzeUpload: agents with null promo_code are excluded from matching', () => {
+  const agentsWithNull = [
+    { id: 'agent-a', promo_code: 'A100', name: 'Alice', commission_plan: 'per_client' },
+    { id: 'agent-null', promo_code: null, name: 'NoCode', commission_plan: 'per_client' },
+  ];
+  const rows = [
+    { agent_code: '', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 0 },
+    { agent_code: 'A100', user_id: 'u2', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 0 },
+  ];
+  const result = analyzeUpload(rows, agentsWithNull, '2026-04-27');
+  assert.equal(result.matched.length, 1);
+  assert.equal(result.matched[0].agent.id, 'agent-a');
+  // The empty-code row goes to skipped.missing_agent_code, never silently matches the null-code agent.
+  assert.equal(result.skipped.length, 1);
+  assert.equal(result.skipped[0].reason, 'missing_agent_code');
+});
