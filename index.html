@@ -7029,9 +7029,10 @@ Total Players: ${s.total}`;
         el.textContent = 'K' + stats.balance.toLocaleString();
       },
 
-      // Picks the most recent week with unpaid earnings for an agent,
-      // falling back to MAX(week_start_date) overall, then to today's ISO date.
-      // Used by legacy single-payment INSERT so week_start_date is always set.
+      // Picks the most recent week_start_date present in cached weeklyData
+      // for an agent, falling back to MAX(week_start_date) overall, then to
+      // today's ISO date. Used by the legacy single-payment INSERT so
+      // week_start_date is always set under the Plan-1 NOT NULL constraint.
       _pickDefaultPaymentWeek(agentId) {
         const agentWeeks = (this.weeklyData || [])
           .filter(w => w.agent_id === agentId)
