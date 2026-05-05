@@ -235,3 +235,67 @@ test('aggregateCurrentPeriod: row for unknown agent gets placeholder name', () =
   // Plan letter falls back to '?' so it doesn't crash counters.
   assert.equal(r.rows[0].plan, '?');
 });
+
+const { aggregateAllUnpaidWeeks } = require('../assets/js/overview.js');
+
+test('aggregateAllUnpaidWeeks: empty inputs return zeros', () => {
+  const r = aggregateAllUnpaidWeeks([], sampleAgentsForAggregate, []);
+  assert.equal(r.rows.length, 0);
+  assert.equal(r.weeksRepresented, 0);
+  assert.equal(r.totals.totalWithdrawable, 0);
+});
+
+test('aggregateAllUnpaidWeeks: emits one row per (agent, week) with withdrawable > 0', () => {
+  const weekly = [
+    { agent_id: 'a1', week_start_date: '2026-04-27', total_clients: 5, qualifying_clients: 4, total_losses: 0, total_earnings: 400 },
+    { agent_id: 'a1', week_start_date: '2026-04-20', total_clients: 3, qualifying_clients: 3, total_losses: 0, total_earnings: 300 },
+    { agent_id: 'a1', week_start_date: '2026-04-13', total_clients: 1, qualifying_clients: 0, total_losses: 0, total_earnings: 0   }, // skipped: zero earnings
+  ];
+  const r = aggregateAllUnpaidWeeks(weekly, sampleAgentsForAggregate, []);
+  assert.equal(r.rows.length, 2);
+  assert.equal(r.weeksRepresented, 2); // 04-27 and 04-20
+  assert.equal(r.totals.totalEarnings, 700);
+  assert.equal(r.totals.totalWithdrawable, 700);
+});
+
+test('aggregateAllUnpaidWeeks: fully-paid weeks are excluded from rows', () => {
+  const weekly = [
+    { agent_id: 'a1', week_start_date: '2026-04-27', total_clients: 5, qualifying_clients: 4, total_losses: 0, total_earnings: 400 },
+    { agent_id: 'a1', week_start_date: '2026-04-20', total_clients: 3, qualifying_clients: 3, total_losses: 0, total_earnings: 300 },
+  ];
+  const pays = [
+    { agent_id: 'a1', week_start_date: '2026-04-20', amount: 300, status: 'paid' }, // settles 04-20
+  ];
+  const r = aggregateAllUnpaidWeeks(weekly, sampleAgentsForAggregate, pays);
+  assert.equal(r.rows.length, 1);
+  assert.equal(r.rows[0].week_start_date, '2026-04-27');
+  assert.equal(r.weeksRepresented, 1);
+  // Per-plan totals only include rows that survive (consistent with display).
+  assert.equal(r.perPlan.A.totalWithdrawable, 400);
+});
+
+test('aggregateAllUnpaidWeeks: partially-paid weeks ARE included', () => {
+  const weekly = [
+    { agent_id: 'a1', week_start_date: '2026-04-27', total_clients: 5, qualifying_clients: 4, total_losses: 0, total_earnings: 400 },
+  ];
+  const pays = [
+    { agent_id: 'a1', week_start_date: '2026-04-27', amount: 100, status: 'paid' },
+  ];
+  const r = aggregateAllUnpaidWeeks(weekly, sampleAgentsForAggregate, pays);
+  assert.equal(r.rows.length, 1);
+  assert.equal(r.rows[0].withdrawable, 300);
+  assert.equal(r.rows[0].status, 'partially_paid');
+});
+
+test('aggregateAllUnpaidWeeks: per-plan totals span multiple agents and weeks', () => {
+  const weekly = [
+    { agent_id: 'a1', week_start_date: '2026-04-27', total_clients: 5, qualifying_clients: 4, total_losses: 0,    total_earnings: 400 },
+    { agent_id: 'a2', week_start_date: '2026-04-27', total_clients: 3, qualifying_clients: 2, total_losses: 0,    total_earnings: 200 },
+    { agent_id: 'a3', week_start_date: '2026-04-20', total_clients: 1, qualifying_clients: 1, total_losses: 1000, total_earnings: 200 },
+  ];
+  const r = aggregateAllUnpaidWeeks(weekly, sampleAgentsForAggregate, []);
+  assert.equal(r.perPlan.A.totalWithdrawable, 600);
+  assert.equal(r.perPlan.A.qualifyingAgentsCount, 2); // a1 and a2
+  assert.equal(r.perPlan.B.totalWithdrawable, 200);
+  assert.equal(r.weeksRepresented, 2);
+});
