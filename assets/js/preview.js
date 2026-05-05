@@ -39,7 +39,66 @@ const PreviewLogic = (() => {
   //   perPlan: result of summarizePerPlan(weeklyByAgent)
   // Pure: no DB calls.
   function analyzeUpload(rows, agents, weekStartISO) {
-    throw new Error('not implemented');
+    const PLAN_A_RATE = 100;
+    const PLAN_B_RATE = 0.20;
+    const codeIndex = new Map();
+    for (const a of agents) {
+      if (a.promo_code) codeIndex.set(a.promo_code.toUpperCase().trim(), a);
+    }
+
+    const matched = [];
+    const skipped = [];
+    const perAgent = new Map();
+
+    for (const row of rows) {
+      const code = (row.agent_code || '').toUpperCase().trim();
+      if (!code) {
+        skipped.push({ row, reason: 'missing_agent_code' });
+        continue;
+      }
+      const agent = codeIndex.get(code);
+      if (!agent) {
+        skipped.push({ row, reason: 'unknown_agent_code' });
+        continue;
+      }
+      matched.push({ row, agent });
+
+      const deposit = Number(row.first_deposit) || 0;
+      const sports = Number(row.sports_bet) || 0;
+      const casino = Number(row.casino_bet) || 0;
+      const losses = Number(row.total_losses) || 0;
+      const qualifies = deposit >= 100 && (sports >= 100 || casino >= 100);
+
+      let bucket = perAgent.get(agent.id);
+      if (!bucket) {
+        bucket = {
+          agent_id: agent.id,
+          plan: agent.commission_plan,
+          total_clients: 0,
+          qualifying_clients: 0,
+          total_losses: 0,
+          total_earnings: 0,
+        };
+        perAgent.set(agent.id, bucket);
+      }
+      bucket.total_clients += 1;
+      if (qualifies) bucket.qualifying_clients += 1;
+      bucket.total_losses += losses;
+    }
+
+    for (const bucket of perAgent.values()) {
+      if (bucket.plan === 'per_client') {
+        bucket.total_earnings = bucket.qualifying_clients * PLAN_A_RATE;
+      } else if (bucket.plan === 'loss_based') {
+        bucket.total_earnings = Math.round(bucket.total_losses * PLAN_B_RATE * 100) / 100;
+      } else {
+        bucket.total_earnings = 0;
+      }
+    }
+
+    const weeklyByAgent = Array.from(perAgent.values());
+    const perPlan = summarizePerPlan(weeklyByAgent);
+    return { matched, skipped, weeklyByAgent, perPlan, weekStartISO };
   }
 
   // Compares newly-computed per-agent earnings against existing paid agent_payments rows
