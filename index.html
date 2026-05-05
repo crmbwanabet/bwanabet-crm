@@ -7029,6 +7029,28 @@ Total Players: ${s.total}`;
         el.textContent = 'K' + stats.balance.toLocaleString();
       },
 
+      // Picks the most recent week with unpaid earnings for an agent,
+      // falling back to MAX(week_start_date) overall, then to today's ISO date.
+      // Used by legacy single-payment INSERT so week_start_date is always set.
+      _pickDefaultPaymentWeek(agentId) {
+        const agentWeeks = (this.weeklyData || [])
+          .filter(w => w.agent_id === agentId)
+          .map(w => w.week_start_date)
+          .filter(Boolean);
+        if (agentWeeks.length > 0) {
+          agentWeeks.sort();
+          return agentWeeks[agentWeeks.length - 1];
+        }
+        const allWeeks = (this.weeklyData || [])
+          .map(w => w.week_start_date)
+          .filter(Boolean);
+        if (allWeeks.length > 0) {
+          allWeeks.sort();
+          return allWeeks[allWeeks.length - 1];
+        }
+        return new Date().toISOString().slice(0, 10);
+      },
+
       async recordPayment() {
         const agentId = document.getElementById('paymentAgentSelect')?.value;
         const amount = parseFloat(document.getElementById('paymentAmount')?.value);
@@ -7044,10 +7066,18 @@ Total Players: ${s.total}`;
           if (!proceed) return;
         }
         try {
+          const weekStart = this._pickDefaultPaymentWeek(agentId);
+          const recordedBy = (typeof App !== 'undefined' && App.user && App.user.email) || 'manager';
           const { data, error } = await App.db.from('agent_payments').insert({
-            agent_id: agentId, amount, payment_method: method,
-            payment_date: date || null, status: date ? 'paid' : 'pending',
-            notes: notes || null, paid_at: date ? new Date().toISOString() : null
+            agent_id: agentId,
+            amount,
+            payment_method: method,
+            payment_date: date || null,
+            status: date ? 'paid' : 'pending',
+            notes: notes || null,
+            paid_at: date ? new Date().toISOString() : null,
+            week_start_date: weekStart,
+            recorded_by: recordedBy,
           }).select('*, agents(name, promo_code)').single();
           if (error) throw error;
           this.payments.unshift(data);
