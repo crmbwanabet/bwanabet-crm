@@ -7,7 +7,29 @@ const PreviewLogic = (() => {
   // weeklyByAgent: array of { agent_id, plan, total_clients, qualifying_clients, total_losses, total_earnings }
   // Returns: { A: {...}, B: {...}, C: {...} } where each value is { agentsCount, qualifyingAgentsCount, totalClients, totalQualifyingClients, totalLosses, totalEarnings }
   function summarizePerPlan(weeklyByAgent) {
-    throw new Error('not implemented');
+    const PLAN_KEY = { per_client: 'A', loss_based: 'B', nil: 'C' };
+    const empty = () => ({
+      agentsCount: 0,
+      qualifyingAgentsCount: 0,
+      totalClients: 0,
+      totalQualifyingClients: 0,
+      totalLosses: 0,
+      totalEarnings: 0,
+    });
+    const result = { A: empty(), B: empty(), C: empty() };
+
+    for (const row of weeklyByAgent) {
+      const key = PLAN_KEY[row.plan];
+      if (!key) continue;
+      const bucket = result[key];
+      bucket.agentsCount += 1;
+      if ((row.qualifying_clients || 0) > 0) bucket.qualifyingAgentsCount += 1;
+      bucket.totalClients += row.total_clients || 0;
+      bucket.totalQualifyingClients += row.qualifying_clients || 0;
+      bucket.totalLosses += Number(row.total_losses) || 0;
+      bucket.totalEarnings += Number(row.total_earnings) || 0;
+    }
+    return result;
   }
 
   // Reads parsed CSV/XLSX rows + agent list + week start, computes:
