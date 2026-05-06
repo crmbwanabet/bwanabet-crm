@@ -102,11 +102,6 @@
     .dark .tutorial-content { background: #1e293b; color: #e2e8f0; }
     .comparison-card { transition: all 0.2s; }
     .comparison-card:hover { border-color: #6366F1; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15); }
-    /* Chat styles */
-    .chat-msg { animation: chatIn .2s ease-out; }
-    @keyframes chatIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-    .chat-bubble-mine { background:#059669;color:white;border-radius:16px 16px 4px 16px; }
-    .chat-bubble-theirs { background:#f1f5f9;color:#1e293b;border-radius:16px 16px 16px 4px; }
     .agent-filter-active { background:#059669;color:white; }
     .agent-filter-inactive { background:#e2e8f0;color:#64748b; }
     .trend-up { color:#059669; } .trend-down { color:#ef4444; } .trend-flat { color:#94a3b8; }
@@ -2611,10 +2606,6 @@ BEHAVIOUR RULES:
           <button id="agentSubTab-team" onclick="AgentManager.switchSubTab('team')" class="agent-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 whitespace-nowrap transition-all duration-200">
             <i data-lucide="user-cog" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i><span data-translate="team">Team</span>
           </button>
-          <button id="agentSubTab-chat" onclick="AgentManager.switchSubTab('chat')" class="agent-subtab flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 whitespace-nowrap relative transition-all duration-200">
-            <i data-lucide="message-circle" class="h-4 w-4 inline mr-1.5 align-text-bottom"></i><span data-translate="chat">Chat</span>
-            <span id="chatUnreadBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">0</span>
-          </button>
         </div>
 
         <!-- Agent Filter Toggle (visible to affiliate_manager) -->
@@ -3196,44 +3187,7 @@ BEHAVIOUR RULES:
           </div>
         </div>
 
-        <!-- CHAT SUB-TAB -->
-        <div id="agentContent-chat" class="hidden">
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4" style="height:calc(100vh - 280px);min-height:500px;">
-            <!-- Conversation List -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col" style="border:1px solid #e2e8f0;">
-              <div class="bg-indigo-700 text-white p-4">
-                <h3 class="font-bold flex items-center gap-2"><i data-lucide="message-circle" class="h-4 w-4"></i> <span data-translate="conversations">Conversations</span></h3>
-              </div>
-              <div class="p-2">
-                <input type="text" id="chatSearchAgent" onkeyup="ChatManager.filterConversations()" placeholder="Search agents..." data-translate-placeholder="searchAgents" class="w-full px-3 py-2 border rounded-lg text-sm">
-              </div>
-              <div id="chatConversationList" class="flex-1 overflow-y-auto divide-y">
-                <div class="p-4 text-center text-sm text-slate-400" data-translate="loadingAgents">Loading agents...</div>
-              </div>
-            </div>
-            <!-- Chat Window -->
-            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col" style="border:1px solid #e2e8f0;">
-              <div id="chatHeader" class="bg-slate-800 text-white p-4 flex items-center justify-between">
-                <div id="chatHeaderInfo" class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-sm font-bold">?</div>
-                  <div><p class="font-medium text-sm" data-translate="selectAgentToChat">Select an agent to start chatting</p><p class="text-xs text-slate-400" data-translate="chooseFromList">Choose from the list on the left</p></div>
-                </div>
-              </div>
-              <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50" style="min-height:300px;">
-                <div class="flex items-center justify-center h-full text-slate-400 text-sm">
-                  <div class="text-center"><i data-lucide="message-circle" class="h-12 w-12 mx-auto mb-2 opacity-30"></i><p data-translate="noConversationSelected">No conversation selected</p></div>
-                </div>
-              </div>
-              <div id="chatInputArea" class="p-3 border-t bg-white hidden">
-                <div class="flex gap-2">
-                  <input type="text" id="chatMessageInput" placeholder="Type a message..." data-translate-placeholder="typeMessage" class="flex-1 px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none" onkeypress="if(event.key==='Enter')ChatManager.sendMessage()">
-                  <button onclick="ChatManager.sendMessage()" class="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm font-medium flex items-center gap-1"><i data-lucide="send" class="h-4 w-4"></i> <span data-translate="send">Send</span></button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div> 
+      </div>
       <div id="editAgentModal" style="display:none" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onclick="if(event.target===this)this.style.display='none'">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
           <div class="bg-slate-800 text-white p-4 rounded-t-2xl flex items-center justify-between sticky top-0">
@@ -6258,10 +6212,6 @@ Total Players: ${s.total}`;
 
       // Sub-tab Navigation
       switchSubTab(tab) {
-        // Tear down chat realtime subscription if leaving the chat sub-tab
-        if (this.currentSubTab === 'chat' && tab !== 'chat' && typeof ChatManager !== 'undefined') {
-          ChatManager.teardown?.();
-        }
         this.currentSubTab = tab;
         document.querySelectorAll('.agent-subtab').forEach(btn => {
           btn.classList.remove('bg-slate-800', 'text-white');
@@ -6269,7 +6219,7 @@ Total Players: ${s.total}`;
         });
         const activeBtn = document.getElementById('agentSubTab-' + tab);
         if (activeBtn) { activeBtn.classList.remove('text-slate-500'); activeBtn.classList.add('bg-slate-800', 'text-white'); }
-        ['overview', 'approvals', 'agents', 'upload', 'payments', 'tiers', 'team', 'chat'].forEach(t => {
+        ['overview', 'approvals', 'agents', 'upload', 'payments', 'tiers', 'team'].forEach(t => {
           const c = document.getElementById('agentContent-' + t);
           if (c) c.classList.toggle('hidden', t !== tab);
         });
@@ -6279,7 +6229,6 @@ Total Players: ${s.total}`;
         if (tab === 'payments') this.renderPaymentsTable();
         if (tab === 'tiers') this.renderTiers();
         if (tab === 'team') this.renderTeamTable();
-        if (tab === 'chat') ChatManager.init();
         refreshIcons();
       },
 
@@ -12041,232 +11990,6 @@ Total Players: ${s.total}`;
       finally { showLoading(false); e.target.value = ''; }
     }
 
-    // ============================================================
-    // CHAT MANAGER - In-app live chat between CRM users and agents
-    // ============================================================
-    const ChatManager = {
-      selectedAgentId: null,
-      messages: [],
-      subscription: null,
-      initialized: false,
-      
-      async init() {
-        if (!this.initialized) {
-          this.initialized = true;
-          // Ensure chat_messages table exists (graceful fail)
-          await this.ensureTable();
-        }
-        this.renderConversationList();
-        this.loadUnreadCount();
-      },
-
-      teardown() {
-        // Called when leaving the chat sub-tab — drop any live realtime subscription
-        try { if (this.subscription) { this.subscription.unsubscribe(); this.subscription = null; } } catch (e) {}
-        this.selectedAgentId = null;
-        this.messages = [];
-      },
-
-      async ensureTable() {
-        // Try a lightweight query to check if table exists
-        try {
-          await App.db.from('chat_messages').select('id').limit(1);
-        } catch(e) {
-          console.warn('chat_messages table may not exist. Please run the schema SQL.');
-        }
-      },
-
-      renderConversationList() {
-        const container = document.getElementById('chatConversationList');
-        if (!container) return;
-        const agents = AgentManager.getFilteredAgents().filter(a => a.status === 'active');
-        const search = document.getElementById('chatSearchAgent')?.value?.toLowerCase() || '';
-        const filtered = agents.filter(a => !search || a.name.toLowerCase().includes(search) || a.promo_code.toLowerCase().includes(search));
-        
-        if (filtered.length === 0) { container.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">No agents found</div>'; return; }
-        
-        container.innerHTML = filtered.map(a => {
-          const initials = (a.name || '').split(' ').map(n=>n[0]||'').join('').slice(0,2).toUpperCase();
-          const selected = this.selectedAgentId === a.id;
-          return `<div onclick="ChatManager.selectAgent('${esc(a.id)}')" class="flex items-center gap-3 p-3 cursor-pointer transition-all ${selected ? 'bg-indigo-50 border-l-4 border-l-indigo-500' : 'hover:bg-slate-50'}">
-            <div class="w-9 h-9 rounded-full ${selected ? 'bg-indigo-600' : 'bg-slate-300'} flex items-center justify-center text-xs font-bold ${selected ? 'text-white' : 'text-slate-600'} flex-shrink-0">${esc(initials)}</div>
-            <div class="flex-1 min-w-0">
-              <p class="font-medium text-sm truncate ${selected ? 'text-indigo-700' : ''}">${esc(a.name)}</p>
-              <p class="text-xs text-slate-400 font-mono">${esc(a.promo_code)}</p>
-            </div>
-            <span id="chatBadge-${esc(a.id)}" class="hidden bg-red-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center font-bold flex-shrink-0">0</span>
-          </div>`;
-        }).join('');
-      },
-
-      filterConversations() { this.renderConversationList(); },
-
-      async selectAgent(agentId) {
-        this.selectedAgentId = agentId;
-        const agent = AgentManager.agents.find(a => a.id === agentId);
-        if (!agent) return;
-        
-        // Update header
-        const initials = (agent.name || '').split(' ').map(n=>n[0]||'').join('').slice(0,2).toUpperCase();
-        document.getElementById('chatHeaderInfo').innerHTML = `
-          <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-bold text-white">${esc(initials)}</div>
-          <div><p class="font-medium text-sm">${esc(agent.name)}</p><p class="text-xs text-slate-400 font-mono">${esc(agent.promo_code)} · ${esc(agent.phone||'No phone')}</p></div>`;
-        
-        document.getElementById('chatInputArea').classList.remove('hidden');
-        this.renderConversationList();
-        
-        // Load messages
-        await this.loadMessages(agentId);
-        
-        // Mark as read
-        await this.markRead(agentId);
-        
-        // Subscribe to real-time
-        this.subscribeToMessages(agentId);
-      },
-
-      async loadMessages(agentId) {
-        try {
-          const { data, error } = await App.db.from('chat_messages')
-            .select('*')
-            .eq('agent_id', agentId)
-            .order('created_at', { ascending: true })
-            .limit(100);
-          
-          if (error) throw error;
-          this.messages = data || [];
-          this.renderMessages();
-        } catch(e) {
-          console.error('Failed to load messages:', e);
-          document.getElementById('chatMessages').innerHTML = '<div class="p-4 text-center text-amber-600 text-sm">⚠️ Chat not available. Please ensure the chat_messages table exists in Supabase.</div>';
-        }
-      },
-
-      renderMessages() {
-        const container = document.getElementById('chatMessages');
-        if (!container) return;
-        
-        if (this.messages.length === 0) {
-          container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400 text-sm"><div class="text-center"><p>No messages yet. Start the conversation!</p></div></div>';
-          return;
-        }
-        
-        const userEmail = App.user?.email?.toLowerCase() || '';
-        container.innerHTML = this.messages.map(m => {
-          const isMine = m.sender_type === 'crm' && m.sender_id?.toLowerCase() === userEmail;
-          const isAgent = m.sender_type === 'agent';
-          const time = new Date(m.created_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
-          const date = new Date(m.created_at).toLocaleDateString('en-GB', {day:'numeric',month:'short'});
-          
-          if (isAgent) {
-            return `<div class="chat-msg flex justify-start"><div class="max-w-[70%]"><div class="chat-bubble-theirs px-4 py-2.5"><p class="text-sm">${this.escapeHtml(m.message)}</p></div><p class="text-[10px] text-slate-400 mt-1 ml-1">${date} ${time}</p></div></div>`;
-          } else {
-            return `<div class="chat-msg flex justify-end"><div class="max-w-[70%]"><div class="chat-bubble-mine px-4 py-2.5"><p class="text-sm">${this.escapeHtml(m.message)}</p></div><p class="text-[10px] text-slate-400 mt-1 mr-1 text-right">${isMine ? 'You' : this.escapeHtml(m.sender_name||'CRM')} · ${date} ${time}</p></div></div>`;
-          }
-        }).join('');
-        
-        container.scrollTop = container.scrollHeight;
-      },
-
-      async sendMessage() {
-        const input = document.getElementById('chatMessageInput');
-        const text = input?.value.trim();
-        if (!text || !this.selectedAgentId) return;
-
-        // Verify the agent is still active before sending
-        const agent = AgentManager.agents.find(a => a.id === this.selectedAgentId);
-        if (!agent) { alert('Agent not found. Refresh and try again.'); return; }
-        if (agent.status === 'inactive') {
-          if (!confirm(`${agent.name} is deactivated. Send the message anyway?`)) return;
-        }
-
-        const originalText = text;
-        input.value = '';
-
-        try {
-          const { error } = await App.db.from('chat_messages').insert({
-            agent_id: this.selectedAgentId,
-            sender_type: 'crm',
-            sender_id: App.user?.email || 'unknown',
-            sender_name: App.userName || App.user?.email || 'CRM',
-            message: originalText,
-            is_read: false
-          });
-
-          if (error) throw error;
-          // Message will appear via real-time subscription, or reload
-          await this.loadMessages(this.selectedAgentId);
-        } catch(e) {
-          console.error('Send message failed:', e);
-          input.value = originalText; // restore so user can retry
-          alert('Failed to send message: ' + (e.message || 'Unknown error'));
-        }
-      },
-
-      subscribeToMessages(agentId) {
-        if (this.subscription) { this.subscription.unsubscribe(); this.subscription = null; }
-        
-        this.subscription = App.db.channel('chat-' + agentId)
-          .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'chat_messages',
-            filter: 'agent_id=eq.' + agentId
-          }, (payload) => {
-            this.messages.push(payload.new);
-            this.renderMessages();
-            if (payload.new.sender_type === 'agent') this.markRead(agentId);
-          })
-          .subscribe();
-      },
-
-      async markRead(agentId) {
-        try {
-          await App.db.from('chat_messages')
-            .update({ is_read: true })
-            .eq('agent_id', agentId)
-            .eq('sender_type', 'agent')
-            .eq('is_read', false);
-          
-          // Hide badge
-          const badge = document.getElementById('chatBadge-' + agentId);
-          if (badge) badge.classList.add('hidden');
-          this.loadUnreadCount();
-        } catch(e) {}
-      },
-
-      async loadUnreadCount() {
-        try {
-          const { data } = await App.db.from('chat_messages')
-            .select('agent_id')
-            .eq('sender_type', 'agent')
-            .eq('is_read', false);
-          
-          if (!data) return;
-          const counts = {};
-          data.forEach(m => { counts[m.agent_id] = (counts[m.agent_id]||0) + 1; });
-          
-          let total = 0;
-          Object.keys(counts).forEach(aid => {
-            total += counts[aid];
-            const badge = document.getElementById('chatBadge-' + aid);
-            if (badge) { badge.textContent = counts[aid]; badge.classList.remove('hidden'); }
-          });
-          
-          const mainBadge = document.getElementById('chatUnreadBadge');
-          if (mainBadge) {
-            mainBadge.textContent = total;
-            mainBadge.classList.toggle('hidden', total === 0);
-          }
-        } catch(e) {}
-      },
-
-      escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-      }
-    };
 
     // ============================================================
     // INITIALIZATION
@@ -12366,8 +12089,6 @@ Total Players: ${s.total}`;
           AgentManager.agents = [];
           AgentManager.weeklyData = [];
           AgentManager.payments = [];
-          ChatManager.messages = [];
-          if (ChatManager.subscription) { ChatManager.subscription.unsubscribe(); ChatManager.subscription = null; }
           stopAutoRefresh();
           // Destroy all charts
           Object.values(App.charts).forEach(c => { try { c.destroy(); } catch(e){} });
@@ -12488,11 +12209,7 @@ Total Players: ${s.total}`;
       // Team tab only visible to admin/developer/affiliate_manager
       const teamTab = document.getElementById('agentSubTab-team');
       if (teamTab) teamTab.style.display = (role === 'admin' || role === 'developer' || role === 'affiliate_manager') ? '' : 'none';
-      
-      // Chat tab visible to admin/developer/affiliate_manager
-      const chatTab = document.getElementById('agentSubTab-chat');
-      if (chatTab) chatTab.style.display = (role === 'admin' || role === 'developer' || role === 'affiliate_manager') ? '' : 'none';
-      
+
       // Agent filter bar visible only to affiliate_manager
       const filterBar = document.getElementById('agentFilterBar');
       if (filterBar) {
