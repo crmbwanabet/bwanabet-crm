@@ -2964,11 +2964,12 @@ BEHAVIOUR RULES:
                 </button>
                 <div class="mt-3 p-3 bg-emerald-50 rounded-lg">
                   <p class="text-xs font-medium text-emerald-700 mb-1">Expected sheet: "BWANABET" with columns:</p>
-                  <p class="text-xs text-emerald-600">User ID, Phone Number, Agent Code, First Deposit Amount, Total Deposit Amount, Total Bet Sports, Total Bet Casino, Total Bet, Losses</p>
+                  <p class="text-xs text-emerald-600">User ID, Phone Number, Agent Code, First Deposit Amount, Total Deposit Amount, Total Bet Sports, Total Bet Casino, Total Bet, Total Withdrawals, Current Balance</p>
+                  <p class="text-[11px] text-emerald-700 mt-1">Agent codes may be bare (<code>365</code>) or A-prefixed (<code>A365</code>) — both resolve.</p>
                   <div class="mt-2 p-2 bg-white rounded border">
                     <p class="text-xs font-medium text-slate-700">Commission Rules:</p>
                     <p class="text-xs text-slate-600"><strong>Plan A:</strong> K100 per client with deposit ≥K100 AND (sports bet ≥K100 OR casino bet ≥K100)</p>
-                    <p class="text-xs text-slate-600"><strong>Plan B:</strong> 20% of total player losses</p>
+                    <p class="text-xs text-slate-600"><strong>Plan B:</strong> 20% of derived client loss = max(0, Total Deposit − Total Withdrawals − Current Balance)</p>
                     <p class="text-xs text-slate-600"><strong>Plan C:</strong> No commission (tracking only)</p>
                   </div>
                   <button onclick="AgentManager.downloadActivityTemplate()" class="mt-2 px-3 py-1.5 bg-emerald-600 text-white rounded text-xs font-medium hover:bg-emerald-700 flex items-center gap-1"><i data-lucide="download" class="h-3.5 w-3.5"></i> Download Template</button>
@@ -6136,7 +6137,7 @@ Total Players: ${s.total}`;
       },
 
       downloadActivityTemplate() {
-        const headers = ['User ID','Phone Number','Agent Code','First Deposit Amount','Total Deposit Amount','Total Bet Sports','Total Bet Casino','Total Bet','Losses'];
+        const headers = ['User ID','Phone Number','Agent Code','First Deposit Amount','Total Deposit Amount','Total Bet Sports','Total Bet Casino','Total Bet','Total Withdrawals','Current Balance'];
         this._downloadCSV('player_activity_template.csv', headers, []);
       },
 
@@ -7091,15 +7092,23 @@ Total Players: ${s.total}`;
           return;
         }
 
+        // The losses figure is derived inside analyzeUpload from the new GGR-style formula:
+        // loss = max(0, Total Deposit − Total Withdrawals − Current Balance). Pass the three
+        // raw inputs through; missing columns become null and yield zero loss for that row.
+        const pickNum = (...vals) => {
+          for (const v of vals) if (v != null) return v;
+          return null;
+        };
         const rows = fileData.map(r => ({
           agent_code: r['Agent Code'] || r.agent_code,
           user_id: r['User ID'] || r.user_id,
           phone: r['Phone Number'] || r.phone,
           first_deposit: r['First Deposit Amount'] || r.first_deposit || 0,
-          total_deposit: r['Total Deposit Amount'] || r.total_deposit || 0,
+          total_deposit: pickNum(r['Total Deposit Amount'], r.total_deposit),
           sports_bet: r['Total Bet Sports'] || r.sports_bet || 0,
           casino_bet: r['Total Bet Casino'] || r.casino_bet || 0,
-          total_losses: r['Losses'] || r.total_losses || 0,
+          total_withdrawals: pickNum(r['Total Withdrawals'], r['Total Withdrawal Amount'], r.total_withdrawals),
+          current_balance: pickNum(r['Current Balance'], r.current_balance),
         }));
 
         const analysis = window.PreviewLogic.analyzeUpload(rows, this.agents, weekStart);
@@ -7250,19 +7259,19 @@ Total Players: ${s.total}`;
         if (btn) { btn.disabled = true; }
 
         try {
-          // Upsert per-player activity rows from pre-analysed matches
+          // Upsert per-player activity rows from pre-analysed matches.
+          // qualifies and losses come pre-computed on each matched entry — we don't reapply
+          // the qualifying rule or the GGR formula here.
           let actFailures = 0;
           let wdFailures = 0;
-          for (const { row, agent } of matched) {
+          for (const { row, agent, qualifies, losses } of matched) {
             const deposit = Number(row.first_deposit) || 0;
             const totalDeposit = Number(row.total_deposit) || 0;
             const sports = Number(row.sports_bet) || 0;
             const casino = Number(row.casino_bet) || 0;
             const totalBet = sports + casino;
-            const totalLosses = Number(row.total_losses) || 0;
             const userId = row.user_id;
             const phone = row.phone || null;
-            const qualifies = deposit >= 100 && (sports >= 100 || casino >= 100);
             const { error: actErr } = await App.db.from('agent_player_activity').upsert({
               agent_id: agent.id,
               agent_code: agent.promo_code,
@@ -7275,7 +7284,7 @@ Total Players: ${s.total}`;
               total_bet_sports: sports,
               total_bet_casino: casino,
               total_bet: totalBet,
-              losses: totalLosses,
+              losses,
               qualifies_per_client: qualifies,
             }, { onConflict: 'agent_id,user_id,week_start_date' });
             if (actErr) { console.warn('player activity upsert failed', actErr); actFailures++; }

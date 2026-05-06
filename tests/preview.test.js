@@ -47,10 +47,10 @@ const sampleAgents = [
 
 test('analyzeUpload: matched and skipped row counts', () => {
   const rows = [
-    { agent_code: 'A100', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 50 },
-    { agent_code: 'A100', user_id: 'u2', first_deposit: 50,  sports_bet: 50,  casino_bet: 0, total_losses: 10 },
-    { agent_code: 'XXX',  user_id: 'u3', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 50 },
-    { agent_code: '',     user_id: 'u4', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 50 },
+    { agent_code: 'A100', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 50, total_withdrawals: 0, current_balance: 0 },
+    { agent_code: 'A100', user_id: 'u2', first_deposit: 50,  sports_bet: 50,  casino_bet: 0, total_deposit: 10, total_withdrawals: 0, current_balance: 0 },
+    { agent_code: 'XXX',  user_id: 'u3', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 50, total_withdrawals: 0, current_balance: 0 },
+    { agent_code: '',     user_id: 'u4', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 50, total_withdrawals: 0, current_balance: 0 },
   ];
   const result = analyzeUpload(rows, sampleAgents, '2026-04-27');
   assert.equal(result.matched.length, 2);
@@ -61,10 +61,10 @@ test('analyzeUpload: matched and skipped row counts', () => {
 
 test('analyzeUpload: Plan A qualifying logic — deposit + (sports OR casino) ≥ 100', () => {
   const rows = [
-    { agent_code: 'A100', user_id: 'u1', first_deposit: 100, sports_bet: 100, casino_bet: 0, total_losses: 0 },
-    { agent_code: 'A100', user_id: 'u2', first_deposit: 100, sports_bet: 0,   casino_bet: 100, total_losses: 0 },
-    { agent_code: 'A100', user_id: 'u3', first_deposit: 100, sports_bet: 50,  casino_bet: 50, total_losses: 0 },
-    { agent_code: 'A100', user_id: 'u4', first_deposit: 99,  sports_bet: 200, casino_bet: 0, total_losses: 0 },
+    { agent_code: 'A100', user_id: 'u1', first_deposit: 100, sports_bet: 100, casino_bet: 0, total_deposit: 0, total_withdrawals: 0, current_balance: 0 },
+    { agent_code: 'A100', user_id: 'u2', first_deposit: 100, sports_bet: 0,   casino_bet: 100, total_deposit: 0, total_withdrawals: 0, current_balance: 0 },
+    { agent_code: 'A100', user_id: 'u3', first_deposit: 100, sports_bet: 50,  casino_bet: 50, total_deposit: 0, total_withdrawals: 0, current_balance: 0 },
+    { agent_code: 'A100', user_id: 'u4', first_deposit: 99,  sports_bet: 200, casino_bet: 0, total_deposit: 0, total_withdrawals: 0, current_balance: 0 },
   ];
   const result = analyzeUpload(rows, sampleAgents, '2026-04-27');
   const aliceWeekly = result.weeklyByAgent.find(r => r.agent_id === 'agent-a');
@@ -75,8 +75,8 @@ test('analyzeUpload: Plan A qualifying logic — deposit + (sports OR casino) �
 
 test('analyzeUpload: Plan B earns 20% of losses regardless of qualifying', () => {
   const rows = [
-    { agent_code: 'A200', user_id: 'u1', first_deposit: 50,  sports_bet: 50,  casino_bet: 0, total_losses: 1000 },
-    { agent_code: 'A200', user_id: 'u2', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 500 },
+    { agent_code: 'A200', user_id: 'u1', first_deposit: 50,  sports_bet: 50,  casino_bet: 0, total_deposit: 1000, total_withdrawals: 0, current_balance: 0 },
+    { agent_code: 'A200', user_id: 'u2', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 500,  total_withdrawals: 0, current_balance: 0 },
   ];
   const result = analyzeUpload(rows, sampleAgents, '2026-04-27');
   const bobWeekly = result.weeklyByAgent.find(r => r.agent_id === 'agent-b');
@@ -87,7 +87,7 @@ test('analyzeUpload: Plan B earns 20% of losses regardless of qualifying', () =>
 
 test('analyzeUpload: Plan C tracks clients, pays zero', () => {
   const rows = [
-    { agent_code: 'A300', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 100 },
+    { agent_code: 'A300', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 100, total_withdrawals: 0, current_balance: 0 },
   ];
   const result = analyzeUpload(rows, sampleAgents, '2026-04-27');
   const carolWeekly = result.weeklyByAgent.find(r => r.agent_id === 'agent-c');
@@ -97,7 +97,7 @@ test('analyzeUpload: Plan C tracks clients, pays zero', () => {
 
 test('analyzeUpload: perPlan summary is included', () => {
   const rows = [
-    { agent_code: 'A100', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 0 },
+    { agent_code: 'A100', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 0, total_withdrawals: 0, current_balance: 0 },
   ];
   const result = analyzeUpload(rows, sampleAgents, '2026-04-27');
   assert.ok(result.perPlan);
@@ -167,9 +167,9 @@ test('detectReuploadConflicts: multiple paid rows for same week are summed', () 
 
 test('analyzeUpload: duplicate user_id for same agent is deduplicated', () => {
   const rows = [
-    { agent_code: 'A100', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 50 },
-    { agent_code: 'A100', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 50 }, // duplicate
-    { agent_code: 'A100', user_id: 'u2', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 30 },
+    { agent_code: 'A100', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 50, total_withdrawals: 0, current_balance: 0 },
+    { agent_code: 'A100', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 50, total_withdrawals: 0, current_balance: 0 }, // duplicate
+    { agent_code: 'A100', user_id: 'u2', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 30, total_withdrawals: 0, current_balance: 0 },
   ];
   const result = analyzeUpload(rows, sampleAgents, '2026-04-27');
   assert.equal(result.matched.length, 2);
@@ -181,14 +181,109 @@ test('analyzeUpload: duplicate user_id for same agent is deduplicated', () => {
   assert.equal(aliceWeekly.total_earnings, 200);
 });
 
+test('analyzeUpload: numeric agent_code resolves to "A"-prefixed agent', () => {
+  // Spreadsheet exports agent codes as bare numbers (365). The DB stores them as A365.
+  const rows = [
+    { agent_code: 365, user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 0, total_withdrawals: 0, current_balance: 0 },
+    { agent_code: '100', user_id: 'u2', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 0, total_withdrawals: 0, current_balance: 0 },
+  ];
+  const agents = [
+    { id: 'agent-a', promo_code: 'A100', name: 'Alice', commission_plan: 'per_client' },
+    { id: 'agent-b', promo_code: 'A365', name: 'Evaristo', commission_plan: 'per_client' },
+  ];
+  const result = analyzeUpload(rows, agents, '2026-04-27');
+  assert.equal(result.matched.length, 2);
+  assert.equal(result.skipped.length, 0);
+  assert.equal(result.matched[0].agent.id, 'agent-b');
+  assert.equal(result.matched[1].agent.id, 'agent-a');
+});
+
+test('analyzeUpload: numeric agent_code prefers "A"-prefixed when both bare and prefixed exist', () => {
+  // The DB has both '365' (a stale/garbage agent) and 'A365' (the real agent).
+  // The file's bare '365' should resolve to A365, not the bare 365 row.
+  const rows = [
+    { agent_code: 365, user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 0, total_withdrawals: 0, current_balance: 0 },
+  ];
+  const agents = [
+    { id: 'garbage', promo_code: '365', name: '63', commission_plan: 'per_client' },
+    { id: 'real',    promo_code: 'A365', name: 'Evaristo', commission_plan: 'per_client' },
+  ];
+  const result = analyzeUpload(rows, agents, '2026-04-27');
+  assert.equal(result.matched.length, 1);
+  assert.equal(result.matched[0].agent.id, 'real');
+});
+
+test('analyzeUpload: numeric agent_code falls back to bare match when no prefixed exists', () => {
+  const rows = [
+    { agent_code: '999', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 0, total_withdrawals: 0, current_balance: 0 },
+  ];
+  const agents = [
+    { id: 'only', promo_code: '999', name: 'OnlyBare', commission_plan: 'per_client' },
+  ];
+  const result = analyzeUpload(rows, agents, '2026-04-27');
+  assert.equal(result.matched.length, 1);
+  assert.equal(result.matched[0].agent.id, 'only');
+});
+
+test('analyzeUpload: derives client loss as deposit − withdrawals − balance', () => {
+  const rows = [
+    { agent_code: 'A200', user_id: 'u1', first_deposit: 100, sports_bet: 100, casino_bet: 0, total_deposit: 1000, total_withdrawals: 200, current_balance: 100 },
+  ];
+  const result = analyzeUpload(rows, sampleAgents, '2026-04-27');
+  // Plan B agent — earns 20% of derived loss (1000 - 200 - 100 = 700) → 140
+  const bobWeekly = result.weeklyByAgent.find(r => r.agent_id === 'agent-b');
+  assert.equal(bobWeekly.total_losses, 700);
+  assert.equal(bobWeekly.total_earnings, 140);
+});
+
+test('analyzeUpload: derived loss clamps to 0 when player won net', () => {
+  // Player deposited 100, withdrew 500 (won money), and still has 200 in balance.
+  // House lost on this player: deposit − (withdrawal + balance) = 100 - 700 = -600 → clamp to 0.
+  const rows = [
+    { agent_code: 'A200', user_id: 'u1', first_deposit: 100, sports_bet: 100, casino_bet: 0, total_deposit: 100, total_withdrawals: 500, current_balance: 200 },
+  ];
+  const result = analyzeUpload(rows, sampleAgents, '2026-04-27');
+  const bobWeekly = result.weeklyByAgent.find(r => r.agent_id === 'agent-b');
+  assert.equal(bobWeekly.total_losses, 0);
+  assert.equal(bobWeekly.total_earnings, 0);
+});
+
+test('analyzeUpload: missing total_withdrawals or current_balance yields zero loss (safe default)', () => {
+  // Old-format file lacks the new columns. Better to under-count than over-pay Plan B.
+  const rows = [
+    { agent_code: 'A200', user_id: 'u1', first_deposit: 100, sports_bet: 100, casino_bet: 0, total_deposit: 1000 /* no withdrawals/balance */ },
+    { agent_code: 'A200', user_id: 'u2', first_deposit: 100, sports_bet: 100, casino_bet: 0, total_deposit: 1000, total_withdrawals: 200 /* no balance */ },
+    { agent_code: 'A200', user_id: 'u3', first_deposit: 100, sports_bet: 100, casino_bet: 0, total_deposit: 1000, current_balance: 100 /* no withdrawals */ },
+  ];
+  const result = analyzeUpload(rows, sampleAgents, '2026-04-27');
+  const bobWeekly = result.weeklyByAgent.find(r => r.agent_id === 'agent-b');
+  assert.equal(bobWeekly.total_losses, 0);
+  assert.equal(bobWeekly.total_earnings, 0);
+});
+
+test('analyzeUpload: matched entries include qualifies and losses', () => {
+  // The confirm step writes per-player rows into agent_player_activity; the matched array carries
+  // pre-computed qualifies + losses so confirm doesn't reapply the same business logic.
+  const rows = [
+    { agent_code: 'A100', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 1000, total_withdrawals: 200, current_balance: 100 },
+    { agent_code: 'A100', user_id: 'u2', first_deposit: 50, sports_bet: 50, casino_bet: 0, total_deposit: 100, total_withdrawals: 0, current_balance: 0 },
+  ];
+  const result = analyzeUpload(rows, sampleAgents, '2026-04-27');
+  assert.equal(result.matched.length, 2);
+  assert.equal(result.matched[0].qualifies, true);
+  assert.equal(result.matched[0].losses, 700);
+  assert.equal(result.matched[1].qualifies, false);
+  assert.equal(result.matched[1].losses, 100);
+});
+
 test('analyzeUpload: agents with null promo_code are excluded from matching', () => {
   const agentsWithNull = [
     { id: 'agent-a', promo_code: 'A100', name: 'Alice', commission_plan: 'per_client' },
     { id: 'agent-null', promo_code: null, name: 'NoCode', commission_plan: 'per_client' },
   ];
   const rows = [
-    { agent_code: '', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 0 },
-    { agent_code: 'A100', user_id: 'u2', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_losses: 0 },
+    { agent_code: '', user_id: 'u1', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 0, total_withdrawals: 0, current_balance: 0 },
+    { agent_code: 'A100', user_id: 'u2', first_deposit: 200, sports_bet: 200, casino_bet: 0, total_deposit: 0, total_withdrawals: 0, current_balance: 0 },
   ];
   const result = analyzeUpload(rows, agentsWithNull, '2026-04-27');
   assert.equal(result.matched.length, 1);

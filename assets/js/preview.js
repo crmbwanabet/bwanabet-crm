@@ -37,8 +37,18 @@ const PreviewLogic = (() => {
     return result;
   }
 
+  // Computes per-player client loss using the GGR-style formula:
+  //   loss = max(0, total_deposit − total_withdrawals − current_balance)
+  // Returns 0 when any of the three inputs is null/undefined — under-counting is
+  // safer than over-counting commission for Plan B.
+  function deriveLoss(totalDeposit, totalWithdrawals, currentBalance) {
+    if (totalDeposit == null || totalWithdrawals == null || currentBalance == null) return 0;
+    const loss = Number(totalDeposit) - Number(totalWithdrawals) - Number(currentBalance);
+    return loss > 0 ? loss : 0;
+  }
+
   // Reads parsed CSV/XLSX rows + agent list + week start, computes:
-  //   matched: array of player rows whose agent_code maps to a known agent
+  //   matched: array of { row, agent, qualifies, losses } whose agent_code resolves
   //   skipped: array of { row, reason } for unmatched / invalid rows
   //   weeklyByAgent: per-agent aggregated weekly summary (input to summarizePerPlan)
   //   perPlan: result of summarizePerPlan(weeklyByAgent)
@@ -46,7 +56,7 @@ const PreviewLogic = (() => {
   function analyzeUpload(rows, agents, weekStartISO) {
     const codeIndex = new Map();
     for (const a of agents) {
-      if (a.promo_code) codeIndex.set(a.promo_code.toUpperCase().trim(), a);
+      if (a.promo_code) codeIndex.set(String(a.promo_code).toUpperCase().trim(), a);
     }
 
     const matched = [];
@@ -55,34 +65,39 @@ const PreviewLogic = (() => {
     const seen = new Set();  // tracks 'agent_id:user_id' to dedupe within this upload
 
     for (const row of rows) {
-      const code = (row.agent_code || '').toUpperCase().trim();
+      const code = (row.agent_code == null ? '' : String(row.agent_code)).toUpperCase().trim();
       if (!code) {
         skipped.push({ row, reason: 'missing_agent_code' });
         continue;
       }
-      const agent = codeIndex.get(code);
+      // Bwanabet convention is 'A' + numeric (A100, A365). Spreadsheets often emit
+      // bare numbers, so when the file gives us a numeric code, prefer the
+      // 'A'-prefixed agent if one exists. Falls back to bare match.
+      const isNumeric = /^\d+$/.test(code);
+      const agent = isNumeric
+        ? (codeIndex.get('A' + code) || codeIndex.get(code))
+        : codeIndex.get(code);
       if (!agent) {
         skipped.push({ row, reason: 'unknown_agent_code' });
         continue;
       }
-      matched.push({ row, agent });
 
       const userId = row.user_id != null ? String(row.user_id) : '';
       const seenKey = agent.id + ' ' + userId;
       if (userId && seen.has(seenKey)) {
         // Already counted this player for this agent in this upload
         skipped.push({ row, reason: 'duplicate_user_id' });
-        // Roll back the matched entry we just pushed
-        matched.pop();
         continue;
       }
       if (userId) seen.add(seenKey);
 
-      const deposit = Number(row.first_deposit) || 0;
+      const firstDeposit = Number(row.first_deposit) || 0;
       const sports = Number(row.sports_bet) || 0;
       const casino = Number(row.casino_bet) || 0;
-      const losses = Number(row.total_losses) || 0;
-      const qualifies = deposit >= 100 && (sports >= 100 || casino >= 100);
+      const losses = deriveLoss(row.total_deposit, row.total_withdrawals, row.current_balance);
+      const qualifies = firstDeposit >= 100 && (sports >= 100 || casino >= 100);
+
+      matched.push({ row, agent, qualifies, losses });
 
       let bucket = perAgent.get(agent.id);
       if (!bucket) {
