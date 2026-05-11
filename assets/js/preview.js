@@ -91,11 +91,14 @@ const PreviewLogic = (() => {
       }
       if (userId) seen.add(seenKey);
 
-      const firstDeposit = Number(row.first_deposit) || 0;
+      const totalDeposit = Number(row.total_deposit) || 0;
       const sports = Number(row.sports_bet) || 0;
       const casino = Number(row.casino_bet) || 0;
       const losses = deriveLoss(row.total_deposit, row.total_withdrawals, row.current_balance);
-      const qualifies = firstDeposit >= 100 && (sports >= 100 || casino >= 100);
+      // Plan A qualifier: at least K100 total deposited AND at least K100 of bets placed
+      // (sports + casino combined). 'First Deposit Amount' in the BwanaBet export is the size
+      // of the first deposit transaction (often K2–K30), not a meaningful activity threshold.
+      const qualifies = totalDeposit >= 100 && (sports + casino) >= 100;
 
       matched.push({ row, agent, qualifies, losses });
 
