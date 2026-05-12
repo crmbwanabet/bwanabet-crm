@@ -7150,11 +7150,22 @@ Total Players: ${s.total}`;
         `;
 
         const skippedByReason = {};
-        for (const row of a.skipped) {
-          skippedByReason[row.reason] = (skippedByReason[row.reason] || 0) + 1;
+        const unknownCodes = new Set();
+        for (const s of a.skipped) {
+          skippedByReason[s.reason] = (skippedByReason[s.reason] || 0) + 1;
+          if (s.reason === 'unknown_agent_code') {
+            const c = (s.row && s.row.agent_code != null) ? String(s.row.agent_code).trim() : '';
+            if (c) unknownCodes.add(c);
+          }
         }
         const skippedDetail = Object.entries(skippedByReason)
-          .map(([reason, n]) => `${n} ${reason.replace(/_/g, ' ')}`)
+          .map(([reason, n]) => {
+            if (reason === 'unknown_agent_code' && unknownCodes.size > 0) {
+              const list = [...unknownCodes].sort().join(', ');
+              return `${n} unknown agent code (${unknownCodes.size} distinct: ${list})`;
+            }
+            return `${n} ${reason.replace(/_/g, ' ')}`;
+          })
           .join(', ') || 'none';
         document.getElementById('previewMatchSummary').innerHTML = `
           <div class="flex items-center gap-2 text-emerald-700">
